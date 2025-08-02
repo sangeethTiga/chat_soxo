@@ -64,6 +64,11 @@ class FontPalette {
     fontWeight: FontWeight.w400,
     letterSpacing: 0,
   );
+  static TextStyle hW400S16 = TextStyle(
+    fontSize: 16.sp,
+    fontWeight: FontWeight.w400,
+    letterSpacing: 0,
+  );
   static TextStyle hW400S18 = TextStyle(
     fontSize: 18.sp,
     fontWeight: FontWeight.w400,

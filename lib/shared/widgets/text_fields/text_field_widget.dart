@@ -137,7 +137,8 @@ class TextFeildWidget extends StatelessWidget {
                 ),
             textAlign: textAlign,
             decoration: InputDecoration(
-              prefixIcon: prefix ?? SizedBox(),
+              prefix: prefix ?? SizedBox(),
+              prefixIcon: prefixIcon,
               prefixStyle: FontPalette.hW700S16,
               counter: const Offstage(),
               floatingLabelBehavior: floatingLabelBehavior,
@@ -162,7 +163,11 @@ class TextFeildWidget extends StatelessWidget {
               hintText: isHint ? labelText : hintText,
               hintStyle:
                   hintStyle ??
-                  TextStyle(fontSize: hintSize ?? 13.sp, color: kBlack),
+                  TextStyle(
+                    fontSize: hintSize ?? 14.sp,
+                    color: Color(0XFF8B8B8B),
+                    fontWeight: FontWeight.w400,
+                  ),
               isDense: isDense,
               errorText: errorText,
               errorStyle: errorStyle

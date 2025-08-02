@@ -54,6 +54,7 @@ dependencies:
   json_serializable: ^6.10.0
   build_runner: ^2.6.0
   flutter_widget_from_html: ^0.17.0
+  flutter_expandable_fab: ^2.5.2
   # firebase_core: ^4.0.0
   # firebase_messaging: ^16.0.0
 

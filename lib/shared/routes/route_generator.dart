@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:soxo_chat/feature/chat/screen/chat_screen.dart';
+import 'package:soxo_chat/feature/group/screen/group_screen.dart';
 import 'package:soxo_chat/shared/routes/routes.dart';
 
 class RouteGenerator {
@@ -9,7 +10,8 @@ class RouteGenerator {
     switch (routeSettings.name) {
       case routeRoot:
         return MaterialPageRoute(builder: (_) => ChatScreen());
-
+      case routeGroup:
+        return MaterialPageRoute(builder: (_) => GroupScreen());
       default:
         return _errorRoute();
     }

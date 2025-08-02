@@ -14,19 +14,20 @@ class CustomCheckBox extends StatelessWidget {
         onTap?.call();
       },
       child: Container(
-        margin: EdgeInsets.only(right: 10.w, top: 5.h),
+        margin: EdgeInsets.only(right: 0.w, top: 5.h),
         height: 20.h,
         width: 20.w,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: isSelected == true ? kPrimaryColor : Colors.transparent,
           border: Border.all(
-            color: isSelected == true ? kPrimaryColor : Color(0XFFCBD7D4),
+            width: 1.5.w,
+            color: isSelected == true ? Color(0XFFA6A6A6) : Color(0XFFCBD7D4),
           ),
         ),
-        child: isSelected == true
-            ? Icon(Icons.check, size: 15.h, color: kWhite)
-            : null,
+        // child: isSelected == true
+        //     ? Icon(Icons.check, size: 15.h, color: kWhite)
+        //     : null,
       ),
     );
   }

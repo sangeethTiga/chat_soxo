@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/build_chat_item.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/build_tab.dart';
+import 'package:soxo_chat/feature/chat/screen/widgets/flating_button.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
 import 'package:soxo_chat/shared/widgets/padding/main_padding.dart';
 
 class ChatScreen extends StatelessWidget {
-  const ChatScreen({super.key});
+  ChatScreen({super.key});
+  final _key = GlobalKey<ExpandableFabState>();
 
   @override
   Widget build(BuildContext context) {
@@ -143,15 +146,9 @@ class ChatScreen extends StatelessWidget {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        shape: CircleBorder(),
-        onPressed: () {},
-        backgroundColor: Color(0XFF3D9970),
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: SvgPicture.asset('assets/icons/Group 1000007039.svg'),
-        ),
-      ),
+      floatingActionButtonLocation: ExpandableFab.location,
+
+      floatingActionButton: FlatingWidget(keys: _key),
     );
   }
 }
