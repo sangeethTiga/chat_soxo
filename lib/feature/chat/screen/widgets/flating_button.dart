@@ -57,6 +57,7 @@ class FlatingWidget extends StatelessWidget {
           backgroundColor: kPrimaryColor,
           heroTag: null,
           onPressed: () {
+            keys?.currentState?.close();
             Navigator.pushNamed(context, routeGroup);
           },
           child: Padding(
@@ -68,7 +69,10 @@ class FlatingWidget extends StatelessWidget {
           shape: const CircleBorder(),
           backgroundColor: kPrimaryColor,
           heroTag: null,
-          onPressed: null,
+          onPressed: () {
+            keys?.currentState?.close();
+            Navigator.pushNamed(context, routePerson);
+          },
           child: Padding(
             padding: const EdgeInsets.all(4.0),
             child: SvgPicture.asset('assets/icons/user.svg'),

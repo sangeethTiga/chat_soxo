@@ -10,8 +10,9 @@ Widget buildChatContacts(
   String name,
   String message,
   String time,
-  int unreadCount,
-) {
+  int unreadCount, {
+  bool? isShow = false,
+}) {
   return Container(
     margin: EdgeInsets.only(bottom: 12),
     padding: EdgeInsets.only(left: 6.w, right: 8.w, bottom: 6.h, top: 6.h),
@@ -37,7 +38,7 @@ Widget buildChatContacts(
         ),
         SizedBox(width: 12),
         Expanded(child: Text(name, style: FontPalette.hW600S14)),
-        CustomCheckBox(isSelected: true),
+        if (isShow == false) CustomCheckBox(isSelected: true),
       ],
     ),
   );

@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:soxo_chat/feature/chat/screen/widgets/build_chat_item.dart';
-import 'package:soxo_chat/feature/chat/screen/widgets/build_tab.dart';
-import 'package:soxo_chat/feature/chat/screen/widgets/flating_button.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:soxo_chat/feature/group/screen/widgets/build_item_widget.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
-import 'package:soxo_chat/shared/routes/routes.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
 import 'package:soxo_chat/shared/widgets/padding/main_padding.dart';
+import 'package:soxo_chat/shared/widgets/text_fields/text_field_widget.dart';
 
-class ChatScreen extends StatelessWidget {
-  ChatScreen({super.key});
-  final _key = GlobalKey<ExpandableFabState>();
+class PersonListsScreen extends StatelessWidget {
+  const PersonListsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -30,12 +26,29 @@ class ChatScreen extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 0),
             child: SafeArea(
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Chat',
-                    style: FontPalette.hW400S18.copyWith(color: kBlack),
+                  Container(
+                    padding: EdgeInsets.only(left: 5.w),
+                    alignment: Alignment.center,
+                    height: 39.h,
+                    width: 39.w,
+                    decoration: BoxDecoration(
+                      color: kWhite,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        icon: Icon(Icons.arrow_back_ios),
+                      ),
+                    ),
                   ),
+                  10.horizontalSpace,
+                  Text('Person', style: FontPalette.hW400S18),
+                  Spacer(),
                   Stack(
                     children: [
                       SvgPicture.asset('assets/icons/bell.svg'),
@@ -62,7 +75,6 @@ class ChatScreen extends StatelessWidget {
               ),
             ),
           ),
-
           Expanded(
             child: Container(
               transform: Matrix4.translationValues(0, -20, 0),
@@ -75,26 +87,30 @@ class ChatScreen extends StatelessWidget {
                 ),
               ),
               child: MainPadding(
-                top: 18.h,
+                top: 10.h,
                 child: Column(
                   children: [
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
+                    10.verticalSpace,
+                    TextFeildWidget(
+                      hintStyle: FontPalette.hW400S16.copyWith(
+                        color: Color(0XFFBFBFBF),
+                      ),
+                      prefixIcon: Padding(
+                        padding: EdgeInsets.only(left: 10.w, right: 10.w),
+                        child: SvgPicture.asset(
+                          'assets/icons/Group 1000006923.svg',
+                        ),
+                      ),
+                      hight: 48.h,
+                      fillColor: kWhite,
 
-                      child: Row(
-                        children: [
-                          Row(
-                            children: [
-                              buildTab('All', true, width: 20.w),
-                              6.horizontalSpace,
-                              buildTab('Group Chat', false, width: 10.w),
-                              6.horizontalSpace,
-                              buildTab('Personal Chat', false, width: 10.w),
-                              6.horizontalSpace,
-                              buildTab('Broadcast', false, width: 10.w),
-                            ],
-                          ),
-                        ],
+                      hintText: 'Search Members',
+                      inputBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10.r),
+                        borderSide: BorderSide(
+                          color: Color(0xffCACACA),
+                          width: 1,
+                        ),
                       ),
                     ),
                     12.verticalSpace,
@@ -105,42 +121,23 @@ class ChatScreen extends StatelessWidget {
                           vertical: 0,
                         ),
                         children: [
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.pushNamed(context, routeChatDetail);
-                            },
-                            child: buildChatItem(
-                              'RD',
-                              Colors.blue,
-                              'Internal Review',
-                              'Pls Review',
-                              'Today',
-                              1,
-                            ),
-                          ),
-                          buildChatItem(
-                            'AT',
-                            Colors.green,
-                            'Anoop Ts',
-                            'How is it going?',
-                            '17/5',
-                            0,
-                          ),
-                          buildChatItem(
-                            'CS',
-                            Colors.deepOrange,
-                            'Case Study\'s',
-                            'Please check xary image',
-                            'Today',
-                            1,
-                          ),
-                          buildChatItem(
+                          buildChatContacts(
                             'RD',
                             Colors.blue,
                             'Internal Review',
                             'Pls Review',
                             'Today',
                             1,
+                            isShow: true,
+                          ),
+                          buildChatContacts(
+                            'AT',
+                            Colors.green,
+                            'Anoop Ts',
+                            'How is it going?',
+                            '17/5',
+                            0,
+                            isShow: true,
                           ),
                         ],
                       ),
@@ -152,9 +149,6 @@ class ChatScreen extends StatelessWidget {
           ),
         ],
       ),
-      floatingActionButtonLocation: ExpandableFab.location,
-
-      floatingActionButton: FlatingWidget(keys: _key),
     );
   }
 }

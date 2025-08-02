@@ -55,6 +55,8 @@ dependencies:
   build_runner: ^2.6.0
   flutter_widget_from_html: ^0.17.0
   flutter_expandable_fab: ^2.5.2
+  # chat_bubbles: ^1.7.0
+  bubble: ^1.2.1
   # firebase_core: ^4.0.0
   # firebase_messaging: ^16.0.0
 
