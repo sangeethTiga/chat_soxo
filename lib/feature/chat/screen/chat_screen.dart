@@ -65,7 +65,7 @@ class ChatScreen extends StatelessWidget {
 
           Expanded(
             child: Container(
-              transform: Matrix4.translationValues(0, -20, 0),
+              transform: Matrix4.translationValues(0, -15, 0),
 
               decoration: BoxDecoration(
                 color: Colors.white,

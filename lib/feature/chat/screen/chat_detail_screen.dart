@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
@@ -20,36 +21,47 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     with TickerProviderStateMixin {
   late AnimationController _arrowAnimationController;
   late AnimationController _contentAnimationController;
+  late AnimationController _recordingAnimationController;
   late Animation<double> _arrowRotationAnimation;
+
+  // FIX: Initialize message controller properly
+  late TextEditingController _messageController;
+
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  late Animation<double> _pulseAnimation;
 
   @override
   void initState() {
     super.initState();
+    // FIX: Initialize message controller first
+    _messageController = TextEditingController();
+    _initializeAnimations();
+  }
 
-    // Arrow rotation animation
+  void _initializeAnimations() {
     _arrowAnimationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
 
-    // Content transition animation
     _contentAnimationController = AnimationController(
       duration: const Duration(milliseconds: 400),
       vsync: this,
     );
 
-    _arrowRotationAnimation =
-        Tween<double>(
-          begin: 0.0,
-          end: 0.5, // 180 degrees rotation
-        ).animate(
-          CurvedAnimation(
-            parent: _arrowAnimationController,
-            curve: Curves.easeInOut,
-          ),
-        );
+    // FIX: Initialize recording animation controller
+    _recordingAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+
+    _arrowRotationAnimation = Tween<double>(begin: 0.0, end: 0.5).animate(
+      CurvedAnimation(
+        parent: _arrowAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
@@ -65,39 +77,226 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
             curve: Curves.easeOutCubic,
           ),
         );
+
+    // FIX: Initialize pulse animation after recording controller
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.3).animate(
+      CurvedAnimation(
+        parent: _recordingAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
   }
 
   @override
   void dispose() {
+    // FIX: Dispose all controllers properly
     _arrowAnimationController.dispose();
     _contentAnimationController.dispose();
+    _recordingAnimationController.dispose();
+    _messageController.dispose();
     super.dispose();
   }
 
   void _handleArrowTap() {
     context.read<ChatCubit>().arrowSelected();
-
-    // Animate arrow rotation
     if (_arrowAnimationController.isCompleted) {
       _arrowAnimationController.reverse();
     } else {
       _arrowAnimationController.forward();
     }
 
-    // Animate content transition
     _contentAnimationController.reset();
     _contentAnimationController.forward();
+  }
+
+  void _startRecording() {
+    context.read<ChatCubit>().startRecording();
+    _recordingAnimationController.repeat(reverse: true);
+    _showRecordingDialog();
+  }
+
+  void _stopRecording() {
+    context.read<ChatCubit>().stopRecordingAndSend();
+    _recordingAnimationController.stop();
+    Navigator.pop(context);
+  }
+
+  void _cancelRecording() {
+    context.read<ChatCubit>().cancelRecording();
+    _recordingAnimationController.stop();
+    Navigator.pop(context);
+  }
+
+  void _sendTextMessage() {
+    final message = _messageController.text.trim();
+    if (message.isNotEmpty) {
+      context.read<ChatCubit>().sendTextMessage(message);
+      _messageController.clear();
+    }
+  }
+
+  void _showRecordingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => BlocBuilder<ChatCubit, ChatState>(
+        builder: (context, state) {
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: EdgeInsets.all(20.w),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16.r),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AnimatedBuilder(
+                    animation: _pulseAnimation,
+                    builder: (context, child) {
+                      return Transform.scale(
+                        scale: _pulseAnimation.value,
+                        child: Container(
+                          height: 60.h,
+                          width: 60.w,
+                          decoration: BoxDecoration(
+                            color: kPrimaryColor,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: kPrimaryColor.withOpacity(0.5),
+                                blurRadius: 20,
+                                spreadRadius: 5,
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.mic,
+                            color: Colors.white,
+                            size: 30,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+
+                  20.verticalSpace,
+
+                  Text(
+                    'Recording...',
+                    style: FontPalette.hW400S16.copyWith(color: Colors.red),
+                  ),
+
+                  10.verticalSpace,
+                  Text(
+                    context.read<ChatCubit>().formatDuration(
+                      state.recordingDuration,
+                    ),
+                    style: FontPalette.hW400S14.copyWith(
+                      color: Colors.grey[800],
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  30.verticalSpace,
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      GestureDetector(
+                        onTap: _cancelRecording,
+                        child: Container(
+                          height: 35.h,
+                          padding: EdgeInsets.only(left: 10.w, right: 10.w),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.close, color: Colors.red),
+                              5.horizontalSpace,
+                              Text(
+                                'Cancel',
+                                style: FontPalette.hW500S14.copyWith(
+                                  color: Colors.red,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      10.horizontalSpace,
+                      GestureDetector(
+                        onTap: _stopRecording,
+                        child: Container(
+                          height: 35.h,
+                          padding: EdgeInsets.only(left: 10.w, right: 10.w),
+                          decoration: BoxDecoration(
+                            color: kPrimaryColor,
+                            borderRadius: BorderRadius.circular(12.r),
+                            boxShadow: [
+                              BoxShadow(
+                                color: kPrimaryColor.withOpacity(0.3),
+                                blurRadius: 8,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.send, color: Colors.white),
+                              5.horizontalSpace,
+                              Text(
+                                'Send',
+                                style: FontPalette.hW500S14.copyWith(
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: BlocBuilder<ChatCubit, ChatState>(
+      body: BlocConsumer<ChatCubit, ChatState>(
+        listener: (context, state) {
+          if (state.errorMessage != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.errorMessage!),
+                backgroundColor: Colors.red,
+                action: SnackBarAction(
+                  label: 'Dismiss',
+                  textColor: Colors.white,
+                  onPressed: () {
+                    context.read<ChatCubit>().clearError();
+                  },
+                ),
+              ),
+            );
+          }
+        },
         builder: (context, state) {
           return Column(
             children: [
               Container(
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
@@ -113,18 +312,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                         alignment: Alignment.center,
                         height: 39.h,
                         width: 39.w,
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: kWhite,
                           shape: BoxShape.circle,
                         ),
-                        child: Center(
-                          child: IconButton(
-                            padding: EdgeInsets.zero,
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            icon: Icon(Icons.arrow_back_ios),
-                          ),
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(Icons.arrow_back_ios),
                         ),
                       ),
                       6.horizontalSpace,
@@ -139,7 +334,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                               Container(
                                 height: 8.h,
                                 width: 8.w,
-                                decoration: BoxDecoration(
+                                decoration: const BoxDecoration(
                                   color: Color(0xFF68D391),
                                   shape: BoxShape.circle,
                                 ),
@@ -175,9 +370,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                             child: child,
                           );
                         },
-                    child: state.isArrow == false
-                        ? _buildChatContent(key: ValueKey('chat'))
-                        : _buildGroupContent(key: ValueKey('group')),
+                    child: (state.isArrow) == false
+                        ? _buildChatContent(key: const ValueKey('chat'))
+                        : _buildGroupContent(key: const ValueKey('group')),
                   ),
                 ),
               ),
@@ -189,117 +384,157 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   }
 
   Widget _buildChatContent({required Key key}) {
-    return Column(
-      key: key,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        MainPadding(
-          top: 25.h,
-          child: Row(
-            children: [
-              SvgPicture.asset('assets/icons/mynaui_pin-solid.svg'),
-              5.horizontalSpace,
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [Image.asset('assets/images/Rectangle 1.png')],
-              ),
-              5.horizontalSpace,
-              SizedBox(
-                width: 240.w,
-                child: RichText(
-                  text: TextSpan(
-                    text: 'Anoop TS  ',
-                    style: FontPalette.hW700S14.copyWith(
-                      color: Color(0XFF515978),
-                    ),
+    return BlocBuilder<ChatCubit, ChatState>(
+      builder: (context, state) {
+        return Column(
+          key: key,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                MainPadding(
+                  top: 25.h,
+                  child: Row(
                     children: [
-                      TextSpan(
-                        text: 'send request to case',
-                        style: FontPalette.hW500S14.copyWith(
-                          color: Color(0XFF515978),
+                      SvgPicture.asset('assets/icons/mynaui_pin-solid.svg'),
+                      5.horizontalSpace,
+                      Image.asset('assets/images/Rectangle 1.png'),
+                      5.horizontalSpace,
+                      Expanded(
+                        child: RichText(
+                          text: TextSpan(
+                            text: 'Anoop TS  ',
+                            style: FontPalette.hW700S14.copyWith(
+                              color: const Color(0XFF515978),
+                            ),
+                            children: [
+                              TextSpan(
+                                text: 'send request to case',
+                                style: FontPalette.hW500S14.copyWith(
+                                  color: const Color(0XFF515978),
+                                ),
+                              ),
+                            ],
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
                         ),
+                      ),
+                      SvgPicture.asset('assets/icons/clock.svg'),
+                      5.horizontalSpace,
+                      const Text('45 min'),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.only(left: 34.w, top: 0.h),
+                  child: Row(
+                    children: [
+                      Text(
+                        '3 Replayed , 4 Pending',
+                        style: FontPalette.hW500S12.copyWith(
+                          color: const Color(0XFF166FF6),
+                        ),
+                      ),
+                      5.horizontalSpace,
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: SvgPicture.asset('assets/icons/Eye.svg'),
                       ),
                     ],
                   ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
                 ),
-              ),
-              Spacer(),
-              SvgPicture.asset('assets/icons/clock.svg'),
-              5.horizontalSpace,
-              Text('45 min'),
-            ],
-          ),
-        ),
-        Padding(
-          padding: EdgeInsets.only(left: 34.w, top: 0.h),
-          child: Row(
-            children: [
-              Text(
-                '3 Replayed , 4 Pending',
-                style: FontPalette.hW500S12.copyWith(color: Color(0XFF166FF6)),
-              ),
-              5.horizontalSpace,
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: SvgPicture.asset('assets/icons/Eye.svg'),
-              ),
-            ],
-          ),
-        ),
-        AnimatedDividerCard(
-          onArrowTap: _handleArrowTap,
-          arrowAnimation: _arrowRotationAnimation,
-        ),
-        MainPadding(
-          child: Column(
-            children: [
-              15.verticalSpace,
-              const ChatBubbleMessage(
-                message: 'Thank you for confirmation',
-                timestamp: '12-2-2025 ,15:24',
-                isSent: true,
-              ),
-              const ChatBubbleMessage(
-                message: 'You are welcome',
-                timestamp: '12-2-2025 ,15:24',
-                isSent: false,
-                senderName: 'Dr Habeeb',
-                showAvatar: true,
-              ),
-            ],
-          ),
-        ),
-        Spacer(),
-        Row(
-          children: [
-            13.horizontalSpace,
-            SvgPicture.asset('assets/icons/Vector.svg'),
-            10.horizontalSpace,
+                AnimatedDividerCard(
+                  onArrowTap: _handleArrowTap,
+                  arrowAnimation: _arrowRotationAnimation,
+                ),
+              ],
+            ),
+
             Expanded(
-              child: TextFeildWidget(
-                hintStyle: FontPalette.hW400S16.copyWith(
-                  color: Color(0XFFBFBFBF),
-                ),
-                hight: 48.h,
-                fillColor: kWhite,
-                hintText: 'Type a message',
-                inputBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12.r),
-                  borderSide: BorderSide(color: Color(0xffCACACA), width: 1),
-                ),
-                suffixIcon: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: SvgPicture.asset('assets/icons/Group 1000006770.svg'),
-                ),
+              child: ListView.builder(
+                padding: EdgeInsets.symmetric(horizontal: 16.w),
+                itemCount: state.messages.length + 2,
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return Column(
+                      children: [
+                        SizedBox(height: 15.h),
+                        const ChatBubbleMessage(
+                          message: 'Thank you for confirmation',
+                          timestamp: '12-2-2025 ,15:24',
+                          isSent: true,
+                        ),
+                      ],
+                    );
+                  } else if (index == 1) {
+                    return const ChatBubbleMessage(
+                      message: 'You are welcome',
+                      timestamp: '12-2-2025 ,15:24',
+                      isSent: false,
+                      senderName: 'Dr Habeeb',
+                      showAvatar: true,
+                    );
+                  } else {
+                    final messageIndex = index - 2;
+                    final message = state.messages[messageIndex];
+
+                    // return ChatBubbleMessage(
+                    //   message: message.content,
+                    //   timestamp: _formatMessageTime(message.timestamp),
+                    //   isSent: message.isSent,
+                    //   senderName: message.senderName,
+                    //   showAvatar: !message.isSent,
+                    // );
+                  }
+                  return null;
+                },
               ),
             ),
-            16.horizontalSpace,
+
+            MainPadding(
+              right: 16,
+              bottom: 10.h,
+              child: Row(
+                children: [
+                  10.horizontalSpace,
+
+                  SvgPicture.asset('assets/icons/Vector.svg'),
+                  10.horizontalSpace,
+                  Expanded(
+                    child: TextFeildWidget(
+                      hintText: 'Type a message',
+                      controller: _messageController,
+                      inputBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10.r),
+                        borderSide: BorderSide(
+                          color: Color(0xffCACACA),
+                          width: 1,
+                        ),
+                      ),
+                      suffixIcon: InkWell(
+                        onTap: () {
+                          if (state.hasRecordingPermission) {
+                            _startRecording();
+                          } else {
+                            _showPermissionDialog(context);
+                          }
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: SvgPicture.asset(
+                            'assets/icons/Group 1000006770.svg',
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
-        ),
-        15.verticalSpace,
-      ],
+        );
+      },
     );
   }
 
@@ -315,8 +550,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
               duration: Duration(milliseconds: 200 + (index * 100)),
               curve: Curves.easeOutBack,
               child: SlideTransition(
-                position: Tween<Offset>(begin: Offset(0, 0.5), end: Offset.zero)
-                    .animate(
+                position:
+                    Tween<Offset>(
+                      begin: const Offset(0, 0.5),
+                      end: Offset.zero,
+                    ).animate(
                       CurvedAnimation(
                         parent: _contentAnimationController,
                         curve: Interval(
@@ -337,50 +575,17 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                       ),
                     ),
                   ),
-                  child: GroupCardWidget(),
+                  child: const GroupCardWidget(),
                 ),
               ),
             );
           },
           separatorBuilder: (context, i) {
-            return Divider(color: Color(0XFFE3E3E3), thickness: 0);
+            return const Divider(color: Color(0XFFE3E3E3), thickness: 0);
           },
           itemCount: 3,
         ),
-        // ...List.generate(
-        //   3,
-        //   (index) => AnimatedContainer(
-        //     duration: Duration(milliseconds: 200 + (index * 100)),
-        //     curve: Curves.easeOutBack,
-        //     child: SlideTransition(
-        //       position: Tween<Offset>(begin: Offset(0, 0.5), end: Offset.zero)
-        //           .animate(
-        //             CurvedAnimation(
-        //               parent: _contentAnimationController,
-        //               curve: Interval(
-        //                 index * 0.2,
-        //                 0.6 + (index * 0.2),
-        //                 curve: Curves.easeOutCubic,
-        //               ),
-        //             ),
-        //           ),
-        //       child: FadeTransition(
-        //         opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
-        //           CurvedAnimation(
-        //             parent: _contentAnimationController,
-        //             curve: Interval(
-        //               index * 0.1,
-        //               0.5 + (index * 0.1),
-        //               curve: Curves.easeIn,
-        //             ),
-        //           ),
-        //         ),
-        //         child: GroupCardWidget(),
-        //       ),
-        //     ),
-        //   ),
-        // ),
-        Spacer(),
+        const Spacer(),
         AnimatedDividerCard(
           onArrowTap: _handleArrowTap,
           arrowAnimation: _arrowRotationAnimation,
@@ -389,8 +594,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
       ],
     );
   }
+
+  String _formatMessageTime(DateTime timestamp) {
+    return '${timestamp.day}-${timestamp.month}-${timestamp.year} ,${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
+  }
 }
 
+// Keep existing widgets...
 class AnimatedDividerCard extends StatelessWidget {
   final VoidCallback onArrowTap;
   final Animation<double> arrowAnimation;
@@ -407,13 +617,17 @@ class AnimatedDividerCard extends StatelessWidget {
       builder: (context, state) {
         return Row(
           children: [
-            Expanded(child: Divider(thickness: 1, color: Color(0XFFE3E3E3))),
+            const Expanded(
+              child: Divider(thickness: 1, color: Color(0XFFE3E3E3)),
+            ),
             4.horizontalSpace,
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               child: Text(
                 '3',
-                style: FontPalette.hW600S14.copyWith(color: Color(0XFF9C27B0)),
+                style: FontPalette.hW600S14.copyWith(
+                  color: const Color(0XFF9C27B0),
+                ),
               ),
             ),
             8.horizontalSpace,
@@ -424,7 +638,7 @@ class AnimatedDividerCard extends StatelessWidget {
                 height: 35.h,
                 width: 35.w,
                 margin: EdgeInsets.only(right: 10.w),
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   color: Color(0XFFEEF3F1),
                 ),
@@ -433,7 +647,7 @@ class AnimatedDividerCard extends StatelessWidget {
                   builder: (context, child) {
                     return Padding(
                       padding: const EdgeInsets.all(10.0),
-                      child: state.isArrow == false
+                      child: (state.isArrow) == false
                           ? SvgPicture.asset('assets/icons/icon.svg')
                           : SvgPicture.asset('assets/icons/icon (1).svg'),
                     );
@@ -462,24 +676,20 @@ class GroupCardWidget extends StatelessWidget {
             children: [
               SvgPicture.asset('assets/icons/mynaui_pin-solid.svg'),
               5.horizontalSpace,
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [Image.asset('assets/images/Rectangle 1.png')],
-              ),
+              Image.asset('assets/images/Rectangle 1.png'),
               5.horizontalSpace,
-              SizedBox(
-                width: 240.w,
+              Expanded(
                 child: RichText(
                   text: TextSpan(
                     text: 'Anoop TS  ',
                     style: FontPalette.hW700S14.copyWith(
-                      color: Color(0XFF515978),
+                      color: const Color(0XFF515978),
                     ),
                     children: [
                       TextSpan(
                         text: 'send request to case',
                         style: FontPalette.hW500S14.copyWith(
-                          color: Color(0XFF515978),
+                          color: const Color(0XFF515978),
                         ),
                       ),
                     ],
@@ -488,10 +698,9 @@ class GroupCardWidget extends StatelessWidget {
                   maxLines: 2,
                 ),
               ),
-              Spacer(),
               SvgPicture.asset('assets/icons/clock.svg'),
               5.horizontalSpace,
-              Text('45 min'),
+              const Text('45 min'),
             ],
           ),
         ),
@@ -501,7 +710,9 @@ class GroupCardWidget extends StatelessWidget {
             children: [
               Text(
                 '3 Replayed , 4 Pending',
-                style: FontPalette.hW500S12.copyWith(color: Color(0XFF166FF6)),
+                style: FontPalette.hW500S12.copyWith(
+                  color: const Color(0XFF166FF6),
+                ),
               ),
               5.horizontalSpace,
               Padding(
@@ -562,7 +773,7 @@ class ChatBubbleMessage extends StatelessWidget {
                 style: const TextStyle(fontSize: 14, color: Color(0xFF4C4C4C)),
               ),
               Padding(
-                padding: EdgeInsetsGeometry.only(left: 65.w, top: 5.h),
+                padding: EdgeInsets.only(left: 65.w, top: 5.h),
                 child: Text(
                   timestamp,
                   textAlign: TextAlign.end,
@@ -580,50 +791,58 @@ class ChatBubbleMessage extends StatelessWidget {
 
   Widget _buildReceivedMessage() {
     return Container(
-      margin: EdgeInsets.only(bottom: 0.h, right: 50.w),
+      margin: EdgeInsets.only(bottom: 8.h, right: 50.w),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Image.asset(
             'assets/images/Rectangle 1.png',
             fit: BoxFit.cover,
             height: 28.h,
+            width: 28.w,
           ),
-          Padding(
-            padding: EdgeInsets.only(left: 5.w, top: 8.h),
+          5.horizontalSpace,
+          Expanded(
             child: Bubble(
               nip: BubbleNip.leftTop,
               style: const BubbleStyle(
                 elevation: 0,
                 radius: Radius.circular(12),
               ),
-              margin: BubbleEdges.only(top: 10),
-              color: Color(0x99F1F1F1),
+              margin: const BubbleEdges.only(top: 10),
+              color: const Color(0x99F1F1F1),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Dr Habeeb',
-                    textAlign: TextAlign.right,
+                    senderName ?? 'Dr Habeeb',
                     style: FontPalette.hW500S14.copyWith(color: kGreenColor),
                   ),
+                  const SizedBox(height: 4),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'No',
-                        style: FontPalette.hW500S14.copyWith(
-                          color: Color(0XFF4C4C4C),
+                      Expanded(
+                        child: Text(
+                          message,
+                          style: FontPalette.hW500S14.copyWith(
+                            color: const Color(0XFF4C4C4C),
+                          ),
                         ),
                       ),
-                      50.horizontalSpace,
-                      Text(
-                        '12-2-2025 ,15:23',
-                        textAlign: TextAlign.right,
-                        style: FontPalette.hW400S14.copyWith(
-                          color: Color(0XFFBBBBBB),
-                        ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            timestamp,
+                            style: FontPalette.hW400S14.copyWith(
+                              color: const Color(0XFFBBBBBB),
+                            ),
+                          ),
+                          4.horizontalSpace,
+                          SvgPicture.asset('assets/icons/Receive.svg'),
+                        ],
                       ),
-                      4.horizontalSpace,
-                      SvgPicture.asset('assets/icons/Receive.svg'),
                     ],
                   ),
                 ],
@@ -634,4 +853,29 @@ class ChatBubbleMessage extends StatelessWidget {
       ),
     );
   }
+}
+
+void _showPermissionDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Microphone Permission Required'),
+      content: const Text(
+        'This app needs microphone access to record voice messages. Please grant permission in settings.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+            openAppSettings();
+          },
+          child: const Text('Settings'),
+        ),
+      ],
+    ),
+  );
 }
