@@ -167,7 +167,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                   child: AnimatedSwitcher(
                     switchInCurve: Curves.easeInOut,
                     switchOutCurve: Curves.easeInOut,
-                    duration: const Duration(milliseconds: 400),
+                    duration: const Duration(milliseconds: 200),
                     transitionBuilder:
                         (Widget child, Animation<double> animation) {
                           return FadeTransition(
@@ -307,39 +307,79 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     return Column(
       key: key,
       children: [
-        ...List.generate(
-          3,
-          (index) => AnimatedContainer(
-            duration: Duration(milliseconds: 200 + (index * 100)),
-            curve: Curves.easeOutBack,
-            child: SlideTransition(
-              position: Tween<Offset>(begin: Offset(0, 0.5), end: Offset.zero)
-                  .animate(
+        ListView.separated(
+          padding: EdgeInsets.zero,
+          shrinkWrap: true,
+          itemBuilder: (context, index) {
+            return AnimatedContainer(
+              duration: Duration(milliseconds: 200 + (index * 100)),
+              curve: Curves.easeOutBack,
+              child: SlideTransition(
+                position: Tween<Offset>(begin: Offset(0, 0.5), end: Offset.zero)
+                    .animate(
+                      CurvedAnimation(
+                        parent: _contentAnimationController,
+                        curve: Interval(
+                          index * 0.2,
+                          0.6 + (index * 0.2),
+                          curve: Curves.easeOutCubic,
+                        ),
+                      ),
+                    ),
+                child: FadeTransition(
+                  opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
                     CurvedAnimation(
                       parent: _contentAnimationController,
                       curve: Interval(
-                        index * 0.2,
-                        0.6 + (index * 0.2),
-                        curve: Curves.easeOutCubic,
+                        index * 0.1,
+                        0.5 + (index * 0.1),
+                        curve: Curves.easeIn,
                       ),
                     ),
                   ),
-              child: FadeTransition(
-                opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
-                  CurvedAnimation(
-                    parent: _contentAnimationController,
-                    curve: Interval(
-                      index * 0.1,
-                      0.5 + (index * 0.1),
-                      curve: Curves.easeIn,
-                    ),
-                  ),
+                  child: GroupCardWidget(),
                 ),
-                child: GroupCardWidget(),
               ),
-            ),
-          ),
+            );
+          },
+          separatorBuilder: (context, i) {
+            return Divider(color: Color(0XFFE3E3E3), thickness: 0);
+          },
+          itemCount: 3,
         ),
+        // ...List.generate(
+        //   3,
+        //   (index) => AnimatedContainer(
+        //     duration: Duration(milliseconds: 200 + (index * 100)),
+        //     curve: Curves.easeOutBack,
+        //     child: SlideTransition(
+        //       position: Tween<Offset>(begin: Offset(0, 0.5), end: Offset.zero)
+        //           .animate(
+        //             CurvedAnimation(
+        //               parent: _contentAnimationController,
+        //               curve: Interval(
+        //                 index * 0.2,
+        //                 0.6 + (index * 0.2),
+        //                 curve: Curves.easeOutCubic,
+        //               ),
+        //             ),
+        //           ),
+        //       child: FadeTransition(
+        //         opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+        //           CurvedAnimation(
+        //             parent: _contentAnimationController,
+        //             curve: Interval(
+        //               index * 0.1,
+        //               0.5 + (index * 0.1),
+        //               curve: Curves.easeIn,
+        //             ),
+        //           ),
+        //         ),
+        //         child: GroupCardWidget(),
+        //       ),
+        //     ),
+        //   ),
+        // ),
         Spacer(),
         AnimatedDividerCard(
           onArrowTap: _handleArrowTap,
@@ -387,15 +427,6 @@ class AnimatedDividerCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Color(0XFFEEF3F1),
-                  boxShadow: state.isArrow == false
-                      ? [
-                          BoxShadow(
-                            color: Color(0xFFB7E8CA).withOpacity(0.4),
-                            blurRadius: 8,
-                            spreadRadius: 2,
-                          ),
-                        ]
-                      : null,
                 ),
                 child: AnimatedBuilder(
                   animation: arrowAnimation,
@@ -426,7 +457,7 @@ class GroupCardWidget extends StatelessWidget {
       children: [
         MainPadding(
           bottom: 0,
-          top: 25.h,
+          top: 16.h,
           child: Row(
             children: [
               SvgPicture.asset('assets/icons/mynaui_pin-solid.svg'),
