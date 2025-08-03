@@ -233,7 +233,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                       padding: EdgeInsets.only(bottom: 100.h),
                       itemCount: filteredChats.length,
                       separatorBuilder: (context, index) =>
-                          SizedBox(height: 4.h),
+                          SizedBox(height: 0.h),
                       itemBuilder: (context, index) {
                         final data = filteredChats[index];
 
