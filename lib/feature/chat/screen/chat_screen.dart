@@ -41,50 +41,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     'Broadcast',
   ];
 
-  final List<ChatItemData> _chatItems = [
-    ChatItemData(
-      'RD',
-      Colors.blue,
-      'Internal Review',
-      'Pls Review',
-      'Today',
-      1,
-    ),
-    ChatItemData('AT', Colors.green, 'Anoop Ts', 'How is it going?', '17/5', 0),
-    ChatItemData(
-      'CS',
-      Colors.deepOrange,
-      'Case Study\'s',
-      'Please check xray image',
-      'Today',
-      1,
-    ),
-    ChatItemData(
-      'MK',
-      Colors.purple,
-      'Marketing Team',
-      'New campaign ready',
-      'Yesterday',
-      2,
-    ),
-    ChatItemData(
-      'PR',
-      Colors.teal,
-      'Project Review',
-      'Meeting at 3 PM',
-      'Today',
-      0,
-    ),
-    ChatItemData(
-      'DT',
-      Colors.amber,
-      'Design Team',
-      'UI mockups uploaded',
-      '16/5',
-      3,
-    ),
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -284,12 +240,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                   color: Colors.transparent,
                                 ),
                                 child: buildChatItem(
-                                  _chatItems[index].initials,
-                                  _chatItems[index].color,
-                                  data?.title ?? '',
-                                  data?.description ?? '',
-                                  getFormattedDate(data?.updatedAt ?? ''),
-                                  _chatItems[index].unreadCount,
+                                  name: data?.title ?? '',
+                                  message: data?.description ?? '',
+                                  time: getFormattedDate(data?.updatedAt ?? ''),
+                                  unreadCount: 2,
                                 ),
                               ),
                             ),

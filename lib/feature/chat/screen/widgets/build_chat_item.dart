@@ -4,14 +4,12 @@ import 'package:soxo_chat/feature/chat/screen/widgets/user_data.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
 
-Widget buildChatItem(
-  String initials,
-  Color avatarColor,
-  String name,
-  String message,
-  String time,
-  int unreadCount,
-) {
+Widget buildChatItem({
+  String? name,
+  String? message,
+  String? time,
+  int? unreadCount,
+}) {
   return Container(
     margin: EdgeInsets.only(bottom: 12),
     padding: EdgeInsets.only(left: 6.w, right: 8.w, bottom: 6.h, top: 6.h),
@@ -21,7 +19,7 @@ Widget buildChatItem(
     ),
     child: Row(
       children: [
-        ChatAvatar(name: name, size: 50),
+        ChatAvatar(name: name ?? '', size: 50),
 
         // Container(
         //   width: 48.w,
@@ -42,10 +40,10 @@ Widget buildChatItem(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(name, style: FontPalette.hW600S14),
+              Text(name ?? '', style: FontPalette.hW600S14),
               SizedBox(height: 4),
               Text(
-                message,
+                message ?? '',
                 style: FontPalette.hW400S12.copyWith(color: Color(0XFFADB5BD)),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -57,10 +55,10 @@ Widget buildChatItem(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text(
-              time,
+              time ?? '',
               style: TextStyle(color: Color(0XFFA4A4A4), fontSize: 12),
             ),
-            if (unreadCount > 0) ...[
+            if ((unreadCount ?? 0) > 0) ...[
               10.verticalSpace,
               Container(
                 alignment: Alignment.center,
