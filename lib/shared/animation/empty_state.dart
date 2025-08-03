@@ -324,7 +324,7 @@ class _AnimatedEmptyStateState extends State<AnimatedEmptyState>
                       onPressed: () => _handleActionTap(),
                       icon: Icon(
                         _getActionIcon(widget.selectedTab),
-                        size: 20.sp,
+                        size: 18.sp,
                       ),
                       label: Text(
                         _getActionText(widget.selectedTab),
@@ -337,8 +337,8 @@ class _AnimatedEmptyStateState extends State<AnimatedEmptyState>
                         backgroundColor: _getThemeColor(widget.selectedTab),
                         foregroundColor: Colors.white,
                         padding: EdgeInsets.symmetric(
-                          horizontal: 20.w,
-                          vertical: 12.h,
+                          horizontal: 14.w,
+                          vertical: 10.h,
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(25.r),
@@ -356,7 +356,6 @@ class _AnimatedEmptyStateState extends State<AnimatedEmptyState>
     );
   }
 
-  // Helper methods
   IconData _getEmptyStateIcon(String selectedTab) {
     switch (selectedTab) {
       case 'Group Chat':
@@ -457,18 +456,14 @@ class _AnimatedEmptyStateState extends State<AnimatedEmptyState>
     switch (widget.selectedTab) {
       case 'Group Chat':
       case 'group':
-        print('Create new group chat');
         break;
       case 'Personal Chat':
       case 'personal':
-        print('Start new personal chat');
         break;
       case 'Broadcast':
       case 'broadcast':
-        print('Browse broadcast channels');
         break;
       default:
-        print('Start new chat');
     }
   }
 }

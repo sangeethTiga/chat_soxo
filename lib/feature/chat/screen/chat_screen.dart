@@ -213,104 +213,57 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         builder: (context, child) {
           return Transform.translate(
             offset: Offset(0, _listSlideAnimation.value),
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.w),
-              child: BlocBuilder<ChatCubit, ChatState>(
-                builder: (context, state) {
-                  final filteredChats = state.chatList ?? [];
+            child: Opacity(
+              opacity: _listAnimationController.value,
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.w),
+                child: BlocBuilder<ChatCubit, ChatState>(
+                  builder: (context, state) {
+                    final filteredChats = state.chatList ?? [];
 
-                  return AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 500),
-                    switchInCurve: Curves.easeInOut,
-                    switchOutCurve: Curves.easeInOut,
-                    transitionBuilder:
-                        (Widget child, Animation<double> animation) {
-                          return FadeTransition(
-                            opacity: animation,
-                            child: SlideTransition(
-                              position:
-                                  Tween<Offset>(
-                                    begin: const Offset(0.0, 0.2),
-                                    end: Offset.zero,
-                                  ).animate(
-                                    CurvedAnimation(
-                                      parent: animation,
-                                      curve: Curves.easeOutCubic,
-                                    ),
-                                  ),
-                              child: child,
-                            ),
-                          );
-                        },
-                    child: filteredChats.isEmpty
-                        ? Container(
-                            key: ValueKey('empty_${state.selectedTab}'),
-                            child: AnimatedEmptyState(
-                              selectedTab: state.selectedTab ?? 'all',
-                            ),
-                          )
-                        : Container(
-                            key: ValueKey('list_${filteredChats.length}'),
-                            child: ListView.separated(
-                              controller: _scrollController,
-                              physics: const BouncingScrollPhysics(),
-                              padding: EdgeInsets.only(
-                                bottom: 100.h,
-                                left: 0.w,
-                                right: 0.w,
+                    if (filteredChats.isEmpty) {
+                      return AnimatedEmptyState(
+                        selectedTab: state.selectedTab ?? 'all',
+                      );
+                    }
+
+                    return ListView.separated(
+                      controller: _scrollController,
+                      physics: const BouncingScrollPhysics(),
+                      padding: EdgeInsets.only(bottom: 100.h),
+                      itemCount: filteredChats.length,
+                      separatorBuilder: (context, index) =>
+                          SizedBox(height: 4.h),
+                      itemBuilder: (context, index) {
+                        final data = filteredChats[index];
+
+                        final delay = index * 100;
+                        final progress =
+                            (_listAnimationController.value * 1000 - delay) /
+                            400;
+                        final itemOpacity = progress.clamp(0.0, 1.0);
+                        final itemTranslate = (1 - itemOpacity) * 30;
+
+                        return Transform.translate(
+                          offset: Offset(0, itemTranslate),
+                          child: Opacity(
+                            opacity: itemOpacity,
+                            child: GestureDetector(
+                              onTap: () =>
+                                  _onChatItemTapped(index, state, context),
+                              child: buildChatItem(
+                                name: data.title ?? '',
+                                message: data.description ?? '',
+                                time: getFormattedDate(data.updatedAt ?? ''),
+                                unreadCount: 2,
                               ),
-                              itemCount: filteredChats.length,
-                              separatorBuilder: (context, index) =>
-                                  SizedBox(height: 4.h),
-                              itemBuilder: (context, index) {
-                                final data = filteredChats[index];
-                                return TweenAnimationBuilder<double>(
-                                  duration: Duration(
-                                    milliseconds: 800 + (index * 150),
-                                  ),
-                                  tween: Tween(begin: 0.0, end: 1.0),
-                                  curve: Curves.easeOutBack,
-                                  builder: (context, value, child) {
-                                    final clampedValue = value.clamp(0.0, 1.0);
-
-                                    return Transform.scale(
-                                      scale: 0.9 + (0.1 * clampedValue),
-                                      child: Opacity(
-                                        opacity: clampedValue,
-                                        child: GestureDetector(
-                                          onTap: () => _onChatItemTapped(
-                                            index,
-                                            state,
-                                            context,
-                                          ),
-                                          child: AnimatedContainer(
-                                            duration: const Duration(
-                                              milliseconds: 200,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular(12.r),
-                                              color: Colors.transparent,
-                                            ),
-                                            child: buildChatItem(
-                                              name: data.title ?? '',
-                                              message: data.description ?? '',
-                                              time: getFormattedDate(
-                                                data.updatedAt ?? '',
-                                              ),
-                                              unreadCount: 2,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                );
-                              },
                             ),
                           ),
-                  );
-                },
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
             ),
           );
