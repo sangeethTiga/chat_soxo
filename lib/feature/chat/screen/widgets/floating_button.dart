@@ -59,7 +59,6 @@ class FlatingWidget extends StatelessWidget {
           heroTag: null,
           onPressed: () {
             keys?.currentState?.close();
-            // Navigator.pushNamed(context, routeGroup);
             context.push(
               routeGroup,
               extra: {'title': 'Create Group', 'subtitle': 'Group'},
@@ -76,7 +75,6 @@ class FlatingWidget extends StatelessWidget {
           heroTag: null,
           onPressed: () {
             keys?.currentState?.close();
-            // Navigator.pushNamed(context, routePerson);
             context.push(routePerson);
           },
           child: Padding(

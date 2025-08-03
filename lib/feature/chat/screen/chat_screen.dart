@@ -8,7 +8,7 @@ import 'package:soxo_chat/feature/chat/screen/chat_detail_screen.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/appbar.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/build_chat_item.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/build_tab.dart';
-import 'package:soxo_chat/feature/chat/screen/widgets/flating_button.dart';
+import 'package:soxo_chat/feature/chat/screen/widgets/floating_button.dart';
 import 'package:soxo_chat/shared/animation/empty_state.dart';
 import 'package:soxo_chat/shared/app/list/helper.dart';
 

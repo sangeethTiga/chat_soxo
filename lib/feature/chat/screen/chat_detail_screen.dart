@@ -8,6 +8,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/appbar.dart';
+import 'package:soxo_chat/feature/chat/screen/widgets/htm_Card.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/record_dialog.dart';
 import 'package:soxo_chat/shared/animation/empty_chat.dart';
 import 'package:soxo_chat/shared/app/enums/api_fetch_status.dart';
@@ -217,7 +218,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 MainPadding(
-                  top: 25.h,
+                  top: 16.h,
+                  bottom: 0,
                   child: Row(
                     children: [
                       SvgPicture.asset('assets/icons/mynaui_pin-solid.svg'),
@@ -304,6 +306,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                               message: data?.content ?? '',
                               timestamp: '12-2-2025 ,15:24',
                               isSent: true,
+                            ),
+                            // PatientCardWebView(),
+                            SizedBox(
+                              height: 400.h,
+                              child: PatientCardWebView(),
                             ),
                           ],
                         );

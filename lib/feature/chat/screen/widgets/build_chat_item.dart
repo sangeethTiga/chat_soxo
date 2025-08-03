@@ -21,21 +21,7 @@ Widget buildChatItem({
       children: [
         ChatAvatar(name: name ?? '', size: 50),
 
-        // Container(
-        //   width: 48.w,
-        //   height: 48.h,
-        //   decoration: BoxDecoration(
-        //     color: avatarColor,
-        //     borderRadius: BorderRadius.all(Radius.circular(16.r)),
-        //   ),
-        //   child: Center(
-        //     child: Text(
-        //       initials,
-        //       style: FontPalette.hW700S14.copyWith(color: kWhite),
-        //     ),
-        //   ),
-        // ),
-        SizedBox(width: 12),
+        12.horizontalSpace,
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

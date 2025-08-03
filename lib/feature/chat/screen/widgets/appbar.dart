@@ -52,7 +52,7 @@ PreferredSizeWidget buildAppBar(
                       icon: const Icon(Icons.arrow_back_ios, size: 18),
                     ),
                   ),
-                  SizedBox(width: 10.w),
+                  10.horizontalSpace,
                 ],
 
                 Expanded(
@@ -111,30 +111,6 @@ Widget _buildNotificationBell({
     ),
   );
 }
-
-// Widget _buildCircularButton({
-//   required IconData icon,
-//   required VoidCallback onTap,
-// }) {
-//   return GestureDetector(
-//     onTap: onTap,
-//     child: Container(
-//       padding: EdgeInsets.all(8.r),
-//       decoration: BoxDecoration(
-//         color: Colors.white,
-//         shape: BoxShape.circle,
-//         boxShadow: [
-//           BoxShadow(
-//             color: Colors.black.withOpacity(0.1),
-//             blurRadius: 4,
-//             offset: const Offset(0, 2),
-//           ),
-//         ],
-//       ),
-//       child: Icon(icon, size: 20.sp, color: Colors.black87),
-//     ),
-//   );
-// }
 
 PreferredSizeWidget buildAppBarWithProfile(
   BuildContext context,
@@ -202,28 +178,6 @@ PreferredSizeWidget buildAppBarWithProfile(
                     ),
                   ],
                 ),
-                // Stack(
-                //   children: [
-                //     SvgPicture.asset('assets/icons/bell.svg'),
-                //     Positioned(
-                //       left: 4,
-                //       top: 0,
-                //       child: Container(
-                //         alignment: Alignment.center,
-                //         width: 14,
-                //         height: 14,
-                //         decoration: BoxDecoration(
-                //           color: Color(0xFFE42168),
-                //           shape: BoxShape.circle,
-                //         ),
-                //         child: Text(
-                //           '5',
-                //           style: FontPalette.hW400S8.copyWith(color: kWhite),
-                //         ),
-                //       ),
-                //     ),
-                //   ],
-                // ),
               ],
             ),
           ),
@@ -233,29 +187,6 @@ PreferredSizeWidget buildAppBarWithProfile(
   );
 }
 
-// Widget _buildCircularButton({
-//   required IconData icon,
-//   required VoidCallback onTap,
-// }) {
-//   return GestureDetector(
-//     onTap: onTap,
-//     child: Container(
-//       padding: EdgeInsets.all(8.r),
-//       decoration: BoxDecoration(
-//         color: Colors.white,
-//         shape: BoxShape.circle,
-//         boxShadow: [
-//           BoxShadow(
-//             color: Colors.black.withOpacity(0.1),
-//             blurRadius: 4,
-//             offset: const Offset(0, 2),
-//           ),
-//         ],
-//       ),
-//       child: Icon(icon, size: 20.sp, color: Colors.black87),
-//     ),
-//   );
-// }
 PreferredSizeWidget buildSeamlessAppBar(
   BuildContext context,
   Map<String, dynamic>? arguments, {
@@ -271,16 +202,13 @@ PreferredSizeWidget buildSeamlessAppBar(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFFB7E8CA),
-            Color(0xFFF2F2F2), // This should match your body's starting color
-          ],
-          stops: [0.0, 0.9], // Adjust gradient distribution
+          colors: [Color(0xFFB7E8CA), Color(0xFFF2F2F2)],
+          stops: [0.0, 0.9],
         ),
       ),
       child: AppBar(
         elevation: 0,
-        backgroundColor: Colors.transparent, // Make AppBar transparent
+        backgroundColor: Colors.transparent,
         automaticallyImplyLeading: false,
         flexibleSpace: SafeArea(
           child: Padding(
