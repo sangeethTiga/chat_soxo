@@ -362,6 +362,21 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                       ),
                     ),
                   ),
+                  6.horizontalSpace,
+                  Padding(
+                    padding: EdgeInsets.only(top: 5.h),
+                    child: Container(
+                      padding: EdgeInsets.only(left: 4.w),
+                      alignment: Alignment.center,
+                      height: 48.h,
+                      width: 48.w,
+                      decoration: BoxDecoration(
+                        color: Color(0x99F1F1F1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.send, color: kPrimaryColor),
+                    ),
+                  ),
                 ],
               ),
             ),
