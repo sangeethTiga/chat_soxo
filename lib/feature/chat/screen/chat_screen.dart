@@ -288,7 +288,12 @@ void _onChatItemTapped(int index, ChatState state, BuildContext context) {
   Navigator.of(context).push(
     PageRouteBuilder(
       pageBuilder: (context, animation, secondaryAnimation) {
-        return ChatDetailScreen();
+        return ChatDetailScreen(
+          data: {
+            "title": state.chatList?[index].title,
+            // "description": state.chatList?[index].description,
+          },
+        );
       },
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         const begin = Offset(1.0, 0.0);

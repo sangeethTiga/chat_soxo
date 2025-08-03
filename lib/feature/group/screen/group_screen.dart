@@ -9,7 +9,9 @@ import 'package:soxo_chat/shared/widgets/padding/main_padding.dart';
 import 'package:soxo_chat/shared/widgets/text_fields/text_field_widget.dart';
 
 class GroupScreen extends StatelessWidget {
-  const GroupScreen({super.key});
+  final Map<String, dynamic>? data;
+
+  const GroupScreen({super.key, this.data});
 
   @override
   Widget build(BuildContext context) {

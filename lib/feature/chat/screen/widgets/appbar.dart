@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:soxo_chat/feature/chat/screen/widgets/user_data.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
 import 'package:soxo_chat/shared/routes/routes.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
@@ -136,8 +137,9 @@ Widget _buildNotificationBell({
 
 PreferredSizeWidget buildAppBarWithProfile(
   BuildContext context,
-  Map<String, dynamic>? arguments,
-) {
+  Map<String, dynamic>? arguments, {
+  final String? title,
+}) {
   return PreferredSize(
     preferredSize: Size.fromHeight(65.h),
     child: AppBar(
@@ -174,12 +176,15 @@ PreferredSizeWidget buildAppBarWithProfile(
                   ),
                 ),
                 6.horizontalSpace,
-                Image.asset('assets/images/Avatar.png'),
+                ChatAvatar(name: title ?? '', size: 40.h),
                 6.horizontalSpace,
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Mathew', style: FontPalette.hW400S18),
+                    4.verticalSpace,
+                    Text(title ?? '', style: FontPalette.hW400S18),
+                    1.verticalSpace,
+
                     Row(
                       children: [
                         Container(

@@ -18,7 +18,9 @@ import 'package:soxo_chat/shared/widgets/shimmer/shimmer_category.dart';
 import 'package:soxo_chat/shared/widgets/text_fields/text_field_widget.dart';
 
 class ChatDetailScreen extends StatefulWidget {
-  const ChatDetailScreen({super.key});
+  final Map<String, dynamic>? data;
+
+  const ChatDetailScreen({super.key, this.data});
 
   @override
   State<ChatDetailScreen> createState() => _ChatDetailScreenState();
@@ -140,7 +142,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: buildAppBarWithProfile(context, {}),
+      appBar: buildAppBarWithProfile(context, {}, title: widget.data?['title']),
 
       body: BlocConsumer<ChatCubit, ChatState>(
         listener: (context, state) {
