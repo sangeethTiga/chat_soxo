@@ -25,7 +25,7 @@ class FlatingWidget extends StatelessWidget {
         backgroundColor: Color(0xFF3D9970),
         shape: const CircleBorder(),
       ),
-      distance: 55,
+      distance: 58,
       closeButtonBuilder: FloatingActionButtonBuilder(
         size: 50,
         builder:
@@ -37,8 +37,8 @@ class FlatingWidget extends StatelessWidget {
               return InkWell(
                 onTap: onPressed,
                 child: Container(
-                  height: 50.h,
-                  width: 50.w,
+                  height: 46.h,
+                  width: 46.w,
                   decoration: BoxDecoration(
                     color: Color(0xFF3D9970),
                     shape: BoxShape.circle,

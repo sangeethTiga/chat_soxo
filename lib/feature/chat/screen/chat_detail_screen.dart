@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
+import 'package:soxo_chat/feature/chat/screen/widgets/appbar.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
 import 'package:soxo_chat/shared/widgets/padding/main_padding.dart';
@@ -274,6 +275,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: buildAppBarWithProfile(
+        context,
+        {},
+        onTap: () {
+          _contentAnimationController.reset();
+        },
+      ),
+
       body: BlocConsumer<ChatCubit, ChatState>(
         listener: (context, state) {
           if (state.errorMessage != null) {
@@ -293,90 +302,44 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
           }
         },
         builder: (context, state) {
-          return Column(
-            children: [
-              Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0xFFB7E8CA), Color(0xFFF2F2F2)],
-                  ),
-                ),
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 0),
-                child: SafeArea(
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: EdgeInsets.only(left: 5.w),
-                        alignment: Alignment.center,
-                        height: 39.h,
-                        width: 39.w,
-                        decoration: const BoxDecoration(
-                          color: kWhite,
-                          shape: BoxShape.circle,
-                        ),
-                        child: IconButton(
-                          padding: EdgeInsets.zero,
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(Icons.arrow_back_ios),
-                        ),
-                      ),
-                      6.horizontalSpace,
-                      Image.asset('assets/images/Avatar.png'),
-                      6.horizontalSpace,
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Mathew', style: FontPalette.hW400S18),
-                          Row(
-                            children: [
-                              Container(
-                                height: 8.h,
-                                width: 8.w,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFF68D391),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              5.horizontalSpace,
-                              Text('Online', style: FontPalette.hW600S12),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+          return Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFFF2F2F2), Color(0xFFB7E8CA)],
               ),
-              Expanded(
-                child: Container(
-                  transform: Matrix4.translationValues(0, -20, 0),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(24.r),
-                      topRight: Radius.circular(24.r),
+            ),
+            child: Column(
+              children: [
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(24.r),
+                        topRight: Radius.circular(24.r),
+                      ),
+                    ),
+                    child: AnimatedSwitcher(
+                      switchInCurve: Curves.easeInOut,
+                      switchOutCurve: Curves.easeInOut,
+                      duration: const Duration(milliseconds: 200),
+                      transitionBuilder:
+                          (Widget child, Animation<double> animation) {
+                            return FadeTransition(
+                              opacity: animation,
+                              child: child,
+                            );
+                          },
+                      child: (state.isArrow) == false
+                          ? _buildChatContent(key: const ValueKey('chat'))
+                          : _buildGroupContent(key: const ValueKey('group')),
                     ),
                   ),
-                  child: AnimatedSwitcher(
-                    switchInCurve: Curves.easeInOut,
-                    switchOutCurve: Curves.easeInOut,
-                    duration: const Duration(milliseconds: 200),
-                    transitionBuilder:
-                        (Widget child, Animation<double> animation) {
-                          return FadeTransition(
-                            opacity: animation,
-                            child: child,
-                          );
-                        },
-                    child: (state.isArrow) == false
-                        ? _buildChatContent(key: const ValueKey('chat'))
-                        : _buildGroupContent(key: const ValueKey('group')),
-                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           );
         },
       ),
