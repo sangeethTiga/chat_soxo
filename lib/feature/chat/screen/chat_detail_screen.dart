@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:bubble/bubble.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -6,9 +8,12 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/appbar.dart';
+import 'package:soxo_chat/shared/animation/empty_chat.dart';
+import 'package:soxo_chat/shared/app/enums/api_fetch_status.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
 import 'package:soxo_chat/shared/widgets/padding/main_padding.dart';
+import 'package:soxo_chat/shared/widgets/shimmer/shimmer_category.dart';
 import 'package:soxo_chat/shared/widgets/text_fields/text_field_widget.dart';
 
 class ChatDetailScreen extends StatefulWidget {
@@ -409,12 +414,25 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
             Expanded(
               child: BlocBuilder<ChatCubit, ChatState>(
                 builder: (context, state) {
+                  if (state.isChatEntry == ApiFetchStatus.loading) {
+                    return ListView.builder(
+                      padding: EdgeInsets.symmetric(horizontal: 0.w),
+                      itemCount: 3,
+                      itemBuilder: (context, index) {
+                        return ChatMessageShimmer(isSent: index % 2 == 0);
+                      },
+                    );
+                  }
+                  if (state.chatEntry?.isEmpty ?? true) {
+                    return const AnimatedEmptyChatWidget();
+                  }
                   return ListView.builder(
                     padding: EdgeInsets.symmetric(horizontal: 16.w),
                     itemCount: state.chatEntry?.length,
                     itemBuilder: (context, index) {
                       final data = state.chatEntry?[index];
-                      if (index == 0) {
+                      log('index: $index');
+                      if (state.chatEntry?.isNotEmpty ?? false) {
                         return Column(
                           children: [
                             SizedBox(height: 15.h),
@@ -425,24 +443,15 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                             ),
                           ],
                         );
-                      } else if (index == 1) {
-                        return const ChatBubbleMessage(
-                          message: 'You are welcome',
-                          timestamp: '12-2-2025 ,15:24',
-                          isSent: false,
-                          senderName: 'Dr Habeeb',
-                          showAvatar: true,
-                        );
                       } else {
-                        // final messageIndex = index - 2;
-                        // final message = state.messages[messageIndex];
+                        final message = data;
 
                         // return ChatBubbleMessage(
-                        //   message: message.content,
-                        //   timestamp: _formatMessageTime(message.timestamp),
-                        //   isSent: message.isSent,
-                        //   senderName: message.senderName,
-                        //   showAvatar: !message.isSent,
+                        //   message: message?.content ?? '',
+                        //   timestamp: message?.createdAt.toString() ?? '',
+                        //   isSent: true,
+                        //   senderName: 'Dr Habeeb',
+                        //   showAvatar: false,
                         // );
                       }
                       return null;
@@ -554,13 +563,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
       ],
     );
   }
-
-  // String _formatMessageTime(DateTime timestamp) {
-  //   return '${timestamp.day}-${timestamp.month}-${timestamp.year} ,${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
-  // }
 }
 
-// Keep existing widgets...
 class AnimatedDividerCard extends StatelessWidget {
   final VoidCallback onArrowTap;
   final Animation<double> arrowAnimation;
