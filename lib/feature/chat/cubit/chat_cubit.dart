@@ -331,6 +331,7 @@ class ChatCubit extends Cubit<ChatState> {
           chatList: res.data,
           isChat: ApiFetchStatus.success,
           allChats: res.data,
+          selectedTab: 'all',
         ),
       );
     } else {
@@ -356,7 +357,6 @@ class ChatCubit extends Cubit<ChatState> {
     final previousChatList = state.chatList;
     emit(state.copyWith(selectedTab: value));
 
-    // Add a small delay for smooth transition if going from populated to empty
     if (previousChatList != null && previousChatList.isNotEmpty) {
       await Future.delayed(const Duration(milliseconds: 100));
     }
