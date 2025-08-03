@@ -16,7 +16,12 @@ class GroupScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: buildAppBar(title: 'Create Group', context, {}, isLeading: true),
+      appBar: buildAppBar(
+        title: data?['title'] ?? 'Group',
+        context,
+        {},
+        isLeading: true,
+      ),
       body: Column(
         children: [
           Expanded(
@@ -67,7 +72,8 @@ class GroupScreen extends StatelessWidget {
                               hight: 48.h,
                               fillColor: kWhite,
                               // prefix: SizedBox(width: 0),
-                              hintText: 'Enter Group Name',
+                              hintText:
+                                  'Enter ${data?['subtitle'] ?? 'Group'} Name',
                               inputBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(5.r),
                                 borderSide: BorderSide(

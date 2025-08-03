@@ -60,7 +60,10 @@ class FlatingWidget extends StatelessWidget {
           onPressed: () {
             keys?.currentState?.close();
             // Navigator.pushNamed(context, routeGroup);
-            context.push(routeGroup);
+            context.push(
+              routeGroup,
+              extra: {'title': 'Create Group', 'subtitle': 'Group'},
+            );
           },
           child: Padding(
             padding: const EdgeInsets.all(4.0),
@@ -85,7 +88,12 @@ class FlatingWidget extends StatelessWidget {
           shape: const CircleBorder(),
           backgroundColor: kPrimaryColor,
           heroTag: null,
-          onPressed: null,
+          onPressed: () {
+            context.push(
+              routeGroup,
+              extra: {'title': 'Create Broadcast', 'subtitle': 'Broadcast'},
+            );
+          },
           child: Padding(
             padding: const EdgeInsets.all(4.0),
             child: SvgPicture.asset('assets/icons/notification.svg'),

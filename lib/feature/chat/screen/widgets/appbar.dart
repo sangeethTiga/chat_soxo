@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/user_data.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
 import 'package:soxo_chat/shared/routes/routes.dart';
@@ -314,7 +315,7 @@ PreferredSizeWidget buildSeamlessAppBar(
                 if (isNotification == false)
                   GestureDetector(
                     onTap: () {
-                      Navigator.pushNamed(context, routeNotification);
+                      context.push(routeNotification);
                     },
                     child: Stack(
                       clipBehavior: Clip.none,

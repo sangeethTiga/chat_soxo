@@ -274,7 +274,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
   void _onTabTapped(String value) {
     HapticFeedback.lightImpact();
-
     context.read<ChatCubit>().selectedTab(value);
   }
 }
