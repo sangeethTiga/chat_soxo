@@ -17,66 +17,6 @@ class GroupScreen extends StatelessWidget {
       appBar: buildAppBar(title: 'Create Group', context, {}, isLeading: true),
       body: Column(
         children: [
-          // Container(
-          //   decoration: BoxDecoration(
-          //     gradient: LinearGradient(
-          //       begin: Alignment.topCenter,
-          //       end: Alignment.bottomCenter,
-          //       colors: [Color(0xFFB7E8CA), Color(0xFFF2F2F2)],
-          //     ),
-          //   ),
-          //   padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 0),
-          //   child: SafeArea(
-          //     child: Row(
-          //       children: [
-          //         Container(
-          //           padding: EdgeInsets.only(left: 5.w),
-          //           alignment: Alignment.center,
-          //           height: 39.h,
-          //           width: 39.w,
-          //           decoration: BoxDecoration(
-          //             color: kWhite,
-          //             shape: BoxShape.circle,
-          //           ),
-          //           child: Center(
-          //             child: IconButton(
-          //               padding: EdgeInsets.zero,
-          //               onPressed: () {
-          //                 Navigator.pop(context);
-          //               },
-          //               icon: Icon(Icons.arrow_back_ios),
-          //             ),
-          //           ),
-          //         ),
-          //         10.horizontalSpace,
-          //         Text('Create Group', style: FontPalette.hW400S18),
-          //         Spacer(),
-          //         Stack(
-          //           children: [
-          //             SvgPicture.asset('assets/icons/bell.svg'),
-          //             Positioned(
-          //               left: 4,
-          //               top: 0,
-          //               child: Container(
-          //                 alignment: Alignment.center,
-          //                 width: 14,
-          //                 height: 14,
-          //                 decoration: BoxDecoration(
-          //                   color: Color(0xFFE42168),
-          //                   shape: BoxShape.circle,
-          //                 ),
-          //                 child: Text(
-          //                   '5',
-          //                   style: FontPalette.hW400S8.copyWith(color: kWhite),
-          //                 ),
-          //               ),
-          //             ),
-          //           ],
-          //         ),
-          //       ],
-          //     ),
-          //   ),
-          // ),
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -139,9 +79,9 @@ class GroupScreen extends StatelessWidget {
                           Expanded(
                             flex: 0,
                             child: Padding(
-                              padding: EdgeInsets.only(top: 5.h),
+                              padding: EdgeInsets.only(top: 2.h),
                               child: Container(
-                                height: 48.h,
+                                height: 47.h,
                                 width: 48.w,
                                 decoration: BoxDecoration(
                                   color: Color(0XFF3D9970),
@@ -157,7 +97,7 @@ class GroupScreen extends StatelessWidget {
                       Row(
                         children: [
                           Padding(
-                            padding: EdgeInsets.only(left: 5.w),
+                            padding: EdgeInsets.only(left: 3.w),
                             child: Text(
                               'Select Members',
                               style: FontPalette.hW400S12.copyWith(

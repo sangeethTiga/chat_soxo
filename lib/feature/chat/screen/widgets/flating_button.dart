@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
 import 'package:soxo_chat/shared/routes/routes.dart';
 
@@ -58,7 +59,8 @@ class FlatingWidget extends StatelessWidget {
           heroTag: null,
           onPressed: () {
             keys?.currentState?.close();
-            Navigator.pushNamed(context, routeGroup);
+            // Navigator.pushNamed(context, routeGroup);
+            context.push(routeGroup);
           },
           child: Padding(
             padding: const EdgeInsets.all(4.0),
@@ -71,7 +73,8 @@ class FlatingWidget extends StatelessWidget {
           heroTag: null,
           onPressed: () {
             keys?.currentState?.close();
-            Navigator.pushNamed(context, routePerson);
+            // Navigator.pushNamed(context, routePerson);
+            context.push(routePerson);
           },
           child: Padding(
             padding: const EdgeInsets.all(4.0),

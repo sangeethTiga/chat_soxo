@@ -15,7 +15,7 @@ Widget buildChatContacts(
 }) {
   return Container(
     margin: EdgeInsets.only(bottom: 12),
-    padding: EdgeInsets.only(left: 6.w, right: 8.w, bottom: 6.h, top: 6.h),
+    padding: EdgeInsets.only(left: 0.w, right: 0.w, bottom: 6.h, top: 6.h),
     decoration: BoxDecoration(
       color: kWhite,
       borderRadius: BorderRadius.circular(12),

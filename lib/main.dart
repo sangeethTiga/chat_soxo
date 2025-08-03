@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/shared/dependency_injection/injectable.dart';
 import 'package:soxo_chat/shared/routes/route_generator.dart';
@@ -14,7 +15,9 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  MyApp({super.key});
+  final GoRouter router = RouteGenerator.generateRoute();
+
   @override
   Widget build(BuildContext context) {
     return ScreenUtilInit(
@@ -24,13 +27,12 @@ class MyApp extends StatelessWidget {
       builder: (context, child) {
         return MultiBlocProvider(
           providers: [BlocProvider(create: (context) => getIt<ChatCubit>())],
-          child: MaterialApp(
+          child: MaterialApp.router(
             debugShowCheckedModeBanner: false,
             title: '',
             theme: AppTheme.lightTheme,
             themeMode: ThemeMode.light,
-            onGenerateRoute: (settings) =>
-                RouteGenerator.generateRoute(settings),
+            routerConfig: router,
           ),
         );
       },
