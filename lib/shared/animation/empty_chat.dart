@@ -117,7 +117,7 @@ class _AnimatedEmptyChatWidgetState extends State<AnimatedEmptyChatWidget>
             _buildAnimatedTitle(),
             SizedBox(height: 12.h),
             _buildAnimatedSubtitle(),
-            SizedBox(height: 32.h),
+            SizedBox(height: 56.h),
             // _buildAnimatedStartButton(),
           ],
         ),
@@ -138,8 +138,8 @@ class _AnimatedEmptyChatWidgetState extends State<AnimatedEmptyChatWidget>
               child: Transform.scale(
                 scale: _iconScaleAnimation.value,
                 child: Container(
-                  width: 80.w,
-                  height: 80.h,
+                  width: 100.w,
+                  height: 100.h,
                   decoration: BoxDecoration(
                     color: const Color(0xFFE8F5E8).withOpacity(0.8),
                     shape: BoxShape.circle,

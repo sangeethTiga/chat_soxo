@@ -33,6 +33,7 @@ class NetworkProvider {
         retries: 3,
         retryEvaluator: (error, attempt) {
           if (error.response?.statusCode == 403 ||
+              error.response?.statusCode == 404 ||
               error.response?.statusCode == 401 ||
               (error.response?.statusCode == 400)) {
             return false;
