@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
+import 'package:soxo_chat/shared/routes/routes.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
 
 PreferredSizeWidget buildAppBar(
@@ -13,6 +14,7 @@ PreferredSizeWidget buildAppBar(
   int? notificationCount,
   VoidCallback? onNotificationTap,
   VoidCallback? onBackPressed,
+  bool? isNotification = false,
 }) {
   return PreferredSize(
     preferredSize: Size.fromHeight(height ?? 55.h),
@@ -58,11 +60,11 @@ PreferredSizeWidget buildAppBar(
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-
-                _buildNotificationBell(
-                  notificationCount: notificationCount ?? 5,
-                  onTap: onNotificationTap,
-                ),
+                if (isNotification == false)
+                  _buildNotificationBell(
+                    notificationCount: notificationCount ?? 5,
+                    onTap: onNotificationTap,
+                  ),
               ],
             ),
           ),
@@ -254,6 +256,7 @@ PreferredSizeWidget buildSeamlessAppBar(
   bool? isLeading = false,
   String? title,
   double? height,
+  bool? isNotification = false,
 }) {
   return PreferredSize(
     preferredSize: Size.fromHeight(height ?? 55.h),
@@ -303,29 +306,37 @@ PreferredSizeWidget buildSeamlessAppBar(
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    SvgPicture.asset('assets/icons/bell.svg'),
-                    Positioned(
-                      right: -2,
-                      top: -2,
-                      child: Container(
-                        alignment: Alignment.center,
-                        width: 14.w,
-                        height: 14.h,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFE42168),
-                          shape: BoxShape.circle,
+                if (isNotification == false)
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pushNamed(context, routeNotification);
+                    },
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        SvgPicture.asset('assets/icons/bell.svg'),
+                        Positioned(
+                          right: -2,
+                          top: -2,
+                          child: Container(
+                            alignment: Alignment.center,
+                            width: 14.w,
+                            height: 14.h,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFE42168),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Text(
+                              '5',
+                              style: FontPalette.hW400S8.copyWith(
+                                color: kWhite,
+                              ),
+                            ),
+                          ),
                         ),
-                        child: Text(
-                          '5',
-                          style: FontPalette.hW400S8.copyWith(color: kWhite),
-                        ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
               ],
             ),
           ),

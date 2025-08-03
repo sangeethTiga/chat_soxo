@@ -8,6 +8,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/appbar.dart';
+import 'package:soxo_chat/feature/chat/screen/widgets/record_dialog.dart';
 import 'package:soxo_chat/shared/animation/empty_chat.dart';
 import 'package:soxo_chat/shared/app/enums/api_fetch_status.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
@@ -113,10 +114,15 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     _contentAnimationController.forward();
   }
 
-  void _startRecording() {
+  void _startRecording(BuildContext context) {
     context.read<ChatCubit>().startRecording();
     _recordingAnimationController.repeat(reverse: true);
-    _showRecordingDialog();
+    showRecordingDialog(
+      context,
+      _pulseAnimation,
+      _cancelRecording,
+      _stopRecording,
+    );
   }
 
   void _stopRecording() {
@@ -129,150 +135,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     context.read<ChatCubit>().cancelRecording();
     _recordingAnimationController.stop();
     Navigator.pop(context);
-  }
-
-  // void _sendTextMessage() {
-  //   final message = _messageController.text.trim();
-  //   if (message.isNotEmpty) {
-  //     context.read<ChatCubit>().sendTextMessage(message);
-  //     _messageController.clear();
-  //   }
-  // }
-
-  void _showRecordingDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => BlocBuilder<ChatCubit, ChatState>(
-        builder: (context, state) {
-          return Dialog(
-            backgroundColor: Colors.transparent,
-            child: Container(
-              padding: EdgeInsets.all(20.w),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16.r),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AnimatedBuilder(
-                    animation: _pulseAnimation,
-                    builder: (context, child) {
-                      return Transform.scale(
-                        scale: _pulseAnimation.value,
-                        child: Container(
-                          height: 60.h,
-                          width: 60.w,
-                          decoration: BoxDecoration(
-                            color: kPrimaryColor,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: kPrimaryColor.withOpacity(0.5),
-                                blurRadius: 20,
-                                spreadRadius: 5,
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.mic,
-                            color: Colors.white,
-                            size: 30,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-
-                  20.verticalSpace,
-
-                  Text(
-                    'Recording...',
-                    style: FontPalette.hW400S16.copyWith(color: Colors.red),
-                  ),
-
-                  10.verticalSpace,
-                  Text(
-                    context.read<ChatCubit>().formatDuration(
-                      state.recordingDuration,
-                    ),
-                    style: FontPalette.hW400S14.copyWith(
-                      color: Colors.grey[800],
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-
-                  30.verticalSpace,
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      GestureDetector(
-                        onTap: _cancelRecording,
-                        child: Container(
-                          height: 35.h,
-                          padding: EdgeInsets.only(left: 10.w, right: 10.w),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12.r),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.close, color: Colors.red),
-                              5.horizontalSpace,
-                              Text(
-                                'Cancel',
-                                style: FontPalette.hW500S14.copyWith(
-                                  color: Colors.red,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      10.horizontalSpace,
-                      GestureDetector(
-                        onTap: _stopRecording,
-                        child: Container(
-                          height: 35.h,
-                          padding: EdgeInsets.only(left: 10.w, right: 10.w),
-                          decoration: BoxDecoration(
-                            color: kPrimaryColor,
-                            borderRadius: BorderRadius.circular(12.r),
-                            boxShadow: [
-                              BoxShadow(
-                                color: kPrimaryColor.withOpacity(0.3),
-                                blurRadius: 8,
-                                spreadRadius: 2,
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.send, color: Colors.white),
-                              5.horizontalSpace,
-                              Text(
-                                'Send',
-                                style: FontPalette.hW500S14.copyWith(
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
   }
 
   @override
@@ -484,7 +346,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                       suffixIcon: InkWell(
                         onTap: () {
                           if (state.hasRecordingPermission) {
-                            _startRecording();
+                            _startRecording(context);
                           } else {
                             _showPermissionDialog(context);
                           }
