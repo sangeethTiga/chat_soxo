@@ -1,7 +1,9 @@
 import 'dart:developer';
 import 'dart:io';
 
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 
 class Helper {
@@ -111,4 +113,95 @@ String truncateTo2Decimals(double? value) {
   if (value == null) return '0.00';
   int truncated = (value * 100).truncate();
   return (truncated / 100).toStringAsFixed(2);
+}
+
+class ChatTab {
+  String name;
+  String type;
+
+  ChatTab(this.name, this.type);
+}
+
+List<ChatTab> chatTab = [
+  ChatTab('All', 'all'),
+  ChatTab('Group Chat', 'group'),
+  ChatTab('Personal Chat', 'personal'),
+  ChatTab('Broadcast', 'broadcast'),
+];
+String getFormattedDate(String dateStr) {
+  final DateTime inputDate = DateTime.parse(dateStr).toLocal();
+  final DateTime now = DateTime.now();
+  final DateTime today = DateTime(now.year, now.month, now.day);
+  final DateTime inputDay = DateTime(
+    inputDate.year,
+    inputDate.month,
+    inputDate.day,
+  );
+
+  final difference = today.difference(inputDay).inDays;
+
+  if (difference == 0) {
+    return "Today";
+  } else if (difference == 1) {
+    return "Yesterday";
+  } else {
+    return DateFormat('dd MMM yyyy').format(inputDate);
+  }
+}
+
+IconData getEmptyStateIcon(String selectedTab) {
+  switch (selectedTab) {
+    case 'Group Chat':
+      return Icons.group;
+    case 'Personal Chat':
+      return Icons.person;
+    case 'Broadcast':
+      return Icons.campaign;
+    default:
+      return Icons.chat;
+  }
+}
+
+Widget buildEmptyState(String selectedTab) {
+  return Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          getEmptyStateIcon(selectedTab),
+          size: 80.sp,
+          color: Colors.grey[400],
+        ),
+        16.verticalSpace,
+        Text(
+          'No ${selectedTab.toLowerCase()} found',
+          style: TextStyle(
+            fontSize: 18.sp,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey[600],
+          ),
+        ),
+        8.verticalSpace,
+        Text(
+          _getEmptyStateMessage(selectedTab),
+          style: TextStyle(fontSize: 14.sp, color: Colors.grey[500]),
+          textAlign: TextAlign.center,
+        ),
+        120.verticalSpace,
+      ],
+    ),
+  );
+}
+
+String _getEmptyStateMessage(String selectedTab) {
+  switch (selectedTab) {
+    case 'Group Chat':
+      return 'You haven\'t joined any group chats yet.\nCreate or join a group to get started.';
+    case 'Personal Chat':
+      return 'No personal conversations yet.\nStart chatting with your contacts.';
+    case 'Broadcast':
+      return 'No broadcast messages.\nSubscribe to channels for updates.';
+    default:
+      return 'No chats available.\nStart a new conversation.';
+  }
 }

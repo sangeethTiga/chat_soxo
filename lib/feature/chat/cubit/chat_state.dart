@@ -9,9 +9,12 @@ class ChatState extends Equatable {
   final List<ChatMessage> messages;
   final String? errorMessage;
   final List<ChatListResponse>? chatList;
+  final List<ChatListResponse>? allChats;
+
   final ApiFetchStatus? isChat;
   final List<ChatEntryResponse>? chatEntry;
   final ApiFetchStatus? isChatEntry;
+  final String? selectedTab;
 
   const ChatState({
     this.isArrow = false,
@@ -25,6 +28,8 @@ class ChatState extends Equatable {
     this.isChat = ApiFetchStatus.idle,
     this.chatEntry,
     this.isChatEntry = ApiFetchStatus.idle,
+    this.selectedTab,
+    this.allChats,
   });
 
   ChatState copyWith({
@@ -39,6 +44,8 @@ class ChatState extends Equatable {
     ApiFetchStatus? isChat,
     List<ChatEntryResponse>? chatEntry,
     ApiFetchStatus? isChatEntry,
+    String? selectedTab,
+    List<ChatListResponse>? allChats,
   }) {
     return ChatState(
       isArrow: isArrow ?? this.isArrow,
@@ -53,6 +60,8 @@ class ChatState extends Equatable {
       isChat: isChat ?? this.isChat,
       chatEntry: chatEntry ?? this.chatEntry,
       isChatEntry: isChatEntry ?? this.isChatEntry,
+      selectedTab: selectedTab ?? this.selectedTab,
+      allChats: allChats ?? this.allChats,
     );
   }
 
@@ -69,6 +78,8 @@ class ChatState extends Equatable {
     isChat,
     chatEntry,
     isChatEntry,
+    selectedTab,
+    allChats,
   ];
 }
 

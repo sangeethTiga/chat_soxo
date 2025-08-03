@@ -10,9 +10,9 @@ PreferredSizeWidget buildAppBar(
   bool? isLeading = false,
   String? title,
   double? height,
-  int? notificationCount, 
-  VoidCallback? onNotificationTap, 
-  VoidCallback? onBackPressed, 
+  int? notificationCount,
+  VoidCallback? onNotificationTap,
+  VoidCallback? onBackPressed,
 }) {
   return PreferredSize(
     preferredSize: Size.fromHeight(height ?? 55.h),
@@ -134,9 +134,8 @@ Widget _buildNotificationBell({
 
 PreferredSizeWidget buildAppBarWithProfile(
   BuildContext context,
-  Map<String, dynamic>? arguments, {
-  Function? onTap,
-}) {
+  Map<String, dynamic>? arguments,
+) {
   return PreferredSize(
     preferredSize: Size.fromHeight(65.h),
     child: AppBar(
@@ -167,7 +166,6 @@ PreferredSizeWidget buildAppBarWithProfile(
                   child: IconButton(
                     padding: EdgeInsets.zero,
                     onPressed: () {
-                      onTap!();
                       Navigator.pop(context);
                     },
                     icon: const Icon(Icons.arrow_back_ios),

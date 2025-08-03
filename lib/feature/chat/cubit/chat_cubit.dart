@@ -326,9 +326,16 @@ class ChatCubit extends Cubit<ChatState> {
     emit(state.copyWith(isChat: ApiFetchStatus.loading));
     final res = await _chatRepositories.chatList();
     if (res.data != null) {
-      emit(state.copyWith(chatList: res.data, isChat: ApiFetchStatus.success));
+      emit(
+        state.copyWith(
+          chatList: res.data,
+          isChat: ApiFetchStatus.success,
+          allChats: res.data,
+        ),
+      );
+    } else {
+      emit(state.copyWith(isChat: ApiFetchStatus.failed, chatList: []));
     }
-    emit(state.copyWith(isChat: ApiFetchStatus.failed));
   }
 
   Future<void> getChatEntry({int? chatId, int? userId}) async {
@@ -343,6 +350,49 @@ class ChatCubit extends Cubit<ChatState> {
       );
     }
     emit(state.copyWith(isChatEntry: ApiFetchStatus.failed));
+  }
+
+  Future<void> selectedTab(String value) async {
+    final previousChatList = state.chatList;
+    emit(state.copyWith(selectedTab: value));
+
+    // Add a small delay for smooth transition if going from populated to empty
+    if (previousChatList != null && previousChatList.isNotEmpty) {
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+
+    _filterChatList(value);
+  }
+
+  void _filterChatList(String selectedTab) {
+    if (state.allChats == null) {
+      return;
+    }
+    List<ChatListResponse> filteredChats;
+    switch (selectedTab) {
+      case 'all':
+        filteredChats = List.from(state.allChats!);
+        break;
+      case 'group':
+        filteredChats = state.allChats!
+            .where((chat) => chat.type?.toLowerCase() == 'group')
+            .toList();
+        break;
+      case 'personal':
+        filteredChats = state.allChats!
+            .where((chat) => chat.type?.toLowerCase() == 'personal')
+            .toList();
+        break;
+      case 'broadcast':
+        filteredChats = state.allChats!
+            .where((chat) => chat.type?.toLowerCase() == 'broadcast')
+            .toList();
+        break;
+      default:
+        filteredChats = List.from(state.allChats!);
+    }
+
+    emit(state.copyWith(chatList: filteredChats, selectedTab: selectedTab));
   }
 
   @override

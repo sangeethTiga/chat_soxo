@@ -5,7 +5,6 @@ import 'package:soxo_chat/shared/themes/font_palette.dart';
 
 Widget buildTab(String text, bool isSelected, {double? width}) {
   return Container(
-    // height: 45.h,
     alignment: Alignment.center,
     padding: EdgeInsets.symmetric(horizontal: width ?? 0, vertical: 0),
     decoration: BoxDecoration(
@@ -15,7 +14,9 @@ Widget buildTab(String text, bool isSelected, {double? width}) {
     ),
     child: Text(
       text,
-      style: FontPalette.hW500S12.copyWith(color: Color(0XFF0F1828)),
+      style: FontPalette.hW500S12.copyWith(
+        color: isSelected ? kPrimaryColor : Color(0XFF0F1828),
+      ),
     ),
   );
 }

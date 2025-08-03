@@ -3,13 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:intl/intl.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/screen/chat_detail_screen.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/appbar.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/build_chat_item.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/build_tab.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/flating_button.dart';
+import 'package:soxo_chat/shared/animation/empty_state.dart';
+import 'package:soxo_chat/shared/app/list/helper.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -33,13 +34,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   final ScrollController _tabScrollController = ScrollController();
 
-  int _selectedTabIndex = 0;
-  final List<String> _tabs = [
-    'All',
-    'Group Chat',
-    'Personal Chat',
-    'Broadcast',
-  ];
+  final int _selectedTabIndex = 0;
 
   @override
   void initState() {
@@ -152,54 +147,60 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildAnimatedTabs() {
-    return AnimatedBuilder(
-      animation: _tabAnimationController,
-      builder: (context, child) {
-        return Transform.translate(
-          offset: Offset(_tabSlideAnimation.value, 0),
-          child: Container(
-            padding: EdgeInsets.fromLTRB(16.w, 20.h, 16.w, 12.h),
-            child: SizedBox(
-              height: 30.h,
-              child: ListView.separated(
-                controller: _tabScrollController,
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                itemCount: _tabs.length,
-                separatorBuilder: (context, index) => SizedBox(width: 8.w),
-                itemBuilder: (context, index) {
-                  return TweenAnimationBuilder<double>(
-                    duration: Duration(milliseconds: 600 + (index * 100)),
-                    tween: Tween(begin: 0.0, end: 1.0),
-                    builder: (context, value, child) {
-                      return Transform.scale(
-                        scale: 0.8 + (0.2 * value),
-                        child: Opacity(
-                          opacity: value,
-                          child: GestureDetector(
-                            onTap: () => _onTabTapped(index),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInOut,
-                              transform: Matrix4.identity()
-                                ..scale(
-                                  _selectedTabIndex == index ? 1.00 : 1.0,
+    return BlocBuilder<ChatCubit, ChatState>(
+      builder: (context, state) {
+        return AnimatedBuilder(
+          animation: _tabAnimationController,
+          builder: (context, child) {
+            return Transform.translate(
+              offset: Offset(_tabSlideAnimation.value, 0),
+              child: Container(
+                padding: EdgeInsets.fromLTRB(16.w, 20.h, 16.w, 12.h),
+                child: SizedBox(
+                  height: 30.h,
+                  child: ListView.separated(
+                    controller: _tabScrollController,
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: chatTab.length,
+                    separatorBuilder: (context, index) => SizedBox(width: 6.w),
+                    itemBuilder: (context, index) {
+                      return TweenAnimationBuilder<double>(
+                        duration: Duration(milliseconds: 600 + (index * 100)),
+                        tween: Tween(begin: 0.0, end: 1.0),
+                        builder: (context, value, child) {
+                          final clampedValue = value.clamp(0.0, 1.0);
+
+                          return Transform.scale(
+                            scale: 0.8 + (0.2 * clampedValue),
+                            child: Opacity(
+                              opacity: clampedValue,
+                              child: GestureDetector(
+                                onTap: () => _onTabTapped(chatTab[index].type),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                  transform: Matrix4.identity()
+                                    ..scale(
+                                      _selectedTabIndex == index ? 1.00 : 1.0,
+                                    ),
+                                  child: buildTab(
+                                    chatTab[index].name,
+                                    state.selectedTab == chatTab[index].type,
+                                    width: index == 0 ? 20.w : 8.w,
+                                  ),
                                 ),
-                              child: buildTab(
-                                _tabs[index],
-                                _selectedTabIndex == index,
-                                width: index == 0 ? 20.w : 8.w,
                               ),
                             ),
-                          ),
-                        ),
+                          );
+                        },
                       );
                     },
-                  );
-                },
+                  ),
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );
@@ -216,45 +217,98 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               padding: EdgeInsets.symmetric(horizontal: 16.w),
               child: BlocBuilder<ChatCubit, ChatState>(
                 builder: (context, state) {
-                  return ListView.separated(
-                    controller: _scrollController,
-                    physics: const BouncingScrollPhysics(),
-                    padding: EdgeInsets.only(
-                      bottom: 100.h,
-                      left: 0.w,
-                      right: 0.w,
-                    ),
-                    itemCount: state.chatList?.length ?? 0,
-                    separatorBuilder: (context, index) => SizedBox(height: 4.h),
-                    itemBuilder: (context, index) {
-                      final data = state.chatList?[index];
-                      return TweenAnimationBuilder<double>(
-                        duration: Duration(milliseconds: 800 + (index * 150)),
-                        tween: Tween(begin: 0.0, end: 1.0),
-                        curve: Curves.easeOutBack,
-                        builder: (context, value, child) {
-                          return Transform.scale(
-                            scale: 0.9 + (0.1 * value),
-                            child: GestureDetector(
-                              onTap: () => _onChatItemTapped(index, state),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12.r),
-                                  color: Colors.transparent,
-                                ),
-                                child: buildChatItem(
-                                  name: data?.title ?? '',
-                                  message: data?.description ?? '',
-                                  time: getFormattedDate(data?.updatedAt ?? ''),
-                                  unreadCount: 2,
-                                ),
-                              ),
+                  final filteredChats = state.chatList ?? [];
+
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 500),
+                    switchInCurve: Curves.easeInOut,
+                    switchOutCurve: Curves.easeInOut,
+                    transitionBuilder:
+                        (Widget child, Animation<double> animation) {
+                          return FadeTransition(
+                            opacity: animation,
+                            child: SlideTransition(
+                              position:
+                                  Tween<Offset>(
+                                    begin: const Offset(0.0, 0.2),
+                                    end: Offset.zero,
+                                  ).animate(
+                                    CurvedAnimation(
+                                      parent: animation,
+                                      curve: Curves.easeOutCubic,
+                                    ),
+                                  ),
+                              child: child,
                             ),
                           );
                         },
-                      );
-                    },
+                    child: filteredChats.isEmpty
+                        ? Container(
+                            key: ValueKey('empty_${state.selectedTab}'),
+                            child: AnimatedEmptyState(
+                              selectedTab: state.selectedTab ?? 'all',
+                            ),
+                          )
+                        : Container(
+                            key: ValueKey('list_${filteredChats.length}'),
+                            child: ListView.separated(
+                              controller: _scrollController,
+                              physics: const BouncingScrollPhysics(),
+                              padding: EdgeInsets.only(
+                                bottom: 100.h,
+                                left: 0.w,
+                                right: 0.w,
+                              ),
+                              itemCount: filteredChats.length,
+                              separatorBuilder: (context, index) =>
+                                  SizedBox(height: 4.h),
+                              itemBuilder: (context, index) {
+                                final data = filteredChats[index];
+                                return TweenAnimationBuilder<double>(
+                                  duration: Duration(
+                                    milliseconds: 800 + (index * 150),
+                                  ),
+                                  tween: Tween(begin: 0.0, end: 1.0),
+                                  curve: Curves.easeOutBack,
+                                  builder: (context, value, child) {
+                                    final clampedValue = value.clamp(0.0, 1.0);
+
+                                    return Transform.scale(
+                                      scale: 0.9 + (0.1 * clampedValue),
+                                      child: Opacity(
+                                        opacity: clampedValue,
+                                        child: GestureDetector(
+                                          onTap: () => _onChatItemTapped(
+                                            index,
+                                            state,
+                                            context,
+                                          ),
+                                          child: AnimatedContainer(
+                                            duration: const Duration(
+                                              milliseconds: 200,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(12.r),
+                                              color: Colors.transparent,
+                                            ),
+                                            child: buildChatItem(
+                                              name: data.title ?? '',
+                                              message: data.description ?? '',
+                                              time: getFormattedDate(
+                                                data.updatedAt ?? '',
+                                              ),
+                                              unreadCount: 2,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                          ),
                   );
                 },
               ),
@@ -265,96 +319,40 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     );
   }
 
-  void _onTabTapped(int index) {
-    if (_selectedTabIndex != index) {
-      setState(() {
-        _selectedTabIndex = index;
-      });
-      HapticFeedback.lightImpact();
-      final double targetOffset = (index * 100.w).clamp(
-        0.0,
-        _tabScrollController.hasClients
-            ? _tabScrollController.position.maxScrollExtent
-            : 0.0,
-      );
+  void _onTabTapped(String value) {
+    HapticFeedback.lightImpact();
 
-      if (_tabScrollController.hasClients) {
-        _tabScrollController.animateTo(
-          targetOffset,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
+    context.read<ChatCubit>().selectedTab(value);
+  }
+}
+
+void _onChatItemTapped(int index, ChatState state, BuildContext context) {
+  HapticFeedback.selectionClick();
+  context.read<ChatCubit>().getChatEntry(
+    chatId: state.chatList?[index].chatId,
+    userId: 2,
+  );
+  Navigator.of(context).push(
+    PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return ChatDetailScreen();
+      },
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        const begin = Offset(1.0, 0.0);
+        const end = Offset.zero;
+        const curve = Curves.fastOutSlowIn;
+
+        var tween = Tween(
+          begin: begin,
+          end: end,
+        ).chain(CurveTween(curve: curve));
+
+        return SlideTransition(
+          position: animation.drive(tween),
+          child: FadeTransition(opacity: animation, child: child),
         );
-      }
-    }
-  }
-
-  void _onChatItemTapped(int index, ChatState state) {
-    HapticFeedback.selectionClick();
-    context.read<ChatCubit>().getChatEntry(
-      chatId: state.chatList?[index].chatId,
-      userId: 2,
-    );
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) {
-          return ChatDetailScreen();
-        },
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          const begin = Offset(1.0, 0.0);
-          const end = Offset.zero;
-          const curve = Curves.fastOutSlowIn;
-
-          var tween = Tween(
-            begin: begin,
-            end: end,
-          ).chain(CurveTween(curve: curve));
-
-          return SlideTransition(
-            position: animation.drive(tween),
-            child: FadeTransition(opacity: animation, child: child),
-          );
-        },
-        transitionDuration: const Duration(milliseconds: 400),
-      ),
-    );
-  }
-}
-
-class ChatItemData {
-  final String initials;
-  final Color color;
-  final String title;
-  final String subtitle;
-  final String time;
-  final int unreadCount;
-
-  ChatItemData(
-    this.initials,
-    this.color,
-    this.title,
-    this.subtitle,
-    this.time,
-    this.unreadCount,
+      },
+      transitionDuration: const Duration(milliseconds: 400),
+    ),
   );
-}
-
-String getFormattedDate(String dateStr) {
-  final DateTime inputDate = DateTime.parse(dateStr).toLocal();
-  final DateTime now = DateTime.now();
-  final DateTime today = DateTime(now.year, now.month, now.day);
-  final DateTime inputDay = DateTime(
-    inputDate.year,
-    inputDate.month,
-    inputDate.day,
-  );
-
-  final difference = today.difference(inputDay).inDays;
-
-  if (difference == 0) {
-    return "Today";
-  } else if (difference == 1) {
-    return "Yesterday";
-  } else {
-    return DateFormat('dd MMM yyyy').format(inputDate); // e.g. 17 Jul 2025
-  }
 }
