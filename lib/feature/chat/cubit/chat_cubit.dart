@@ -64,7 +64,6 @@ class ChatCubit extends Cubit<ChatState> {
       log('Starting recording...');
       log('Has permission: ${state.hasRecordingPermission}');
 
-      // FIX: Check permission first, if not granted, request it
       if (!state.hasRecordingPermission) {
         log('No permission, requesting...');
         await _initializePermissions();
@@ -80,17 +79,14 @@ class ChatCubit extends Cubit<ChatState> {
         }
       }
 
-      // Generate recording path
       final directory = await getApplicationDocumentsDirectory();
       final fileName = 'voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
       final recordingPath = '${directory.path}/$fileName';
       log('Recording path: $recordingPath');
 
-      // Check if recorder has permission
       if (await _audioRecorder.hasPermission()) {
         log('AudioRecorder has permission, starting...');
 
-        // Start recording
         await _audioRecorder.start(
           const RecordConfig(
             encoder: AudioEncoder.aacLc,
@@ -100,7 +96,6 @@ class ChatCubit extends Cubit<ChatState> {
           path: recordingPath,
         );
 
-        // Update state to recording
         emit(
           state.copyWith(
             isRecording: true,
@@ -112,7 +107,6 @@ class ChatCubit extends Cubit<ChatState> {
 
         log('State updated - isRecording: ${state.isRecording}');
 
-        // FIX: Start timer with proper error handling
         _startRecordingTimer();
 
         log('Recording started successfully at: $recordingPath');
@@ -126,11 +120,9 @@ class ChatCubit extends Cubit<ChatState> {
     }
   }
 
-  // FIX: Enhanced timer with better logging and error handling
   void _startRecordingTimer() {
     log('Starting recording timer...');
 
-    // Cancel any existing timer
     _recordingTimer?.cancel();
 
     _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -142,11 +134,7 @@ class ChatCubit extends Cubit<ChatState> {
 
         // FIX: Use a new state object to force rebuild
         emit(
-          state.copyWith(
-            recordingDuration: newDuration,
-            // FIX: Force state change by updating a dummy field if needed
-            errorMessage: null, // This ensures state actually changes
-          ),
+          state.copyWith(recordingDuration: newDuration, errorMessage: null),
         );
 
         log(
@@ -169,23 +157,19 @@ class ChatCubit extends Cubit<ChatState> {
         return;
       }
 
-      // Stop timer first
       _recordingTimer?.cancel();
       log('Timer cancelled');
 
-      // Stop recording
       final path = await _audioRecorder.stop();
       log('Recording stopped, path: $path');
 
       if (path != null && state.recordingPath != null) {
-        // Validate file
         final file = File(state.recordingPath!);
         if (await file.exists()) {
           final fileSize = await file.length();
           log('File exists, size: $fileSize bytes');
 
           if (fileSize > 0) {
-            // Create voice message
             final voiceMessage = ChatMessage(
               id: DateTime.now().millisecondsSinceEpoch.toString(),
               content: state.recordingPath!,
@@ -195,7 +179,6 @@ class ChatCubit extends Cubit<ChatState> {
               audioDuration: state.recordingDuration,
             );
 
-            // Add message to chat
             final updatedMessages = [...state.messages, voiceMessage];
 
             emit(
@@ -257,21 +240,17 @@ class ChatCubit extends Cubit<ChatState> {
     }
   }
 
-  // Cancel recording
   Future<void> cancelRecording() async {
     try {
       log('Cancelling recording...');
       if (!state.isRecording) return;
 
-      // Stop timer
       _recordingTimer?.cancel();
       log('Timer cancelled');
 
-      // Stop recording
       await _audioRecorder.stop();
       log('Recording stopped');
 
-      // Delete the recording file if it exists
       if (state.recordingPath != null) {
         final file = File(state.recordingPath!);
         if (await file.exists()) {
@@ -280,7 +259,6 @@ class ChatCubit extends Cubit<ChatState> {
         }
       }
 
-      // Reset recording state
       emit(
         state.copyWith(
           isRecording: false,
@@ -304,7 +282,6 @@ class ChatCubit extends Cubit<ChatState> {
     }
   }
 
-  // Send text message
   void sendTextMessage(String message) {
     if (message.trim().isEmpty) return;
 
@@ -323,7 +300,6 @@ class ChatCubit extends Cubit<ChatState> {
     log('Text message sent: ${textMessage.content}');
   }
 
-  // Add received message (simulate)
   void addReceivedMessage(String message, {String? senderName}) {
     final receivedMessage = ChatMessage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -339,7 +315,6 @@ class ChatCubit extends Cubit<ChatState> {
     emit(state.copyWith(messages: updatedMessages));
   }
 
-  // Format duration helper
   String formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, "0");
     String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
