@@ -25,7 +25,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   late AnimationController _recordingAnimationController;
   late Animation<double> _arrowRotationAnimation;
 
-  // FIX: Initialize message controller properly
   late TextEditingController _messageController;
 
   late Animation<double> _fadeAnimation;
@@ -35,7 +34,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   @override
   void initState() {
     super.initState();
-    // FIX: Initialize message controller first
     _messageController = TextEditingController();
     _initializeAnimations();
   }
@@ -413,42 +411,47 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
             ),
 
             Expanded(
-              child: ListView.builder(
-                padding: EdgeInsets.symmetric(horizontal: 16.w),
-                itemCount: state.messages.length + 2,
-                itemBuilder: (context, index) {
-                  if (index == 0) {
-                    return Column(
-                      children: [
-                        SizedBox(height: 15.h),
-                        const ChatBubbleMessage(
-                          message: 'Thank you for confirmation',
+              child: BlocBuilder<ChatCubit, ChatState>(
+                builder: (context, state) {
+                  return ListView.builder(
+                    padding: EdgeInsets.symmetric(horizontal: 16.w),
+                    itemCount: state.chatEntry?.length,
+                    itemBuilder: (context, index) {
+                      final data = state.chatEntry?[index];
+                      if (index == 0) {
+                        return Column(
+                          children: [
+                            SizedBox(height: 15.h),
+                            ChatBubbleMessage(
+                              message: data?.content ?? '',
+                              timestamp: '12-2-2025 ,15:24',
+                              isSent: true,
+                            ),
+                          ],
+                        );
+                      } else if (index == 1) {
+                        return const ChatBubbleMessage(
+                          message: 'You are welcome',
                           timestamp: '12-2-2025 ,15:24',
-                          isSent: true,
-                        ),
-                      ],
-                    );
-                  } else if (index == 1) {
-                    return const ChatBubbleMessage(
-                      message: 'You are welcome',
-                      timestamp: '12-2-2025 ,15:24',
-                      isSent: false,
-                      senderName: 'Dr Habeeb',
-                      showAvatar: true,
-                    );
-                  } else {
-                    final messageIndex = index - 2;
-                    final message = state.messages[messageIndex];
+                          isSent: false,
+                          senderName: 'Dr Habeeb',
+                          showAvatar: true,
+                        );
+                      } else {
+                        // final messageIndex = index - 2;
+                        // final message = state.messages[messageIndex];
 
-                    // return ChatBubbleMessage(
-                    //   message: message.content,
-                    //   timestamp: _formatMessageTime(message.timestamp),
-                    //   isSent: message.isSent,
-                    //   senderName: message.senderName,
-                    //   showAvatar: !message.isSent,
-                    // );
-                  }
-                  return null;
+                        // return ChatBubbleMessage(
+                        //   message: message.content,
+                        //   timestamp: _formatMessageTime(message.timestamp),
+                        //   isSent: message.isSent,
+                        //   senderName: message.senderName,
+                        //   showAvatar: !message.isSent,
+                        // );
+                      }
+                      return null;
+                    },
+                  );
                 },
               ),
             ),
@@ -756,11 +759,14 @@ class ChatBubbleMessage extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Image.asset(
-            'assets/images/Rectangle 1.png',
-            fit: BoxFit.cover,
-            height: 28.h,
-            width: 28.w,
+          Padding(
+            padding: EdgeInsets.only(top: 10.h),
+            child: Image.asset(
+              'assets/images/Rectangle 1.png',
+              fit: BoxFit.cover,
+              height: 28.h,
+              width: 28.w,
+            ),
           ),
           5.horizontalSpace,
           Expanded(

@@ -7,6 +7,7 @@ import 'package:injectable/injectable.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
+import 'package:soxo_chat/feature/chat/domain/models/chat_entry/chat_entry_response.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_model/chat_models.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_res/chat_list_response.dart';
 import 'package:soxo_chat/feature/chat/domain/repositories/chat_repositories.dart';
@@ -352,6 +353,20 @@ class ChatCubit extends Cubit<ChatState> {
       emit(state.copyWith(chatList: res.data, isChat: ApiFetchStatus.success));
     }
     emit(state.copyWith(isChat: ApiFetchStatus.failed));
+  }
+
+  Future<void> getChatEntry({int? chatId, int? userId}) async {
+    emit(state.copyWith(isChatEntry: ApiFetchStatus.loading));
+    final res = await _chatRepositories.chatEntry(chatId ?? 0, userId ?? 0);
+    if (res.data != null) {
+      emit(
+        state.copyWith(
+          chatEntry: res.data,
+          isChatEntry: ApiFetchStatus.success,
+        ),
+      );
+    }
+    emit(state.copyWith(isChatEntry: ApiFetchStatus.failed));
   }
 
   @override

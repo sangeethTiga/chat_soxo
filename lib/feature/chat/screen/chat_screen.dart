@@ -287,7 +287,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                           return Transform.scale(
                             scale: 0.9 + (0.1 * value),
                             child: GestureDetector(
-                              onTap: () => _onChatItemTapped(index),
+                              onTap: () => _onChatItemTapped(index, state),
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 200),
                                 decoration: BoxDecoration(
@@ -345,9 +345,12 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _onChatItemTapped(int index) {
+  void _onChatItemTapped(int index, ChatState state) {
     HapticFeedback.selectionClick();
-
+    context.read<ChatCubit>().getChatEntry(
+      chatId: state.chatList?[index].chatId,
+      userId: 2,
+    );
     Navigator.of(context).push(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) {
