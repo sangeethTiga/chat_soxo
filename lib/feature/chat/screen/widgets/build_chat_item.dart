@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:soxo_chat/feature/chat/screen/widgets/user_data.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
 
@@ -20,20 +21,22 @@ Widget buildChatItem(
     ),
     child: Row(
       children: [
-        Container(
-          width: 48.w,
-          height: 48.h,
-          decoration: BoxDecoration(
-            color: avatarColor,
-            borderRadius: BorderRadius.all(Radius.circular(16.r)),
-          ),
-          child: Center(
-            child: Text(
-              initials,
-              style: FontPalette.hW700S14.copyWith(color: kWhite),
-            ),
-          ),
-        ),
+        ChatAvatar(name: name, size: 50),
+
+        // Container(
+        //   width: 48.w,
+        //   height: 48.h,
+        //   decoration: BoxDecoration(
+        //     color: avatarColor,
+        //     borderRadius: BorderRadius.all(Radius.circular(16.r)),
+        //   ),
+        //   child: Center(
+        //     child: Text(
+        //       initials,
+        //       style: FontPalette.hW700S14.copyWith(color: kWhite),
+        //     ),
+        //   ),
+        // ),
         SizedBox(width: 12),
         Expanded(
           child: Column(

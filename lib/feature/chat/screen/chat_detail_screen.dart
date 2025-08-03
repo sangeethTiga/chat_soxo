@@ -36,6 +36,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     super.initState();
     _messageController = TextEditingController();
     _initializeAnimations();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _contentAnimationController.forward();
+    });
   }
 
   void _initializeAnimations() {
@@ -49,7 +52,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
       vsync: this,
     );
 
-    // FIX: Initialize recording animation controller
     _recordingAnimationController = AnimationController(
       duration: const Duration(milliseconds: 1000),
       vsync: this,
@@ -271,13 +273,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: buildAppBarWithProfile(
-        context,
-        {},
-        onTap: () {
-          _contentAnimationController.reset();
-        },
-      ),
+      appBar: buildAppBarWithProfile(context, {}),
 
       body: BlocConsumer<ChatCubit, ChatState>(
         listener: (context, state) {

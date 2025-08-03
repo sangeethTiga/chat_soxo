@@ -41,7 +41,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     'Broadcast',
   ];
 
-  // Sample chat data with better structure
   final List<ChatItemData> _chatItems = [
     ChatItemData(
       'RD',
@@ -95,25 +94,21 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
   void _initializeAnimations() {
     context.read<ChatCubit>().getChatList();
-    // Container animation for the main content area
     _containerAnimationController = AnimationController(
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
 
-    // List items animation
     _listAnimationController = AnimationController(
       duration: const Duration(milliseconds: 1200),
       vsync: this,
     );
 
-    // Tab animation
     _tabAnimationController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
 
-    // Container slide up animation
     _containerSlideAnimation = Tween<double>(begin: 100.0, end: 0.0).animate(
       CurvedAnimation(
         parent: _containerAnimationController,
@@ -121,7 +116,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       ),
     );
 
-    // Container opacity animation
     _containerOpacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _containerAnimationController,
@@ -129,7 +123,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       ),
     );
 
-    // Tab slide animation
     _tabSlideAnimation = Tween<double>(begin: -50.0, end: 0.0).animate(
       CurvedAnimation(
         parent: _tabAnimationController,
@@ -137,7 +130,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       ),
     );
 
-    // List slide animation
     _listSlideAnimation = Tween<double>(begin: 30.0, end: 0.0).animate(
       CurvedAnimation(
         parent: _listAnimationController,
@@ -147,15 +139,12 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   void _startAnimations() {
-    // Start container animation immediately
     _containerAnimationController.forward();
 
-    // Start tab animation after a delay
     Future.delayed(const Duration(milliseconds: 400), () {
       if (mounted) _tabAnimationController.forward();
     });
 
-    // Start list animation after container
     Future.delayed(const Duration(milliseconds: 600), () {
       if (mounted) _listAnimationController.forward();
     });
@@ -274,7 +263,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                   return ListView.separated(
                     controller: _scrollController,
                     physics: const BouncingScrollPhysics(),
-                    padding: EdgeInsets.only(bottom: 100.h), // Space for FAB
+                    padding: EdgeInsets.only(bottom: 100.h),
                     itemCount: state.chatList?.length ?? 0,
                     separatorBuilder: (context, index) => SizedBox(height: 4.h),
                     itemBuilder: (context, index) {
@@ -323,11 +312,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       setState(() {
         _selectedTabIndex = index;
       });
-
-      // Add haptic feedback
       HapticFeedback.lightImpact();
-
-      // Auto-scroll to show selected tab
       final double targetOffset = (index * 100.w).clamp(
         0.0,
         _tabScrollController.hasClients

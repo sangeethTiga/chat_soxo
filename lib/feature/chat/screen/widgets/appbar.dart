@@ -10,9 +10,9 @@ PreferredSizeWidget buildAppBar(
   bool? isLeading = false,
   String? title,
   double? height,
-  int? notificationCount, // Make notification count dynamic
-  VoidCallback? onNotificationTap, // Add callback for notification tap
-  VoidCallback? onBackPressed, // Add callback for back button
+  int? notificationCount, 
+  VoidCallback? onNotificationTap, 
+  VoidCallback? onBackPressed, 
 }) {
   return PreferredSize(
     preferredSize: Size.fromHeight(height ?? 55.h),
@@ -32,7 +32,6 @@ PreferredSizeWidget buildAppBar(
             padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
             child: Row(
               children: [
-                // Back button (if needed)
                 if (isLeading == true) ...[
                   Container(
                     padding: EdgeInsets.only(left: 5.w),
@@ -52,7 +51,6 @@ PreferredSizeWidget buildAppBar(
                   SizedBox(width: 10.w),
                 ],
 
-                // Title
                 Expanded(
                   child: Text(
                     title ?? '',
@@ -61,7 +59,6 @@ PreferredSizeWidget buildAppBar(
                   ),
                 ),
 
-                // Notification bell
                 _buildNotificationBell(
                   notificationCount: notificationCount ?? 5,
                   onTap: onNotificationTap,
