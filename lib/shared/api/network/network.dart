@@ -8,6 +8,9 @@ import 'package:dio_smart_retry/dio_smart_retry.dart';
 import 'package:soxo_chat/shared/app/extension/helper.dart';
 import 'package:soxo_chat/shared/constants/base_url.dart';
 
+final String token =
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJwb3N0IiwidW5pcXVlX25hbWUiOiJwb3N0IiwiQnJhbmNoTmFtZSI6IkRDUlQiLCJGaW5ZZWFyIjoiZjIiLCJGaXJtIjoiZjIiLCJVc2VybmFtZSI6InBvc3QiLCJyb2xlIjoiYWRtaW5pc3RyYXRvciIsIm5iZiI6MTc1MzQyMDEzMywiZXhwIjoxNzU0NzQwMTMzLCJpYXQiOjE3NTM0MjAxMzN9.EljAVeR-YHhsYrGkO2dYq091QIIMBedZgvdkOcrj9YU';
+
 class NetworkProvider {
   final Dio _dio;
   static final Map<String, Response> _cache = {};
@@ -16,7 +19,11 @@ class NetworkProvider {
     : _dio = Dio(
         BaseOptions(
           baseUrl: baseUrl,
-          headers: {"Content-Type": "application/json"},
+          headers: {
+            'Authorization': 'Bearer ${token ?? ''}',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
         ),
       ) {
     _dio.interceptors.add(
@@ -56,14 +63,14 @@ class NetworkProvider {
           } else {
             // final String? token = await AuthUtils.instance.readAccessToken;
 
-            // log("Access token  $token");
-            // if (token != null && token != "") {
-            //   options.headers.addEntries(
-            //     {'Authorization': 'Bearer $token'}.entries,
-            //   );
-            // }
+            log("Access token  $token");
+            if (token != "") {
+              options.headers.addEntries(
+                {'Authorization': 'Bearer $token', "userName": "post"}.entries,
+              );
+            }
 
-            // log("token $token");
+            log("token $token");
           }
 
           return handler.next(options);

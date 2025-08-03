@@ -8,6 +8,8 @@ class ChatState extends Equatable {
   final bool hasRecordingPermission;
   final List<ChatMessage> messages;
   final String? errorMessage;
+  final List<ChatListResponse>? chatList;
+  final ApiFetchStatus? isChat;
 
   const ChatState({
     this.isArrow = false,
@@ -17,6 +19,8 @@ class ChatState extends Equatable {
     this.hasRecordingPermission = false,
     this.messages = const [],
     this.errorMessage,
+    this.chatList,
+    this.isChat = ApiFetchStatus.idle,
   });
 
   ChatState copyWith({
@@ -27,6 +31,8 @@ class ChatState extends Equatable {
     bool? hasRecordingPermission,
     List<ChatMessage>? messages,
     String? errorMessage,
+    List<ChatListResponse>? chatList,
+    ApiFetchStatus? isChat,
   }) {
     return ChatState(
       isArrow: isArrow ?? this.isArrow,
@@ -37,6 +43,8 @@ class ChatState extends Equatable {
           hasRecordingPermission ?? this.hasRecordingPermission,
       messages: messages ?? this.messages,
       errorMessage: errorMessage ?? this.errorMessage,
+      chatList: chatList ?? this.chatList,
+      isChat: isChat ?? this.isChat,
     );
   }
 
@@ -49,6 +57,8 @@ class ChatState extends Equatable {
     hasRecordingPermission,
     messages,
     errorMessage,
+    chatList,
+    isChat,
   ];
 }
 

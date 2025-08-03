@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl/intl.dart';
+import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/screen/chat_detail_screen.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/appbar.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/build_chat_item.dart';
@@ -91,6 +94,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   void _initializeAnimations() {
+    context.read<ChatCubit>().getChatList();
     // Container animation for the main content area
     _containerAnimationController = AnimationController(
       duration: const Duration(milliseconds: 1000),
@@ -265,38 +269,43 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
             offset: Offset(0, _listSlideAnimation.value),
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.w),
-              child: ListView.separated(
-                controller: _scrollController,
-                physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.only(bottom: 100.h), // Space for FAB
-                itemCount: _chatItems.length,
-                separatorBuilder: (context, index) => SizedBox(height: 4.h),
-                itemBuilder: (context, index) {
-                  return TweenAnimationBuilder<double>(
-                    duration: Duration(milliseconds: 800 + (index * 150)),
-                    tween: Tween(begin: 0.0, end: 1.0),
-                    curve: Curves.easeOutBack,
-                    builder: (context, value, child) {
-                      return Transform.scale(
-                        scale: 0.9 + (0.1 * value),
-                        child: GestureDetector(
-                          onTap: () => _onChatItemTapped(index),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12.r),
-                              color: Colors.transparent,
+              child: BlocBuilder<ChatCubit, ChatState>(
+                builder: (context, state) {
+                  return ListView.separated(
+                    controller: _scrollController,
+                    physics: const BouncingScrollPhysics(),
+                    padding: EdgeInsets.only(bottom: 100.h), // Space for FAB
+                    itemCount: state.chatList?.length ?? 0,
+                    separatorBuilder: (context, index) => SizedBox(height: 4.h),
+                    itemBuilder: (context, index) {
+                      final data = state.chatList?[index];
+                      return TweenAnimationBuilder<double>(
+                        duration: Duration(milliseconds: 800 + (index * 150)),
+                        tween: Tween(begin: 0.0, end: 1.0),
+                        curve: Curves.easeOutBack,
+                        builder: (context, value, child) {
+                          return Transform.scale(
+                            scale: 0.9 + (0.1 * value),
+                            child: GestureDetector(
+                              onTap: () => _onChatItemTapped(index),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12.r),
+                                  color: Colors.transparent,
+                                ),
+                                child: buildChatItem(
+                                  _chatItems[index].initials,
+                                  _chatItems[index].color,
+                                  data?.title ?? '',
+                                  data?.description ?? '',
+                                  getFormattedDate(data?.updatedAt ?? ''),
+                                  _chatItems[index].unreadCount,
+                                ),
+                              ),
                             ),
-                            child: buildChatItem(
-                              _chatItems[index].initials,
-                              _chatItems[index].color,
-                              _chatItems[index].title,
-                              _chatItems[index].subtitle,
-                              _chatItems[index].time,
-                              _chatItems[index].unreadCount,
-                            ),
-                          ),
-                        ),
+                          );
+                        },
                       );
                     },
                   );
@@ -381,4 +390,25 @@ class ChatItemData {
     this.time,
     this.unreadCount,
   );
+}
+
+String getFormattedDate(String dateStr) {
+  final DateTime inputDate = DateTime.parse(dateStr).toLocal();
+  final DateTime now = DateTime.now();
+  final DateTime today = DateTime(now.year, now.month, now.day);
+  final DateTime inputDay = DateTime(
+    inputDate.year,
+    inputDate.month,
+    inputDate.day,
+  );
+
+  final difference = today.difference(inputDay).inDays;
+
+  if (difference == 0) {
+    return "Today";
+  } else if (difference == 1) {
+    return "Yesterday";
+  } else {
+    return DateFormat('dd MMM yyyy').format(inputDate); // e.g. 17 Jul 2025
+  }
 }

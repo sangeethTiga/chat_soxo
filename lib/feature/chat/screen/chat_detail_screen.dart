@@ -79,7 +79,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
           ),
         );
 
-    // FIX: Initialize pulse animation after recording controller
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.3).animate(
       CurvedAnimation(
         parent: _recordingAnimationController,
@@ -90,7 +89,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
 
   @override
   void dispose() {
-    // FIX: Dispose all controllers properly
     _arrowAnimationController.dispose();
     _contentAnimationController.dispose();
     _recordingAnimationController.dispose();
@@ -457,7 +455,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
 
             MainPadding(
               right: 16,
-              bottom: 10.h,
+              bottom: 28.h,
               child: Row(
                 children: [
                   10.horizontalSpace,
@@ -553,7 +551,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
           onArrowTap: _handleArrowTap,
           arrowAnimation: _arrowRotationAnimation,
         ),
-        10.verticalSpace,
+        28.verticalSpace,
       ],
     );
   }

@@ -8,6 +8,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_model/chat_models.dart';
+import 'package:soxo_chat/feature/chat/domain/models/chat_res/chat_list_response.dart';
+import 'package:soxo_chat/feature/chat/domain/repositories/chat_repositories.dart';
+import 'package:soxo_chat/shared/app/enums/api_fetch_status.dart';
 
 part 'chat_state.dart';
 
@@ -15,9 +18,9 @@ part 'chat_state.dart';
 class ChatCubit extends Cubit<ChatState> {
   final AudioRecorder _audioRecorder = AudioRecorder();
   Timer? _recordingTimer;
+  final ChatRepositories _chatRepositories;
 
-  ChatCubit() : super(InitilaChatState()) {
-    // FIX: Initialize permissions when cubit is created
+  ChatCubit(this._chatRepositories) : super(InitilaChatState()) {
     _initializePermissions();
   }
 
@@ -340,6 +343,15 @@ class ChatCubit extends Cubit<ChatState> {
     String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
     String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
     return "$twoDigitMinutes:$twoDigitSeconds";
+  }
+
+  Future<void> getChatList() async {
+    emit(state.copyWith(isChat: ApiFetchStatus.loading));
+    final res = await _chatRepositories.chatList();
+    if (res.data != null) {
+      emit(state.copyWith(chatList: res.data, isChat: ApiFetchStatus.success));
+    }
+    emit(state.copyWith(isChat: ApiFetchStatus.failed));
   }
 
   @override
