@@ -124,13 +124,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     Navigator.pop(context);
   }
 
-  void _sendTextMessage() {
-    final message = _messageController.text.trim();
-    if (message.isNotEmpty) {
-      context.read<ChatCubit>().sendTextMessage(message);
-      _messageController.clear();
-    }
-  }
+  // void _sendTextMessage() {
+  //   final message = _messageController.text.trim();
+  //   if (message.isNotEmpty) {
+  //     context.read<ChatCubit>().sendTextMessage(message);
+  //     _messageController.clear();
+  //   }
+  // }
 
   void _showRecordingDialog() {
     showDialog(
@@ -559,9 +559,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     );
   }
 
-  String _formatMessageTime(DateTime timestamp) {
-    return '${timestamp.day}-${timestamp.month}-${timestamp.year} ,${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
-  }
+  // String _formatMessageTime(DateTime timestamp) {
+  //   return '${timestamp.day}-${timestamp.month}-${timestamp.year} ,${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
+  // }
 }
 
 // Keep existing widgets...

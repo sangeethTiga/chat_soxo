@@ -1,6 +1,3 @@
-import 'dart:convert';
-import 'dart:developer';
-
 class AuthUtils {
   AuthUtils._();
   static AuthUtils? _instance;

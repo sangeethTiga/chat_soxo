@@ -111,29 +111,29 @@ Widget _buildNotificationBell({
   );
 }
 
-Widget _buildCircularButton({
-  required IconData icon,
-  required VoidCallback onTap,
-}) {
-  return GestureDetector(
-    onTap: onTap,
-    child: Container(
-      padding: EdgeInsets.all(8.r),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Icon(icon, size: 20.sp, color: Colors.black87),
-    ),
-  );
-}
+// Widget _buildCircularButton({
+//   required IconData icon,
+//   required VoidCallback onTap,
+// }) {
+//   return GestureDetector(
+//     onTap: onTap,
+//     child: Container(
+//       padding: EdgeInsets.all(8.r),
+//       decoration: BoxDecoration(
+//         color: Colors.white,
+//         shape: BoxShape.circle,
+//         boxShadow: [
+//           BoxShadow(
+//             color: Colors.black.withOpacity(0.1),
+//             blurRadius: 4,
+//             offset: const Offset(0, 2),
+//           ),
+//         ],
+//       ),
+//       child: Icon(icon, size: 20.sp, color: Colors.black87),
+//     ),
+//   );
+// }
 
 PreferredSizeWidget buildAppBarWithProfile(
   BuildContext context,

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:bloc/bloc.dart';
@@ -26,7 +27,7 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   Future<void> arrowSelected() async {
-    emit(state.copyWith(isArrow: !(state.isArrow ?? false)));
+    emit(state.copyWith(isArrow: !(state.isArrow)));
   }
 
   void resetState() {
@@ -45,7 +46,7 @@ class ChatCubit extends Cubit<ChatState> {
           hasRecordingPermission: status == PermissionStatus.granted,
         ),
       );
-      print(
+      log(
         'Microphone permission: ${status == PermissionStatus.granted ? "GRANTED" : "DENIED"}',
       );
     } catch (e) {
@@ -54,18 +55,18 @@ class ChatCubit extends Cubit<ChatState> {
           errorMessage: 'Failed to check microphone permission: $e',
         ),
       );
-      print('Permission error: $e');
+      log('Permission error: $e');
     }
   }
 
   Future<void> startRecording() async {
     try {
-      print('Starting recording...');
-      print('Has permission: ${state.hasRecordingPermission}');
+      log('Starting recording...');
+      log('Has permission: ${state.hasRecordingPermission}');
 
       // FIX: Check permission first, if not granted, request it
       if (!state.hasRecordingPermission) {
-        print('No permission, requesting...');
+        log('No permission, requesting...');
         await _initializePermissions();
 
         if (!state.hasRecordingPermission) {
@@ -83,11 +84,11 @@ class ChatCubit extends Cubit<ChatState> {
       final directory = await getApplicationDocumentsDirectory();
       final fileName = 'voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
       final recordingPath = '${directory.path}/$fileName';
-      print('Recording path: $recordingPath');
+      log('Recording path: $recordingPath');
 
       // Check if recorder has permission
       if (await _audioRecorder.hasPermission()) {
-        print('AudioRecorder has permission, starting...');
+        log('AudioRecorder has permission, starting...');
 
         // Start recording
         await _audioRecorder.start(
@@ -109,35 +110,35 @@ class ChatCubit extends Cubit<ChatState> {
           ),
         );
 
-        print('State updated - isRecording: ${state.isRecording}');
+        log('State updated - isRecording: ${state.isRecording}');
 
         // FIX: Start timer with proper error handling
         _startRecordingTimer();
 
-        print('Recording started successfully at: $recordingPath');
+        log('Recording started successfully at: $recordingPath');
       } else {
-        print('AudioRecorder permission denied');
+        log('AudioRecorder permission denied');
         emit(state.copyWith(errorMessage: 'Microphone permission denied'));
       }
     } catch (e) {
-      print('Error starting recording: $e');
+      log('Error starting recording: $e');
       emit(state.copyWith(errorMessage: 'Failed to start recording: $e'));
     }
   }
 
   // FIX: Enhanced timer with better logging and error handling
   void _startRecordingTimer() {
-    print('Starting recording timer...');
+    log('Starting recording timer...');
 
     // Cancel any existing timer
     _recordingTimer?.cancel();
 
     _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      print('Timer tick: ${timer.tick}, isRecording: ${state.isRecording}');
+      log('Timer tick: ${timer.tick}, isRecording: ${state.isRecording}');
 
       if (state.isRecording) {
         final newDuration = Duration(seconds: timer.tick);
-        print('Updating duration to: ${formatDuration(newDuration)}');
+        log('Updating duration to: ${formatDuration(newDuration)}');
 
         // FIX: Use a new state object to force rebuild
         emit(
@@ -148,40 +149,40 @@ class ChatCubit extends Cubit<ChatState> {
           ),
         );
 
-        print(
+        log(
           'Duration updated in state: ${formatDuration(state.recordingDuration)}',
         );
       } else {
-        print('Recording stopped, cancelling timer');
+        log('Recording stopped, cancelling timer');
         timer.cancel();
       }
     });
 
-    print('Recording timer started successfully');
+    log('Recording timer started successfully');
   }
 
   Future<void> stopRecordingAndSend() async {
     try {
-      print('Stopping recording...');
+      log('Stopping recording...');
       if (!state.isRecording) {
-        print('Not currently recording, returning');
+        log('Not currently recording, returning');
         return;
       }
 
       // Stop timer first
       _recordingTimer?.cancel();
-      print('Timer cancelled');
+      log('Timer cancelled');
 
       // Stop recording
       final path = await _audioRecorder.stop();
-      print('Recording stopped, path: $path');
+      log('Recording stopped, path: $path');
 
       if (path != null && state.recordingPath != null) {
         // Validate file
         final file = File(state.recordingPath!);
         if (await file.exists()) {
           final fileSize = await file.length();
-          print('File exists, size: $fileSize bytes');
+          log('File exists, size: $fileSize bytes');
 
           if (fileSize > 0) {
             // Create voice message
@@ -207,11 +208,11 @@ class ChatCubit extends Cubit<ChatState> {
               ),
             );
 
-            print(
+            log(
               'Voice message sent: ${formatDuration(voiceMessage.audioDuration!)}',
             );
           } else {
-            print('File is empty');
+            log('File is empty');
             emit(
               state.copyWith(
                 isRecording: false,
@@ -222,7 +223,7 @@ class ChatCubit extends Cubit<ChatState> {
             );
           }
         } else {
-          print('File does not exist');
+          log('File does not exist');
           emit(
             state.copyWith(
               isRecording: false,
@@ -233,7 +234,7 @@ class ChatCubit extends Cubit<ChatState> {
           );
         }
       } else {
-        print('No recording path');
+        log('No recording path');
         emit(
           state.copyWith(
             isRecording: false,
@@ -244,7 +245,7 @@ class ChatCubit extends Cubit<ChatState> {
         );
       }
     } catch (e) {
-      print('Error stopping recording: $e');
+      log('Error stopping recording: $e');
       emit(
         state.copyWith(
           isRecording: false,
@@ -259,23 +260,23 @@ class ChatCubit extends Cubit<ChatState> {
   // Cancel recording
   Future<void> cancelRecording() async {
     try {
-      print('Cancelling recording...');
+      log('Cancelling recording...');
       if (!state.isRecording) return;
 
       // Stop timer
       _recordingTimer?.cancel();
-      print('Timer cancelled');
+      log('Timer cancelled');
 
       // Stop recording
       await _audioRecorder.stop();
-      print('Recording stopped');
+      log('Recording stopped');
 
       // Delete the recording file if it exists
       if (state.recordingPath != null) {
         final file = File(state.recordingPath!);
         if (await file.exists()) {
           await file.delete();
-          print('Recording file deleted: ${state.recordingPath}');
+          log('Recording file deleted: ${state.recordingPath}');
         }
       }
 
@@ -289,9 +290,9 @@ class ChatCubit extends Cubit<ChatState> {
         ),
       );
 
-      print('Recording cancelled successfully');
+      log('Recording cancelled successfully');
     } catch (e) {
-      print('Error cancelling recording: $e');
+      log('Error cancelling recording: $e');
       emit(
         state.copyWith(
           isRecording: false,
@@ -319,7 +320,7 @@ class ChatCubit extends Cubit<ChatState> {
 
     emit(state.copyWith(messages: updatedMessages, errorMessage: null));
 
-    print('Text message sent: ${textMessage.content}');
+    log('Text message sent: ${textMessage.content}');
   }
 
   // Add received message (simulate)
@@ -371,7 +372,7 @@ class ChatCubit extends Cubit<ChatState> {
 
   @override
   Future<void> close() {
-    print('Closing ChatCubit...');
+    log('Closing ChatCubit...');
     _recordingTimer?.cancel();
     _audioRecorder.dispose();
     return super.close();
