@@ -219,7 +219,11 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                   return ListView.separated(
                     controller: _scrollController,
                     physics: const BouncingScrollPhysics(),
-                    padding: EdgeInsets.only(bottom: 100.h),
+                    padding: EdgeInsets.only(
+                      bottom: 100.h,
+                      left: 0.w,
+                      right: 0.w,
+                    ),
                     itemCount: state.chatList?.length ?? 0,
                     separatorBuilder: (context, index) => SizedBox(height: 4.h),
                     itemBuilder: (context, index) {
