@@ -5,4 +5,5 @@ class ApiEndpoints {
       'ChatEntry/$chatId/$userId?offset=0&limit=50';
 
   static String addChatENtry = 'ChatEntry';
+  static String userList = 'ChatUser';
 }

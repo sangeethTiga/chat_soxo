@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
+import 'package:soxo_chat/feature/person_lists/cubit/person_lists_cubit.dart';
 import 'package:soxo_chat/shared/dependency_injection/injectable.dart';
 import 'package:soxo_chat/shared/routes/route_generator.dart';
 import 'package:soxo_chat/shared/themes/app_theme.dart';
@@ -26,7 +27,10 @@ class MyApp extends StatelessWidget {
       useInheritedMediaQuery: true,
       builder: (context, child) {
         return MultiBlocProvider(
-          providers: [BlocProvider(create: (context) => getIt<ChatCubit>())],
+          providers: [
+            BlocProvider(create: (context) => getIt<ChatCubit>()),
+            BlocProvider(create: (context) => getIt<PersonListsCubit>()),
+          ],
           child: MaterialApp.router(
             debugShowCheckedModeBanner: false,
             title: '',

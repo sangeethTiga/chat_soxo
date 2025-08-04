@@ -9,6 +9,7 @@ import 'package:soxo_chat/feature/chat/screen/widgets/appbar.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/build_chat_item.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/build_tab.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/floating_button.dart';
+import 'package:soxo_chat/feature/person_lists/cubit/person_lists_cubit.dart';
 import 'package:soxo_chat/shared/animation/empty_state.dart';
 import 'package:soxo_chat/shared/app/list/helper.dart';
 import 'package:soxo_chat/shared/routes/routes.dart';
@@ -46,6 +47,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
   void _initializeAnimations() {
     context.read<ChatCubit>().getChatList();
+    context.read<PersonListsCubit>().getPersonList();
     _containerAnimationController = AnimationController(
       duration: const Duration(milliseconds: 1000),
       vsync: this,
