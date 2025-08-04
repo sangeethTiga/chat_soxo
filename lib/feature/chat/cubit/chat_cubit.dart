@@ -397,6 +397,10 @@ class ChatCubit extends Cubit<ChatState> {
     emit(state.copyWith(chatList: filteredChats, selectedTab: selectedTab));
   }
 
+  Future<void> initStateClear() async {
+    emit(state.copyWith(isArrow: false));
+  }
+
   @override
   Future<void> close() {
     log('Closing ChatCubit...');

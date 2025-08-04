@@ -3,14 +3,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
-import 'package:soxo_chat/feature/chat/screen/chat_detail_screen.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/appbar.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/build_chat_item.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/build_tab.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/floating_button.dart';
 import 'package:soxo_chat/shared/animation/empty_state.dart';
 import 'package:soxo_chat/shared/app/list/helper.dart';
+import 'package:soxo_chat/shared/routes/routes.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -250,7 +251,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                             opacity: itemOpacity,
                             child: GestureDetector(
                               onTap: () =>
-                                  _onChatItemTapped(index, state, context),
+                                  onChatItemTappedWithGo(index, state, context),
                               child: buildChatItem(
                                 name: data.title ?? '',
                                 message: data.description ?? '',
@@ -278,38 +279,58 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 }
 
-void _onChatItemTapped(int index, ChatState state, BuildContext context) {
+void onChatItemTappedWithGo(int index, ChatState state, BuildContext context) {
   HapticFeedback.selectionClick();
+
   context.read<ChatCubit>().getChatEntry(
     chatId: state.chatList?[index].chatId,
     userId: 2,
   );
-  Navigator.of(context).push(
-    PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) {
-        return ChatDetailScreen(
-          data: {
-            "title": state.chatList?[index].title,
-            // "description": state.chatList?[index].description,
-          },
-        );
-      },
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        const begin = Offset(1.0, 0.0);
-        const end = Offset.zero;
-        const curve = Curves.fastOutSlowIn;
 
-        var tween = Tween(
-          begin: begin,
-          end: end,
-        ).chain(CurveTween(curve: curve));
+  context.read<ChatCubit>().initStateClear();
 
-        return SlideTransition(
-          position: animation.drive(tween),
-          child: FadeTransition(opacity: animation, child: child),
-        );
-      },
-      transitionDuration: const Duration(milliseconds: 400),
-    ),
+  context.push(
+    routeChatDetail,
+    extra: {
+      "title": state.chatList?[index].title,
+      "chatId": state.chatList?[index].chatId,
+    },
   );
 }
+
+// void _onChatItemTapped(int index, ChatState state, BuildContext context) {
+//   HapticFeedback.selectionClick();
+//   context.read<ChatCubit>().getChatEntry(
+//     chatId: state.chatList?[index].chatId,
+//     userId: 2,
+//   );
+//   context.read<ChatCubit>().initStateClear();
+//   Navigator.of(context).push(
+//     PageRouteBuilder(
+//       pageBuilder: (context, animation, secondaryAnimation) {
+//         return ChatDetailScreen(
+//           data: {
+//             "title": state.chatList?[index].title,
+//             // "description": state.chatList?[index].description,
+//           },
+//         );
+//       },
+//       transitionsBuilder: (context, animation, secondaryAnimation, child) {
+//         const begin = Offset(1.0, 0.0);
+//         const end = Offset.zero;
+//         const curve = Curves.fastOutSlowIn;
+
+//         var tween = Tween(
+//           begin: begin,
+//           end: end,
+//         ).chain(CurveTween(curve: curve));
+
+//         return SlideTransition(
+//           position: animation.drive(tween),
+//           child: FadeTransition(opacity: animation, child: child),
+//         );
+//       },
+//       transitionDuration: const Duration(milliseconds: 400),
+//     ),
+//   );
+// }

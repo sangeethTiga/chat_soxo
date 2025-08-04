@@ -5,6 +5,7 @@ import 'package:soxo_chat/feature/chat/screen/chat_screen.dart';
 import 'package:soxo_chat/feature/group/screen/group_screen.dart';
 import 'package:soxo_chat/feature/notifcation/screen/notification_screen.dart';
 import 'package:soxo_chat/feature/person_lists/screen/person_lists_screen.dart';
+import 'package:soxo_chat/shared/routes/custom_transition.dart';
 import 'package:soxo_chat/shared/routes/routes.dart';
 
 class RouteGenerator {
@@ -26,7 +27,16 @@ class RouteGenerator {
         ),
         GoRoute(
           path: routeChatDetail,
-          builder: (context, state) => ChatDetailScreen(),
+          pageBuilder: (context, state) {
+            final data = state.extra as Map<String, dynamic>;
+
+            return CustomTransitions.slideFade(
+              context,
+              state,
+              ChatDetailScreen(data: data),
+              begin: const Offset(1.0, 0.0),
+            );
+          },
         ),
         GoRoute(
           path: routeNotification,
