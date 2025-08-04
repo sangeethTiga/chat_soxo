@@ -152,9 +152,9 @@ class GroupScreen extends StatelessWidget {
                           ),
                           children: [
                             buildChatContacts(
-                              'RD',
+                              'SA',
                               Colors.blue,
-                              'Internal Review',
+                              'Sam',
                               'Pls Review',
                               'Today',
                               1,
