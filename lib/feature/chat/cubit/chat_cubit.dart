@@ -343,7 +343,7 @@ class ChatCubit extends Cubit<ChatState> {
   Future<void> getChatEntry({int? chatId, int? userId}) async {
     emit(state.copyWith(isChatEntry: ApiFetchStatus.loading));
     final res = await _chatRepositories.chatEntry(chatId ?? 0, userId ?? 0);
-    if (res.data != null && res.data!.isNotEmpty) {
+    if (res.data != null) {
       emit(
         state.copyWith(
           chatEntry: res.data,
@@ -351,7 +351,9 @@ class ChatCubit extends Cubit<ChatState> {
         ),
       );
     } else {
-      emit(state.copyWith(isChatEntry: ApiFetchStatus.success, chatEntry: []));
+      emit(
+        state.copyWith(isChatEntry: ApiFetchStatus.success, chatEntry: null),
+      );
     }
     emit(state.copyWith(isChatEntry: ApiFetchStatus.failed));
   }
@@ -405,7 +407,7 @@ class ChatCubit extends Cubit<ChatState> {
   Future<void> createChat(AddChatEntryRequest req) async {
     final res = await _chatRepositories.addChatEntry(req: req);
     if (res.data != null) {
-      emit(state.copyWith(chatEntry: res.data));
+      // emit(state.copyWith(chatEntry: res.data));
     }
   }
 

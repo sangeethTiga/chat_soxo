@@ -5,7 +5,7 @@ import 'package:soxo_chat/shared/utils/result.dart';
 
 abstract class ChatRepositories {
   Future<ResponseResult<List<ChatListResponse>>> chatList();
-  Future<ResponseResult<List<ChatEntryResponse>>> chatEntry(
+  Future<ResponseResult<ChatEntryResponse>> chatEntry(
     int chatId,
     int userId,
   );

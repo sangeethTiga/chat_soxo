@@ -224,16 +224,16 @@ class _SingleChatScreenState extends State<SingleChatScreen>
                       },
                     );
                   }
-                  if (state.chatEntry?.isEmpty ?? true) {
+                  if (state.chatEntry?.entries?.isEmpty ?? true) {
                     return const AnimatedEmptyChatWidget();
                   }
                   return ListView.builder(
                     padding: EdgeInsets.symmetric(horizontal: 16.w),
-                    itemCount: state.chatEntry?.length,
+                    itemCount: state.chatEntry?.entries?.length,
                     itemBuilder: (context, index) {
-                      final data = state.chatEntry?[index];
+                      final data = state.chatEntry?.entries?[index];
                       log('index: $index');
-                      if (state.chatEntry?.isNotEmpty ?? false) {
+                      if (state.chatEntry?.entries?.isNotEmpty ?? false) {
                         return Column(
                           children: [
                             SizedBox(height: 15.h),

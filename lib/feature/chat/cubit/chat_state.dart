@@ -12,7 +12,7 @@ class ChatState extends Equatable {
   final List<ChatListResponse>? allChats;
 
   final ApiFetchStatus? isChat;
-  final List<ChatEntryResponse>? chatEntry;
+  final ChatEntryResponse? chatEntry;
   final ApiFetchStatus? isChatEntry;
   final String? selectedTab;
 
@@ -42,7 +42,7 @@ class ChatState extends Equatable {
     String? errorMessage,
     List<ChatListResponse>? chatList,
     ApiFetchStatus? isChat,
-    List<ChatEntryResponse>? chatEntry,
+    ChatEntryResponse? chatEntry,
     ApiFetchStatus? isChatEntry,
     String? selectedTab,
     List<ChatListResponse>? allChats,

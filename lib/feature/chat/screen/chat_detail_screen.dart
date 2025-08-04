@@ -303,16 +303,19 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                       },
                     );
                   }
-                  if (state.chatEntry?.isEmpty ?? true) {
+                  if (state.chatEntry?.entries?.isEmpty ?? true) {
                     return const AnimatedEmptyChatWidget();
                   }
                   return ListView.builder(
                     padding: EdgeInsets.symmetric(horizontal: 16.w),
-                    itemCount: state.chatEntry?.length,
+                    itemCount: state.chatEntry?.entries?.length,
                     itemBuilder: (context, index) {
-                      final data = state.chatEntry?[index];
+                      final data = state.chatEntry?.entries?[index];
+                      log('data: ${data?.content}');
+
                       log('index: $index');
-                      if (state.chatEntry?.isNotEmpty ?? false) {
+                      if (state.chatEntry?.entries?.isNotEmpty ?? false) {
+                        log('data: ${data?.content}');
                         return Column(
                           children: [
                             SizedBox(height: 15.h),
@@ -321,23 +324,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                               timestamp: '12-2-2025 ,15:24',
                               isSent: true,
                             ),
-                            // PatientCardWebView(),
-                            // SizedBox(
-                            //   height: 400.h,
-                            //   child: PatientCardWebView(),
-                            // ),
                           ],
                         );
                       } else {
                         final message = data;
-
-                        // return ChatBubbleMessage(
-                        //   message: message?.content ?? '',
-                        //   timestamp: message?.createdAt.toString() ?? '',
-                        //   isSent: true,
-                        //   senderName: 'Dr Habeeb',
-                        //   showAvatar: false,
-                        // );
                       }
                       return null;
                     },

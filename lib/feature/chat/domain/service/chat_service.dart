@@ -26,7 +26,7 @@ class ChatService implements ChatRepositories {
   }
 
   @override
-  Future<ResponseResult<List<ChatEntryResponse>>> chatEntry(
+  Future<ResponseResult<ChatEntryResponse>> chatEntry(
     int chatId,
     int userId,
   ) async {
@@ -36,18 +36,14 @@ class ChatService implements ChatRepositories {
       );
 
       if (res.statusCode == 200) {
-        return ResponseResult(
-          data: List<ChatEntryResponse>.from(
-            res.data?.map((e) => ChatEntryResponse.fromJson(e)) ?? [],
-          ).toList(),
-        );
+        return ResponseResult(data: ChatEntryResponse.fromJson(res.data));
       } else {
-        return ResponseResult(data: []);
+        return ResponseResult(data: ChatEntryResponse());
       }
     } on DioException catch (e) {
       switch (e.response?.statusCode) {
         case 404:
-          return ResponseResult(data: []);
+          return ResponseResult(data: ChatEntryResponse());
         case 401:
           throw ResponseResult(
             data: 'Authentication failed. Please login again.',

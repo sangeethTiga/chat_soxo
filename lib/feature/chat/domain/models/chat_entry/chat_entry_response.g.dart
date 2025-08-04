@@ -9,6 +9,22 @@ part of 'chat_entry_response.dart';
 _$ChatEntryResponseImpl _$$ChatEntryResponseImplFromJson(
   Map<String, dynamic> json,
 ) => _$ChatEntryResponseImpl(
+  userChats: (json['userChats'] as List<dynamic>?)
+      ?.map((e) => UserChat.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  entries: (json['entries'] as List<dynamic>?)
+      ?.map((e) => Entry.fromJson(e as Map<String, dynamic>))
+      .toList(),
+);
+
+Map<String, dynamic> _$$ChatEntryResponseImplToJson(
+  _$ChatEntryResponseImpl instance,
+) => <String, dynamic>{
+  'userChats': instance.userChats,
+  'entries': instance.entries,
+};
+
+_$EntryImpl _$$EntryImplFromJson(Map<String, dynamic> json) => _$EntryImpl(
   id: (json['id'] as num?)?.toInt(),
   type: json['type'] as String?,
   typeValue: (json['typeValue'] as num?)?.toInt(),
@@ -26,25 +42,28 @@ _$ChatEntryResponseImpl _$$ChatEntryResponseImplFromJson(
       ?.map((e) => ChatMedia.fromJson(e as Map<String, dynamic>))
       .toList(),
   userStatus: json['userStatus'] as String?,
+  userChats: (json['userChats'] as List<dynamic>?)
+      ?.map((e) => UserChat.fromJson(e as Map<String, dynamic>))
+      .toList(),
 );
 
-Map<String, dynamic> _$$ChatEntryResponseImplToJson(
-  _$ChatEntryResponseImpl instance,
-) => <String, dynamic>{
-  'id': instance.id,
-  'type': instance.type,
-  'typeValue': instance.typeValue,
-  'chatId': instance.chatId,
-  'senderId': instance.senderId,
-  'messageType': instance.messageType,
-  'thread': instance.thread,
-  'content': instance.content,
-  'mediaIds': instance.mediaIds,
-  'createdAt': instance.createdAt,
-  'sender': instance.sender,
-  'chatMedias': instance.chatMedias,
-  'userStatus': instance.userStatus,
-};
+Map<String, dynamic> _$$EntryImplToJson(_$EntryImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'type': instance.type,
+      'typeValue': instance.typeValue,
+      'chatId': instance.chatId,
+      'senderId': instance.senderId,
+      'messageType': instance.messageType,
+      'thread': instance.thread,
+      'content': instance.content,
+      'mediaIds': instance.mediaIds,
+      'createdAt': instance.createdAt,
+      'sender': instance.sender,
+      'chatMedias': instance.chatMedias,
+      'userStatus': instance.userStatus,
+      'userChats': instance.userChats,
+    };
 
 _$ChatMediaImpl _$$ChatMediaImplFromJson(Map<String, dynamic> json) =>
     _$ChatMediaImpl(
@@ -91,4 +110,43 @@ Map<String, dynamic> _$$SenderImplToJson(_$SenderImpl instance) =>
       'id': instance.id,
       'name': instance.name,
       'sentMessages': instance.sentMessages,
+    };
+
+_$UserChatImpl _$$UserChatImplFromJson(Map<String, dynamic> json) =>
+    _$UserChatImpl(
+      id: (json['id'] as num?)?.toInt(),
+      chatId: (json['chatId'] as num?)?.toInt(),
+      userId: (json['userId'] as num?)?.toInt(),
+      type: json['type'] as String?,
+      role: json['role'] as String?,
+      lastSeenMsgId: (json['lastSeenMsgId'] as num?)?.toInt(),
+      createdAt: json['createdAt'] as String?,
+      user: json['user'] == null
+          ? null
+          : User.fromJson(json['user'] as Map<String, dynamic>),
+    );
+
+Map<String, dynamic> _$$UserChatImplToJson(_$UserChatImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'chatId': instance.chatId,
+      'userId': instance.userId,
+      'type': instance.type,
+      'role': instance.role,
+      'lastSeenMsgId': instance.lastSeenMsgId,
+      'createdAt': instance.createdAt,
+      'user': instance.user,
+    };
+
+_$UserImpl _$$UserImplFromJson(Map<String, dynamic> json) => _$UserImpl(
+  id: (json['id'] as num?)?.toInt(),
+  name: json['name'] as String?,
+  userChats: json['userChats'] as List<dynamic>?,
+);
+
+Map<String, dynamic> _$$UserImplToJson(_$UserImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'name': instance.name,
+      'userChats': instance.userChats,
     };

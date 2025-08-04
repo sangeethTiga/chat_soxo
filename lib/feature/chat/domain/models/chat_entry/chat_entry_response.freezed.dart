@@ -21,6 +21,215 @@ ChatEntryResponse _$ChatEntryResponseFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$ChatEntryResponse {
+  @JsonKey(name: "userChats")
+  List<UserChat>? get userChats => throw _privateConstructorUsedError;
+  @JsonKey(name: "entries")
+  List<Entry>? get entries => throw _privateConstructorUsedError;
+
+  /// Serializes this ChatEntryResponse to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of ChatEntryResponse
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $ChatEntryResponseCopyWith<ChatEntryResponse> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $ChatEntryResponseCopyWith<$Res> {
+  factory $ChatEntryResponseCopyWith(
+    ChatEntryResponse value,
+    $Res Function(ChatEntryResponse) then,
+  ) = _$ChatEntryResponseCopyWithImpl<$Res, ChatEntryResponse>;
+  @useResult
+  $Res call({
+    @JsonKey(name: "userChats") List<UserChat>? userChats,
+    @JsonKey(name: "entries") List<Entry>? entries,
+  });
+}
+
+/// @nodoc
+class _$ChatEntryResponseCopyWithImpl<$Res, $Val extends ChatEntryResponse>
+    implements $ChatEntryResponseCopyWith<$Res> {
+  _$ChatEntryResponseCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of ChatEntryResponse
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({Object? userChats = freezed, Object? entries = freezed}) {
+    return _then(
+      _value.copyWith(
+            userChats: freezed == userChats
+                ? _value.userChats
+                : userChats // ignore: cast_nullable_to_non_nullable
+                      as List<UserChat>?,
+            entries: freezed == entries
+                ? _value.entries
+                : entries // ignore: cast_nullable_to_non_nullable
+                      as List<Entry>?,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$ChatEntryResponseImplCopyWith<$Res>
+    implements $ChatEntryResponseCopyWith<$Res> {
+  factory _$$ChatEntryResponseImplCopyWith(
+    _$ChatEntryResponseImpl value,
+    $Res Function(_$ChatEntryResponseImpl) then,
+  ) = __$$ChatEntryResponseImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    @JsonKey(name: "userChats") List<UserChat>? userChats,
+    @JsonKey(name: "entries") List<Entry>? entries,
+  });
+}
+
+/// @nodoc
+class __$$ChatEntryResponseImplCopyWithImpl<$Res>
+    extends _$ChatEntryResponseCopyWithImpl<$Res, _$ChatEntryResponseImpl>
+    implements _$$ChatEntryResponseImplCopyWith<$Res> {
+  __$$ChatEntryResponseImplCopyWithImpl(
+    _$ChatEntryResponseImpl _value,
+    $Res Function(_$ChatEntryResponseImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of ChatEntryResponse
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({Object? userChats = freezed, Object? entries = freezed}) {
+    return _then(
+      _$ChatEntryResponseImpl(
+        userChats: freezed == userChats
+            ? _value._userChats
+            : userChats // ignore: cast_nullable_to_non_nullable
+                  as List<UserChat>?,
+        entries: freezed == entries
+            ? _value._entries
+            : entries // ignore: cast_nullable_to_non_nullable
+                  as List<Entry>?,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$ChatEntryResponseImpl implements _ChatEntryResponse {
+  const _$ChatEntryResponseImpl({
+    @JsonKey(name: "userChats") final List<UserChat>? userChats,
+    @JsonKey(name: "entries") final List<Entry>? entries,
+  }) : _userChats = userChats,
+       _entries = entries;
+
+  factory _$ChatEntryResponseImpl.fromJson(Map<String, dynamic> json) =>
+      _$$ChatEntryResponseImplFromJson(json);
+
+  final List<UserChat>? _userChats;
+  @override
+  @JsonKey(name: "userChats")
+  List<UserChat>? get userChats {
+    final value = _userChats;
+    if (value == null) return null;
+    if (_userChats is EqualUnmodifiableListView) return _userChats;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
+  final List<Entry>? _entries;
+  @override
+  @JsonKey(name: "entries")
+  List<Entry>? get entries {
+    final value = _entries;
+    if (value == null) return null;
+    if (_entries is EqualUnmodifiableListView) return _entries;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
+  @override
+  String toString() {
+    return 'ChatEntryResponse(userChats: $userChats, entries: $entries)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$ChatEntryResponseImpl &&
+            const DeepCollectionEquality().equals(
+              other._userChats,
+              _userChats,
+            ) &&
+            const DeepCollectionEquality().equals(other._entries, _entries));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    const DeepCollectionEquality().hash(_userChats),
+    const DeepCollectionEquality().hash(_entries),
+  );
+
+  /// Create a copy of ChatEntryResponse
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$ChatEntryResponseImplCopyWith<_$ChatEntryResponseImpl> get copyWith =>
+      __$$ChatEntryResponseImplCopyWithImpl<_$ChatEntryResponseImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$ChatEntryResponseImplToJson(this);
+  }
+}
+
+abstract class _ChatEntryResponse implements ChatEntryResponse {
+  const factory _ChatEntryResponse({
+    @JsonKey(name: "userChats") final List<UserChat>? userChats,
+    @JsonKey(name: "entries") final List<Entry>? entries,
+  }) = _$ChatEntryResponseImpl;
+
+  factory _ChatEntryResponse.fromJson(Map<String, dynamic> json) =
+      _$ChatEntryResponseImpl.fromJson;
+
+  @override
+  @JsonKey(name: "userChats")
+  List<UserChat>? get userChats;
+  @override
+  @JsonKey(name: "entries")
+  List<Entry>? get entries;
+
+  /// Create a copy of ChatEntryResponse
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$ChatEntryResponseImplCopyWith<_$ChatEntryResponseImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+Entry _$EntryFromJson(Map<String, dynamic> json) {
+  return _Entry.fromJson(json);
+}
+
+/// @nodoc
+mixin _$Entry {
   @JsonKey(name: "id")
   int? get id => throw _privateConstructorUsedError;
   @JsonKey(name: "type")
@@ -47,23 +256,22 @@ mixin _$ChatEntryResponse {
   List<ChatMedia>? get chatMedias => throw _privateConstructorUsedError;
   @JsonKey(name: "userStatus")
   String? get userStatus => throw _privateConstructorUsedError;
+  @JsonKey(name: "userChats")
+  List<UserChat>? get userChats => throw _privateConstructorUsedError;
 
-  /// Serializes this ChatEntryResponse to a JSON map.
+  /// Serializes this Entry to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
-  /// Create a copy of ChatEntryResponse
+  /// Create a copy of Entry
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
-  $ChatEntryResponseCopyWith<ChatEntryResponse> get copyWith =>
-      throw _privateConstructorUsedError;
+  $EntryCopyWith<Entry> get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class $ChatEntryResponseCopyWith<$Res> {
-  factory $ChatEntryResponseCopyWith(
-    ChatEntryResponse value,
-    $Res Function(ChatEntryResponse) then,
-  ) = _$ChatEntryResponseCopyWithImpl<$Res, ChatEntryResponse>;
+abstract class $EntryCopyWith<$Res> {
+  factory $EntryCopyWith(Entry value, $Res Function(Entry) then) =
+      _$EntryCopyWithImpl<$Res, Entry>;
   @useResult
   $Res call({
     @JsonKey(name: "id") int? id,
@@ -79,22 +287,23 @@ abstract class $ChatEntryResponseCopyWith<$Res> {
     @JsonKey(name: "sender") Sender? sender,
     @JsonKey(name: "chatMedias") List<ChatMedia>? chatMedias,
     @JsonKey(name: "userStatus") String? userStatus,
+    @JsonKey(name: "userChats") List<UserChat>? userChats,
   });
 
   $SenderCopyWith<$Res>? get sender;
 }
 
 /// @nodoc
-class _$ChatEntryResponseCopyWithImpl<$Res, $Val extends ChatEntryResponse>
-    implements $ChatEntryResponseCopyWith<$Res> {
-  _$ChatEntryResponseCopyWithImpl(this._value, this._then);
+class _$EntryCopyWithImpl<$Res, $Val extends Entry>
+    implements $EntryCopyWith<$Res> {
+  _$EntryCopyWithImpl(this._value, this._then);
 
   // ignore: unused_field
   final $Val _value;
   // ignore: unused_field
   final $Res Function($Val) _then;
 
-  /// Create a copy of ChatEntryResponse
+  /// Create a copy of Entry
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
@@ -112,6 +321,7 @@ class _$ChatEntryResponseCopyWithImpl<$Res, $Val extends ChatEntryResponse>
     Object? sender = freezed,
     Object? chatMedias = freezed,
     Object? userStatus = freezed,
+    Object? userChats = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -167,12 +377,16 @@ class _$ChatEntryResponseCopyWithImpl<$Res, $Val extends ChatEntryResponse>
                 ? _value.userStatus
                 : userStatus // ignore: cast_nullable_to_non_nullable
                       as String?,
+            userChats: freezed == userChats
+                ? _value.userChats
+                : userChats // ignore: cast_nullable_to_non_nullable
+                      as List<UserChat>?,
           )
           as $Val,
     );
   }
 
-  /// Create a copy of ChatEntryResponse
+  /// Create a copy of Entry
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
@@ -188,12 +402,11 @@ class _$ChatEntryResponseCopyWithImpl<$Res, $Val extends ChatEntryResponse>
 }
 
 /// @nodoc
-abstract class _$$ChatEntryResponseImplCopyWith<$Res>
-    implements $ChatEntryResponseCopyWith<$Res> {
-  factory _$$ChatEntryResponseImplCopyWith(
-    _$ChatEntryResponseImpl value,
-    $Res Function(_$ChatEntryResponseImpl) then,
-  ) = __$$ChatEntryResponseImplCopyWithImpl<$Res>;
+abstract class _$$EntryImplCopyWith<$Res> implements $EntryCopyWith<$Res> {
+  factory _$$EntryImplCopyWith(
+    _$EntryImpl value,
+    $Res Function(_$EntryImpl) then,
+  ) = __$$EntryImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -210,6 +423,7 @@ abstract class _$$ChatEntryResponseImplCopyWith<$Res>
     @JsonKey(name: "sender") Sender? sender,
     @JsonKey(name: "chatMedias") List<ChatMedia>? chatMedias,
     @JsonKey(name: "userStatus") String? userStatus,
+    @JsonKey(name: "userChats") List<UserChat>? userChats,
   });
 
   @override
@@ -217,15 +431,15 @@ abstract class _$$ChatEntryResponseImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$ChatEntryResponseImplCopyWithImpl<$Res>
-    extends _$ChatEntryResponseCopyWithImpl<$Res, _$ChatEntryResponseImpl>
-    implements _$$ChatEntryResponseImplCopyWith<$Res> {
-  __$$ChatEntryResponseImplCopyWithImpl(
-    _$ChatEntryResponseImpl _value,
-    $Res Function(_$ChatEntryResponseImpl) _then,
+class __$$EntryImplCopyWithImpl<$Res>
+    extends _$EntryCopyWithImpl<$Res, _$EntryImpl>
+    implements _$$EntryImplCopyWith<$Res> {
+  __$$EntryImplCopyWithImpl(
+    _$EntryImpl _value,
+    $Res Function(_$EntryImpl) _then,
   ) : super(_value, _then);
 
-  /// Create a copy of ChatEntryResponse
+  /// Create a copy of Entry
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
@@ -243,9 +457,10 @@ class __$$ChatEntryResponseImplCopyWithImpl<$Res>
     Object? sender = freezed,
     Object? chatMedias = freezed,
     Object? userStatus = freezed,
+    Object? userChats = freezed,
   }) {
     return _then(
-      _$ChatEntryResponseImpl(
+      _$EntryImpl(
         id: freezed == id
             ? _value.id
             : id // ignore: cast_nullable_to_non_nullable
@@ -298,6 +513,10 @@ class __$$ChatEntryResponseImplCopyWithImpl<$Res>
             ? _value.userStatus
             : userStatus // ignore: cast_nullable_to_non_nullable
                   as String?,
+        userChats: freezed == userChats
+            ? _value._userChats
+            : userChats // ignore: cast_nullable_to_non_nullable
+                  as List<UserChat>?,
       ),
     );
   }
@@ -305,8 +524,8 @@ class __$$ChatEntryResponseImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$ChatEntryResponseImpl implements _ChatEntryResponse {
-  const _$ChatEntryResponseImpl({
+class _$EntryImpl implements _Entry {
+  const _$EntryImpl({
     @JsonKey(name: "id") this.id,
     @JsonKey(name: "type") this.type,
     @JsonKey(name: "typeValue") this.typeValue,
@@ -320,10 +539,12 @@ class _$ChatEntryResponseImpl implements _ChatEntryResponse {
     @JsonKey(name: "sender") this.sender,
     @JsonKey(name: "chatMedias") final List<ChatMedia>? chatMedias,
     @JsonKey(name: "userStatus") this.userStatus,
-  }) : _chatMedias = chatMedias;
+    @JsonKey(name: "userChats") final List<UserChat>? userChats,
+  }) : _chatMedias = chatMedias,
+       _userChats = userChats;
 
-  factory _$ChatEntryResponseImpl.fromJson(Map<String, dynamic> json) =>
-      _$$ChatEntryResponseImplFromJson(json);
+  factory _$EntryImpl.fromJson(Map<String, dynamic> json) =>
+      _$$EntryImplFromJson(json);
 
   @override
   @JsonKey(name: "id")
@@ -372,17 +593,27 @@ class _$ChatEntryResponseImpl implements _ChatEntryResponse {
   @override
   @JsonKey(name: "userStatus")
   final String? userStatus;
+  final List<UserChat>? _userChats;
+  @override
+  @JsonKey(name: "userChats")
+  List<UserChat>? get userChats {
+    final value = _userChats;
+    if (value == null) return null;
+    if (_userChats is EqualUnmodifiableListView) return _userChats;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
 
   @override
   String toString() {
-    return 'ChatEntryResponse(id: $id, type: $type, typeValue: $typeValue, chatId: $chatId, senderId: $senderId, messageType: $messageType, thread: $thread, content: $content, mediaIds: $mediaIds, createdAt: $createdAt, sender: $sender, chatMedias: $chatMedias, userStatus: $userStatus)';
+    return 'Entry(id: $id, type: $type, typeValue: $typeValue, chatId: $chatId, senderId: $senderId, messageType: $messageType, thread: $thread, content: $content, mediaIds: $mediaIds, createdAt: $createdAt, sender: $sender, chatMedias: $chatMedias, userStatus: $userStatus, userChats: $userChats)';
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$ChatEntryResponseImpl &&
+            other is _$EntryImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.type, type) || other.type == type) &&
             (identical(other.typeValue, typeValue) ||
@@ -404,7 +635,11 @@ class _$ChatEntryResponseImpl implements _ChatEntryResponse {
               _chatMedias,
             ) &&
             (identical(other.userStatus, userStatus) ||
-                other.userStatus == userStatus));
+                other.userStatus == userStatus) &&
+            const DeepCollectionEquality().equals(
+              other._userChats,
+              _userChats,
+            ));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -424,27 +659,25 @@ class _$ChatEntryResponseImpl implements _ChatEntryResponse {
     sender,
     const DeepCollectionEquality().hash(_chatMedias),
     userStatus,
+    const DeepCollectionEquality().hash(_userChats),
   );
 
-  /// Create a copy of ChatEntryResponse
+  /// Create a copy of Entry
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
-  _$$ChatEntryResponseImplCopyWith<_$ChatEntryResponseImpl> get copyWith =>
-      __$$ChatEntryResponseImplCopyWithImpl<_$ChatEntryResponseImpl>(
-        this,
-        _$identity,
-      );
+  _$$EntryImplCopyWith<_$EntryImpl> get copyWith =>
+      __$$EntryImplCopyWithImpl<_$EntryImpl>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$ChatEntryResponseImplToJson(this);
+    return _$$EntryImplToJson(this);
   }
 }
 
-abstract class _ChatEntryResponse implements ChatEntryResponse {
-  const factory _ChatEntryResponse({
+abstract class _Entry implements Entry {
+  const factory _Entry({
     @JsonKey(name: "id") final int? id,
     @JsonKey(name: "type") final String? type,
     @JsonKey(name: "typeValue") final int? typeValue,
@@ -458,10 +691,10 @@ abstract class _ChatEntryResponse implements ChatEntryResponse {
     @JsonKey(name: "sender") final Sender? sender,
     @JsonKey(name: "chatMedias") final List<ChatMedia>? chatMedias,
     @JsonKey(name: "userStatus") final String? userStatus,
-  }) = _$ChatEntryResponseImpl;
+    @JsonKey(name: "userChats") final List<UserChat>? userChats,
+  }) = _$EntryImpl;
 
-  factory _ChatEntryResponse.fromJson(Map<String, dynamic> json) =
-      _$ChatEntryResponseImpl.fromJson;
+  factory _Entry.fromJson(Map<String, dynamic> json) = _$EntryImpl.fromJson;
 
   @override
   @JsonKey(name: "id")
@@ -502,12 +735,15 @@ abstract class _ChatEntryResponse implements ChatEntryResponse {
   @override
   @JsonKey(name: "userStatus")
   String? get userStatus;
+  @override
+  @JsonKey(name: "userChats")
+  List<UserChat>? get userChats;
 
-  /// Create a copy of ChatEntryResponse
+  /// Create a copy of Entry
   /// with the given fields replaced by the non-null parameter values.
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$ChatEntryResponseImplCopyWith<_$ChatEntryResponseImpl> get copyWith =>
+  _$$EntryImplCopyWith<_$EntryImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -1194,5 +1430,581 @@ abstract class _Sender implements Sender {
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$SenderImplCopyWith<_$SenderImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+UserChat _$UserChatFromJson(Map<String, dynamic> json) {
+  return _UserChat.fromJson(json);
+}
+
+/// @nodoc
+mixin _$UserChat {
+  @JsonKey(name: "id")
+  int? get id => throw _privateConstructorUsedError;
+  @JsonKey(name: "chatId")
+  int? get chatId => throw _privateConstructorUsedError;
+  @JsonKey(name: "userId")
+  int? get userId => throw _privateConstructorUsedError;
+  @JsonKey(name: "type")
+  String? get type => throw _privateConstructorUsedError;
+  @JsonKey(name: "role")
+  String? get role => throw _privateConstructorUsedError;
+  @JsonKey(name: "lastSeenMsgId")
+  int? get lastSeenMsgId => throw _privateConstructorUsedError;
+  @JsonKey(name: "createdAt")
+  String? get createdAt => throw _privateConstructorUsedError;
+  @JsonKey(name: "user")
+  User? get user => throw _privateConstructorUsedError;
+
+  /// Serializes this UserChat to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of UserChat
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $UserChatCopyWith<UserChat> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $UserChatCopyWith<$Res> {
+  factory $UserChatCopyWith(UserChat value, $Res Function(UserChat) then) =
+      _$UserChatCopyWithImpl<$Res, UserChat>;
+  @useResult
+  $Res call({
+    @JsonKey(name: "id") int? id,
+    @JsonKey(name: "chatId") int? chatId,
+    @JsonKey(name: "userId") int? userId,
+    @JsonKey(name: "type") String? type,
+    @JsonKey(name: "role") String? role,
+    @JsonKey(name: "lastSeenMsgId") int? lastSeenMsgId,
+    @JsonKey(name: "createdAt") String? createdAt,
+    @JsonKey(name: "user") User? user,
+  });
+
+  $UserCopyWith<$Res>? get user;
+}
+
+/// @nodoc
+class _$UserChatCopyWithImpl<$Res, $Val extends UserChat>
+    implements $UserChatCopyWith<$Res> {
+  _$UserChatCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of UserChat
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = freezed,
+    Object? chatId = freezed,
+    Object? userId = freezed,
+    Object? type = freezed,
+    Object? role = freezed,
+    Object? lastSeenMsgId = freezed,
+    Object? createdAt = freezed,
+    Object? user = freezed,
+  }) {
+    return _then(
+      _value.copyWith(
+            id: freezed == id
+                ? _value.id
+                : id // ignore: cast_nullable_to_non_nullable
+                      as int?,
+            chatId: freezed == chatId
+                ? _value.chatId
+                : chatId // ignore: cast_nullable_to_non_nullable
+                      as int?,
+            userId: freezed == userId
+                ? _value.userId
+                : userId // ignore: cast_nullable_to_non_nullable
+                      as int?,
+            type: freezed == type
+                ? _value.type
+                : type // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            role: freezed == role
+                ? _value.role
+                : role // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            lastSeenMsgId: freezed == lastSeenMsgId
+                ? _value.lastSeenMsgId
+                : lastSeenMsgId // ignore: cast_nullable_to_non_nullable
+                      as int?,
+            createdAt: freezed == createdAt
+                ? _value.createdAt
+                : createdAt // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            user: freezed == user
+                ? _value.user
+                : user // ignore: cast_nullable_to_non_nullable
+                      as User?,
+          )
+          as $Val,
+    );
+  }
+
+  /// Create a copy of UserChat
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $UserCopyWith<$Res>? get user {
+    if (_value.user == null) {
+      return null;
+    }
+
+    return $UserCopyWith<$Res>(_value.user!, (value) {
+      return _then(_value.copyWith(user: value) as $Val);
+    });
+  }
+}
+
+/// @nodoc
+abstract class _$$UserChatImplCopyWith<$Res>
+    implements $UserChatCopyWith<$Res> {
+  factory _$$UserChatImplCopyWith(
+    _$UserChatImpl value,
+    $Res Function(_$UserChatImpl) then,
+  ) = __$$UserChatImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    @JsonKey(name: "id") int? id,
+    @JsonKey(name: "chatId") int? chatId,
+    @JsonKey(name: "userId") int? userId,
+    @JsonKey(name: "type") String? type,
+    @JsonKey(name: "role") String? role,
+    @JsonKey(name: "lastSeenMsgId") int? lastSeenMsgId,
+    @JsonKey(name: "createdAt") String? createdAt,
+    @JsonKey(name: "user") User? user,
+  });
+
+  @override
+  $UserCopyWith<$Res>? get user;
+}
+
+/// @nodoc
+class __$$UserChatImplCopyWithImpl<$Res>
+    extends _$UserChatCopyWithImpl<$Res, _$UserChatImpl>
+    implements _$$UserChatImplCopyWith<$Res> {
+  __$$UserChatImplCopyWithImpl(
+    _$UserChatImpl _value,
+    $Res Function(_$UserChatImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of UserChat
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = freezed,
+    Object? chatId = freezed,
+    Object? userId = freezed,
+    Object? type = freezed,
+    Object? role = freezed,
+    Object? lastSeenMsgId = freezed,
+    Object? createdAt = freezed,
+    Object? user = freezed,
+  }) {
+    return _then(
+      _$UserChatImpl(
+        id: freezed == id
+            ? _value.id
+            : id // ignore: cast_nullable_to_non_nullable
+                  as int?,
+        chatId: freezed == chatId
+            ? _value.chatId
+            : chatId // ignore: cast_nullable_to_non_nullable
+                  as int?,
+        userId: freezed == userId
+            ? _value.userId
+            : userId // ignore: cast_nullable_to_non_nullable
+                  as int?,
+        type: freezed == type
+            ? _value.type
+            : type // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        role: freezed == role
+            ? _value.role
+            : role // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        lastSeenMsgId: freezed == lastSeenMsgId
+            ? _value.lastSeenMsgId
+            : lastSeenMsgId // ignore: cast_nullable_to_non_nullable
+                  as int?,
+        createdAt: freezed == createdAt
+            ? _value.createdAt
+            : createdAt // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        user: freezed == user
+            ? _value.user
+            : user // ignore: cast_nullable_to_non_nullable
+                  as User?,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$UserChatImpl implements _UserChat {
+  const _$UserChatImpl({
+    @JsonKey(name: "id") this.id,
+    @JsonKey(name: "chatId") this.chatId,
+    @JsonKey(name: "userId") this.userId,
+    @JsonKey(name: "type") this.type,
+    @JsonKey(name: "role") this.role,
+    @JsonKey(name: "lastSeenMsgId") this.lastSeenMsgId,
+    @JsonKey(name: "createdAt") this.createdAt,
+    @JsonKey(name: "user") this.user,
+  });
+
+  factory _$UserChatImpl.fromJson(Map<String, dynamic> json) =>
+      _$$UserChatImplFromJson(json);
+
+  @override
+  @JsonKey(name: "id")
+  final int? id;
+  @override
+  @JsonKey(name: "chatId")
+  final int? chatId;
+  @override
+  @JsonKey(name: "userId")
+  final int? userId;
+  @override
+  @JsonKey(name: "type")
+  final String? type;
+  @override
+  @JsonKey(name: "role")
+  final String? role;
+  @override
+  @JsonKey(name: "lastSeenMsgId")
+  final int? lastSeenMsgId;
+  @override
+  @JsonKey(name: "createdAt")
+  final String? createdAt;
+  @override
+  @JsonKey(name: "user")
+  final User? user;
+
+  @override
+  String toString() {
+    return 'UserChat(id: $id, chatId: $chatId, userId: $userId, type: $type, role: $role, lastSeenMsgId: $lastSeenMsgId, createdAt: $createdAt, user: $user)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$UserChatImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.chatId, chatId) || other.chatId == chatId) &&
+            (identical(other.userId, userId) || other.userId == userId) &&
+            (identical(other.type, type) || other.type == type) &&
+            (identical(other.role, role) || other.role == role) &&
+            (identical(other.lastSeenMsgId, lastSeenMsgId) ||
+                other.lastSeenMsgId == lastSeenMsgId) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.user, user) || other.user == user));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    id,
+    chatId,
+    userId,
+    type,
+    role,
+    lastSeenMsgId,
+    createdAt,
+    user,
+  );
+
+  /// Create a copy of UserChat
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$UserChatImplCopyWith<_$UserChatImpl> get copyWith =>
+      __$$UserChatImplCopyWithImpl<_$UserChatImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$UserChatImplToJson(this);
+  }
+}
+
+abstract class _UserChat implements UserChat {
+  const factory _UserChat({
+    @JsonKey(name: "id") final int? id,
+    @JsonKey(name: "chatId") final int? chatId,
+    @JsonKey(name: "userId") final int? userId,
+    @JsonKey(name: "type") final String? type,
+    @JsonKey(name: "role") final String? role,
+    @JsonKey(name: "lastSeenMsgId") final int? lastSeenMsgId,
+    @JsonKey(name: "createdAt") final String? createdAt,
+    @JsonKey(name: "user") final User? user,
+  }) = _$UserChatImpl;
+
+  factory _UserChat.fromJson(Map<String, dynamic> json) =
+      _$UserChatImpl.fromJson;
+
+  @override
+  @JsonKey(name: "id")
+  int? get id;
+  @override
+  @JsonKey(name: "chatId")
+  int? get chatId;
+  @override
+  @JsonKey(name: "userId")
+  int? get userId;
+  @override
+  @JsonKey(name: "type")
+  String? get type;
+  @override
+  @JsonKey(name: "role")
+  String? get role;
+  @override
+  @JsonKey(name: "lastSeenMsgId")
+  int? get lastSeenMsgId;
+  @override
+  @JsonKey(name: "createdAt")
+  String? get createdAt;
+  @override
+  @JsonKey(name: "user")
+  User? get user;
+
+  /// Create a copy of UserChat
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$UserChatImplCopyWith<_$UserChatImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+User _$UserFromJson(Map<String, dynamic> json) {
+  return _User.fromJson(json);
+}
+
+/// @nodoc
+mixin _$User {
+  @JsonKey(name: "id")
+  int? get id => throw _privateConstructorUsedError;
+  @JsonKey(name: "name")
+  String? get name => throw _privateConstructorUsedError;
+  @JsonKey(name: "userChats")
+  List<dynamic>? get userChats => throw _privateConstructorUsedError;
+
+  /// Serializes this User to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of User
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $UserCopyWith<User> get copyWith => throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $UserCopyWith<$Res> {
+  factory $UserCopyWith(User value, $Res Function(User) then) =
+      _$UserCopyWithImpl<$Res, User>;
+  @useResult
+  $Res call({
+    @JsonKey(name: "id") int? id,
+    @JsonKey(name: "name") String? name,
+    @JsonKey(name: "userChats") List<dynamic>? userChats,
+  });
+}
+
+/// @nodoc
+class _$UserCopyWithImpl<$Res, $Val extends User>
+    implements $UserCopyWith<$Res> {
+  _$UserCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of User
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = freezed,
+    Object? name = freezed,
+    Object? userChats = freezed,
+  }) {
+    return _then(
+      _value.copyWith(
+            id: freezed == id
+                ? _value.id
+                : id // ignore: cast_nullable_to_non_nullable
+                      as int?,
+            name: freezed == name
+                ? _value.name
+                : name // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            userChats: freezed == userChats
+                ? _value.userChats
+                : userChats // ignore: cast_nullable_to_non_nullable
+                      as List<dynamic>?,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$UserImplCopyWith<$Res> implements $UserCopyWith<$Res> {
+  factory _$$UserImplCopyWith(
+    _$UserImpl value,
+    $Res Function(_$UserImpl) then,
+  ) = __$$UserImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    @JsonKey(name: "id") int? id,
+    @JsonKey(name: "name") String? name,
+    @JsonKey(name: "userChats") List<dynamic>? userChats,
+  });
+}
+
+/// @nodoc
+class __$$UserImplCopyWithImpl<$Res>
+    extends _$UserCopyWithImpl<$Res, _$UserImpl>
+    implements _$$UserImplCopyWith<$Res> {
+  __$$UserImplCopyWithImpl(_$UserImpl _value, $Res Function(_$UserImpl) _then)
+    : super(_value, _then);
+
+  /// Create a copy of User
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = freezed,
+    Object? name = freezed,
+    Object? userChats = freezed,
+  }) {
+    return _then(
+      _$UserImpl(
+        id: freezed == id
+            ? _value.id
+            : id // ignore: cast_nullable_to_non_nullable
+                  as int?,
+        name: freezed == name
+            ? _value.name
+            : name // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        userChats: freezed == userChats
+            ? _value._userChats
+            : userChats // ignore: cast_nullable_to_non_nullable
+                  as List<dynamic>?,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$UserImpl implements _User {
+  const _$UserImpl({
+    @JsonKey(name: "id") this.id,
+    @JsonKey(name: "name") this.name,
+    @JsonKey(name: "userChats") final List<dynamic>? userChats,
+  }) : _userChats = userChats;
+
+  factory _$UserImpl.fromJson(Map<String, dynamic> json) =>
+      _$$UserImplFromJson(json);
+
+  @override
+  @JsonKey(name: "id")
+  final int? id;
+  @override
+  @JsonKey(name: "name")
+  final String? name;
+  final List<dynamic>? _userChats;
+  @override
+  @JsonKey(name: "userChats")
+  List<dynamic>? get userChats {
+    final value = _userChats;
+    if (value == null) return null;
+    if (_userChats is EqualUnmodifiableListView) return _userChats;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
+  @override
+  String toString() {
+    return 'User(id: $id, name: $name, userChats: $userChats)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$UserImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.name, name) || other.name == name) &&
+            const DeepCollectionEquality().equals(
+              other._userChats,
+              _userChats,
+            ));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    id,
+    name,
+    const DeepCollectionEquality().hash(_userChats),
+  );
+
+  /// Create a copy of User
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$UserImplCopyWith<_$UserImpl> get copyWith =>
+      __$$UserImplCopyWithImpl<_$UserImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$UserImplToJson(this);
+  }
+}
+
+abstract class _User implements User {
+  const factory _User({
+    @JsonKey(name: "id") final int? id,
+    @JsonKey(name: "name") final String? name,
+    @JsonKey(name: "userChats") final List<dynamic>? userChats,
+  }) = _$UserImpl;
+
+  factory _User.fromJson(Map<String, dynamic> json) = _$UserImpl.fromJson;
+
+  @override
+  @JsonKey(name: "id")
+  int? get id;
+  @override
+  @JsonKey(name: "name")
+  String? get name;
+  @override
+  @JsonKey(name: "userChats")
+  List<dynamic>? get userChats;
+
+  /// Create a copy of User
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$UserImplCopyWith<_$UserImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

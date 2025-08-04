@@ -1,11 +1,26 @@
+
+
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'chat_entry_response.freezed.dart';
 part 'chat_entry_response.g.dart';
 
+
+
 @freezed
 class ChatEntryResponse with _$ChatEntryResponse {
   const factory ChatEntryResponse({
+    @JsonKey(name: "userChats") List<UserChat>? userChats,
+    @JsonKey(name: "entries") List<Entry>? entries,
+  }) = _ChatEntryResponse;
+
+  factory ChatEntryResponse.fromJson(Map<String, dynamic> json) =>
+      _$ChatEntryResponseFromJson(json);
+}
+
+@freezed
+class Entry with _$Entry {
+  const factory Entry({
     @JsonKey(name: "id") int? id,
     @JsonKey(name: "type") String? type,
     @JsonKey(name: "typeValue") int? typeValue,
@@ -19,10 +34,10 @@ class ChatEntryResponse with _$ChatEntryResponse {
     @JsonKey(name: "sender") Sender? sender,
     @JsonKey(name: "chatMedias") List<ChatMedia>? chatMedias,
     @JsonKey(name: "userStatus") String? userStatus,
-  }) = _ChatEntryResponse;
+    @JsonKey(name: "userChats") List<UserChat>? userChats,
+  }) = _Entry;
 
-  factory ChatEntryResponse.fromJson(Map<String, dynamic> json) =>
-      _$ChatEntryResponseFromJson(json);
+  factory Entry.fromJson(Map<String, dynamic> json) => _$EntryFromJson(json);
 }
 
 @freezed
@@ -56,4 +71,32 @@ class Sender with _$Sender {
   }) = _Sender;
 
   factory Sender.fromJson(Map<String, dynamic> json) => _$SenderFromJson(json);
+}
+
+@freezed
+class UserChat with _$UserChat {
+  const factory UserChat({
+    @JsonKey(name: "id") int? id,
+    @JsonKey(name: "chatId") int? chatId,
+    @JsonKey(name: "userId") int? userId,
+    @JsonKey(name: "type") String? type,
+    @JsonKey(name: "role") String? role,
+    @JsonKey(name: "lastSeenMsgId") int? lastSeenMsgId,
+    @JsonKey(name: "createdAt") String? createdAt,
+    @JsonKey(name: "user") User? user,
+  }) = _UserChat;
+
+  factory UserChat.fromJson(Map<String, dynamic> json) =>
+      _$UserChatFromJson(json);
+}
+
+@freezed
+class User with _$User {
+  const factory User({
+    @JsonKey(name: "id") int? id,
+    @JsonKey(name: "name") String? name,
+    @JsonKey(name: "userChats") List<dynamic>? userChats,
+  }) = _User;
+
+  factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
 }
