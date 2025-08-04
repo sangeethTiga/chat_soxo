@@ -8,6 +8,7 @@ import 'package:injectable/injectable.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
+import 'package:soxo_chat/feature/chat/domain/models/add_chat/add_chatentry_request.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_entry/chat_entry_response.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_model/chat_models.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_res/chat_list_response.dart';
@@ -399,6 +400,13 @@ class ChatCubit extends Cubit<ChatState> {
 
   Future<void> initStateClear() async {
     emit(state.copyWith(isArrow: false));
+  }
+
+  Future<void> createChat(AddChatEntryRequest req) async {
+    final res = await _chatRepositories.addChatEntry(req: req);
+    if (res.data != null) {
+      emit(state.copyWith(chatEntry: res.data));
+    }
   }
 
   @override

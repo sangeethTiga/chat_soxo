@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
+import 'package:soxo_chat/feature/chat/domain/models/add_chat/add_chatentry_request.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_entry/chat_entry_response.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_res/chat_list_response.dart';
 import 'package:soxo_chat/feature/chat/domain/repositories/chat_repositories.dart';
@@ -68,6 +69,26 @@ class ChatService implements ChatRepositories {
       throw ResponseResult(
         data: 'Network error. Please check your connection.',
       );
+    }
+  }
+
+  @override
+  Future<ResponseResult<List<ChatEntryResponse>>> addChatEntry({
+    AddChatEntryRequest? req,
+  }) async {
+    final res = await NetworkProvider().post(
+      ApiEndpoints.addChatENtry,
+      data: req?.toJson(),
+    );
+    switch (res.statusCode) {
+      case 200:
+        return ResponseResult(
+          data: List<ChatEntryResponse>.from(
+            res.data?.map((e) => ChatEntryResponse.fromJson(e)),
+          ).toList(),
+        );
+      default:
+        throw ResponseResult(data: res.statusMessage);
     }
   }
 }
