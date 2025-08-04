@@ -5,30 +5,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/appbar.dart';
+import 'package:soxo_chat/feature/chat/screen/widgets/htm_Card.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/record_dialog.dart';
 import 'package:soxo_chat/shared/animation/empty_chat.dart';
 import 'package:soxo_chat/shared/app/enums/api_fetch_status.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
-import 'package:soxo_chat/shared/routes/routes.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
 import 'package:soxo_chat/shared/widgets/padding/main_padding.dart';
 import 'package:soxo_chat/shared/widgets/shimmer/shimmer_category.dart';
 import 'package:soxo_chat/shared/widgets/text_fields/text_field_widget.dart';
 
-class ChatDetailScreen extends StatefulWidget {
+class SingleChatScreen extends StatefulWidget {
   final Map<String, dynamic>? data;
 
-  const ChatDetailScreen({super.key, this.data});
+  const SingleChatScreen({super.key, this.data});
 
   @override
-  State<ChatDetailScreen> createState() => _ChatDetailScreenState();
+  State<SingleChatScreen> createState() => _SingleChatScreenState();
 }
 
-class _ChatDetailScreenState extends State<ChatDetailScreen>
+class _SingleChatScreenState extends State<SingleChatScreen>
     with TickerProviderStateMixin {
   late AnimationController _arrowAnimationController;
   late AnimationController _contentAnimationController;
@@ -195,12 +194,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                               child: child,
                             );
                           },
-                      child: (state.isArrow) == false
-                          ? _buildChatContent(key: const ValueKey('chat'))
-                          : _buildGroupContent(
-                              key: const ValueKey('group'),
-                              state: state,
-                            ),
+                      child: _buildChatContent(key: const ValueKey('chat')),
                     ),
                   ),
                 ),
@@ -221,47 +215,39 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                InkWell(
-                  onTap: () {
-                    context.push(
-                      routeSingleChat,
-                      extra: {"title": widget.data?['title'], 'chat_id': '2'},
-                    );
-                  },
-                  child: MainPadding(
-                    top: 16.h,
-                    bottom: 0,
-                    child: Row(
-                      children: [
-                        SvgPicture.asset('assets/icons/mynaui_pin-solid.svg'),
-                        5.horizontalSpace,
-                        Image.asset('assets/images/Rectangle 1.png'),
-                        5.horizontalSpace,
-                        Expanded(
-                          child: RichText(
-                            text: TextSpan(
-                              text: 'Anoop TS  ',
-                              style: FontPalette.hW700S14.copyWith(
-                                color: const Color(0XFF515978),
-                              ),
-                              children: [
-                                TextSpan(
-                                  text: 'send request to case',
-                                  style: FontPalette.hW500S14.copyWith(
-                                    color: const Color(0XFF515978),
-                                  ),
-                                ),
-                              ],
+                MainPadding(
+                  top: 16.h,
+                  bottom: 0,
+                  child: Row(
+                    children: [
+                      SvgPicture.asset('assets/icons/mynaui_pin-solid.svg'),
+                      5.horizontalSpace,
+                      Image.asset('assets/images/Rectangle 1.png'),
+                      5.horizontalSpace,
+                      Expanded(
+                        child: RichText(
+                          text: TextSpan(
+                            text: 'Anoop TS  ',
+                            style: FontPalette.hW700S14.copyWith(
+                              color: const Color(0XFF515978),
                             ),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 2,
+                            children: [
+                              TextSpan(
+                                text: 'send request to case',
+                                style: FontPalette.hW500S14.copyWith(
+                                  color: const Color(0XFF515978),
+                                ),
+                              ),
+                            ],
                           ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
                         ),
-                        SvgPicture.asset('assets/icons/clock.svg'),
-                        5.horizontalSpace,
-                        const Text('45 min'),
-                      ],
-                    ),
+                      ),
+                      SvgPicture.asset('assets/icons/clock.svg'),
+                      5.horizontalSpace,
+                      const Text('45 min'),
+                    ],
                   ),
                 ),
                 Padding(
@@ -320,10 +306,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                               isSent: true,
                             ),
                             // PatientCardWebView(),
-                            // SizedBox(
-                            //   height: 400.h,
-                            //   child: PatientCardWebView(),
-                            // ),
+                            SizedBox(
+                              height: 400.h,
+                              child: PatientCardWebView(),
+                            ),
                           ],
                         );
                       } else {
@@ -402,116 +388,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
           ],
         );
       },
-    );
-  }
-
-  Widget _buildGroupContent({required Key key, required ChatState state}) {
-    return Column(
-      key: key,
-      children: [
-        ListView.separated(
-          padding: EdgeInsets.zero,
-          shrinkWrap: true,
-          itemBuilder: (context, index) {
-            return AnimatedContainer(
-              duration: Duration(milliseconds: 200 + (index * 100)),
-              curve: Curves.easeOutBack,
-              child: SlideTransition(
-                position:
-                    Tween<Offset>(
-                      begin: const Offset(0, 0.5),
-                      end: Offset.zero,
-                    ).animate(
-                      CurvedAnimation(
-                        parent: _contentAnimationController,
-                        curve: Interval(
-                          index * 0.2,
-                          0.6 + (index * 0.2),
-                          curve: Curves.easeOutCubic,
-                        ),
-                      ),
-                    ),
-                child: FadeTransition(
-                  opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
-                    CurvedAnimation(
-                      parent: _contentAnimationController,
-                      curve: Interval(
-                        index * 0.1,
-                        0.5 + (index * 0.1),
-                        curve: Curves.easeIn,
-                      ),
-                    ),
-                  ),
-                  child: const GroupCardWidget(),
-                ),
-              ),
-            );
-          },
-          separatorBuilder: (context, i) {
-            return const Divider(color: Color(0XFFE3E3E3), thickness: 0);
-          },
-          itemCount: 3,
-        ),
-        AnimatedDividerCard(
-          onArrowTap: _handleArrowTap,
-          arrowAnimation: _arrowRotationAnimation,
-        ),
-        const Spacer(),
-
-        MainPadding(
-          right: 16,
-          bottom: 0.h,
-          child: Row(
-            children: [
-              10.horizontalSpace,
-
-              SvgPicture.asset('assets/icons/Vector.svg'),
-              10.horizontalSpace,
-              Expanded(
-                child: TextFeildWidget(
-                  hintText: 'Type a message',
-                  controller: _messageController,
-                  inputBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.r),
-                    borderSide: BorderSide(color: Color(0xffCACACA), width: 1),
-                  ),
-                  suffixIcon: InkWell(
-                    onTap: () {
-                      if (state.hasRecordingPermission) {
-                        _startRecording(context);
-                      } else {
-                        _showPermissionDialog(context);
-                      }
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: SvgPicture.asset(
-                        'assets/icons/Group 1000006770.svg',
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              6.horizontalSpace,
-              Padding(
-                padding: EdgeInsets.only(top: 5.h),
-                child: Container(
-                  padding: EdgeInsets.only(left: 4.w),
-                  alignment: Alignment.center,
-                  height: 48.h,
-                  width: 48.w,
-                  decoration: BoxDecoration(
-                    color: Color(0x99F1F1F1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(Icons.send, color: kPrimaryColor),
-                ),
-              ),
-            ],
-          ),
-        ),
-        28.verticalSpace,
-      ],
     );
   }
 }
