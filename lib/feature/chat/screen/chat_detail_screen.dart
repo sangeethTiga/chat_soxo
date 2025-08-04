@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/appbar.dart';
+import 'package:soxo_chat/feature/chat/screen/widgets/file_picker_widget.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/record_dialog.dart';
 import 'package:soxo_chat/shared/animation/empty_chat.dart';
 import 'package:soxo_chat/shared/app/enums/api_fetch_status.dart';
@@ -351,7 +352,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                 children: [
                   10.horizontalSpace,
 
-                  SvgPicture.asset('assets/icons/Vector.svg'),
+                  InkWell(
+                    onTap: () {
+                      showFilePickerBottomSheet(context);
+                    },
+
+                    child: SvgPicture.asset('assets/icons/Vector.svg'),
+                  ),
                   10.horizontalSpace,
                   Expanded(
                     child: TextFeildWidget(

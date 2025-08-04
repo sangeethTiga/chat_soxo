@@ -212,69 +212,6 @@ class _SingleChatScreenState extends State<SingleChatScreen>
         return Column(
           key: key,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                MainPadding(
-                  top: 16.h,
-                  bottom: 0,
-                  child: Row(
-                    children: [
-                      SvgPicture.asset('assets/icons/mynaui_pin-solid.svg'),
-                      5.horizontalSpace,
-                      Image.asset('assets/images/Rectangle 1.png'),
-                      5.horizontalSpace,
-                      Expanded(
-                        child: RichText(
-                          text: TextSpan(
-                            text: 'Anoop TS  ',
-                            style: FontPalette.hW700S14.copyWith(
-                              color: const Color(0XFF515978),
-                            ),
-                            children: [
-                              TextSpan(
-                                text: 'send request to case',
-                                style: FontPalette.hW500S14.copyWith(
-                                  color: const Color(0XFF515978),
-                                ),
-                              ),
-                            ],
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 2,
-                        ),
-                      ),
-                      SvgPicture.asset('assets/icons/clock.svg'),
-                      5.horizontalSpace,
-                      const Text('45 min'),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.only(left: 34.w, top: 0.h),
-                  child: Row(
-                    children: [
-                      Text(
-                        '3 Replayed , 4 Pending',
-                        style: FontPalette.hW500S12.copyWith(
-                          color: const Color(0XFF166FF6),
-                        ),
-                      ),
-                      5.horizontalSpace,
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: SvgPicture.asset('assets/icons/Eye.svg'),
-                      ),
-                    ],
-                  ),
-                ),
-                AnimatedDividerCard(
-                  onArrowTap: _handleArrowTap,
-                  arrowAnimation: _arrowRotationAnimation,
-                ),
-              ],
-            ),
-
             Expanded(
               child: BlocBuilder<ChatCubit, ChatState>(
                 builder: (context, state) {
