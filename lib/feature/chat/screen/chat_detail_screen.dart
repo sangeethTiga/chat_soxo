@@ -8,6 +8,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
+import 'package:soxo_chat/feature/chat/domain/models/add_chat/add_chatentry_request.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/appbar.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/file_picker_widget.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/record_dialog.dart';
@@ -502,16 +503,25 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
               6.horizontalSpace,
               Padding(
                 padding: EdgeInsets.only(top: 5.h),
-                child: Container(
-                  padding: EdgeInsets.only(left: 4.w),
-                  alignment: Alignment.center,
-                  height: 48.h,
-                  width: 48.w,
-                  decoration: BoxDecoration(
-                    color: Color(0x99F1F1F1),
-                    shape: BoxShape.circle,
+                child: GestureDetector(
+                  onTap: () {
+                    context.read<ChatCubit>().createChat(
+                      AddChatEntryRequest(
+                        // chatId: widget?['chat_id'];
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: EdgeInsets.only(left: 4.w),
+                    alignment: Alignment.center,
+                    height: 48.h,
+                    width: 48.w,
+                    decoration: BoxDecoration(
+                      color: Color(0x99F1F1F1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.send, color: kPrimaryColor),
                   ),
-                  child: Icon(Icons.send, color: kPrimaryColor),
                 ),
               ),
             ],
