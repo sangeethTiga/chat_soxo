@@ -112,7 +112,7 @@ class GroupScreen extends StatelessWidget {
                                             ChatRequest(
                                               mode: 'MIS',
                                               type: data?['type'],
-                                              code: 'TEST',
+                                              code: data?['type'],
                                               title: textEditingController.text,
                                               description: 'Test',
                                               status: 'Running',
