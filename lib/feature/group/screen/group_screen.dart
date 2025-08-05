@@ -5,6 +5,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/appbar.dart';
 import 'package:soxo_chat/feature/group/screen/widgets/build_item_widget.dart';
 import 'package:soxo_chat/feature/person_lists/cubit/person_lists_cubit.dart';
+import 'package:soxo_chat/feature/person_lists/domain/models/chat_request/chat_request.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
 import 'package:soxo_chat/shared/widgets/padding/main_padding.dart';
@@ -13,7 +14,9 @@ import 'package:soxo_chat/shared/widgets/text_fields/text_field_widget.dart';
 class GroupScreen extends StatelessWidget {
   final Map<String, dynamic>? data;
 
-  const GroupScreen({super.key, this.data});
+   GroupScreen({super.key, this.data});
+
+  final TextEditingController textEditingController =TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -73,6 +76,7 @@ class GroupScreen extends StatelessWidget {
                               Expanded(
                                 flex: 4,
                                 child: TextFeildWidget(
+                                  controller: textEditingController,
                                   hight: 48.h,
                                   fillColor: kWhite,
                                   hintText:
@@ -91,14 +95,31 @@ class GroupScreen extends StatelessWidget {
                                 flex: 0,
                                 child: Padding(
                                   padding: EdgeInsets.only(top: 2.h),
-                                  child: Container(
-                                    height: 47.h,
-                                    width: 48.w,
-                                    decoration: BoxDecoration(
-                                      color: Color(0XFF3D9970),
-                                      borderRadius: BorderRadius.circular(13.r),
+                                  child: InkWell(
+                                    onTap: () {
+                                      context.read<PersonListsCubit>().createChat(ChatRequest(
+                                        mode: 'MIS',
+                                        type: 'group',
+                                        code: 'TEST',
+                                        title: textEditingController.text,
+                                        description: 'Test',
+                                        status: 'Running',
+                                        createdBy: 1,
+                                        branchPtr: 'TR',
+                                         userChats: state.selectedUsers
+                                      ));
+                                    },
+                                    child: Container(
+                                      height: 47.h,
+                                      width: 48.w,
+                                      decoration: BoxDecoration(
+                                        color: Color(0XFF3D9970),
+                                        borderRadius: BorderRadius.circular(
+                                          13.r,
+                                        ),
+                                      ),
+                                      child: Icon(Icons.check, color: kWhite),
                                     ),
-                                    child: Icon(Icons.check, color: kWhite),
                                   ),
                                 ),
                               ),

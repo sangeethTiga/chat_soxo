@@ -5,12 +5,14 @@ class PersonListsState extends Equatable {
   final ApiFetchStatus? isUser;
   final List<UserResponse>? selectedUsers;
   final bool isSelectionMode;
+  final ApiFetchStatus? isCreate;
 
   const PersonListsState({
     this.personList,
     this.isUser = ApiFetchStatus.idle,
     this.selectedUsers,
     this.isSelectionMode = false,
+    this.isCreate = ApiFetchStatus.idle,
   });
 
   PersonListsState copyWith({
@@ -18,21 +20,29 @@ class PersonListsState extends Equatable {
     ApiFetchStatus? isUser,
     List<UserResponse>? selectedUsers,
     bool? isSelectionMode,
+    ApiFetchStatus? isCreate,
   }) {
     return PersonListsState(
       personList: personList ?? this.personList,
       isUser: isUser ?? this.isUser,
       selectedUsers: selectedUsers ?? this.selectedUsers,
       isSelectionMode: isSelectionMode ?? this.isSelectionMode,
+      isCreate: isCreate ?? this.isCreate,
     );
   }
 
   bool isUserSelected(int userId) {
-    return selectedUsers?.any((user) => user.id == userId)?? false;
+    return selectedUsers?.any((user) => user.id == userId) ?? false;
   }
 
   @override
-  List<Object?> get props => [personList, isUser, selectedUsers, isSelectionMode];
+  List<Object?> get props => [
+    personList,
+    isUser,
+    selectedUsers,
+    isSelectionMode,
+    isCreate,
+  ];
 }
 
 class InitialPersonListsState extends PersonListsState {}

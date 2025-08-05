@@ -1,6 +1,9 @@
+import 'dart:developer';
+
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
+import 'package:soxo_chat/feature/person_lists/domain/models/chat_request/chat_request.dart';
 import 'package:soxo_chat/feature/person_lists/domain/models/user_response.dart';
 import 'package:soxo_chat/feature/person_lists/domain/repositories/person_repositories.dart';
 import 'package:soxo_chat/shared/app/enums/api_fetch_status.dart';
@@ -31,10 +34,8 @@ class PersonListsCubit extends Cubit<PersonListsState> {
     final existingIndex = currentSelected.indexWhere((u) => u.id == user.id);
 
     if (existingIndex != -1) {
-      // User is already selected, remove them
       currentSelected.removeAt(existingIndex);
     } else {
-      // User is not selected, add them
       currentSelected.add(user);
     }
 
@@ -48,15 +49,15 @@ class PersonListsCubit extends Cubit<PersonListsState> {
 
   void addUserToSelection(UserResponse user) {
     if (!state.isUserSelected(user.id ?? 0)) {
-      final updatedSelection = List<UserResponse>.from(state.selectedUsers??[])
-        ..add(user);
+      final updatedSelection = List<UserResponse>.from(
+        state.selectedUsers ?? [],
+      )..add(user);
       emit(
         state.copyWith(selectedUsers: updatedSelection, isSelectionMode: true),
       );
     }
   }
 
-  // Remove user from selection
   void removeUserFromSelection(UserResponse user) {
     final updatedSelection = state.selectedUsers
         ?.where((u) => u.id != user.id)
@@ -68,5 +69,16 @@ class PersonListsCubit extends Cubit<PersonListsState> {
         isSelectionMode: updatedSelection?.isNotEmpty,
       ),
     );
+  }
+
+  Future<void> createChat(ChatRequest req) async {
+    emit(state.copyWith(isCreate: ApiFetchStatus.loading));
+
+    final res = await _personListRepositories.createChat(req);
+    if (res.data != null) {
+      log('SUCCESS');
+      emit(state.copyWith(isCreate: ApiFetchStatus.success));
+    }
+    emit(state.copyWith(isCreate: ApiFetchStatus.failed));
   }
 }

@@ -10,7 +10,7 @@ abstract class ChatRepositories {
     int userId,
   );
 
-  Future<ResponseResult<List<ChatEntryResponse>>> addChatEntry({
+  Future<ResponseResult<ChatEntryResponse>> addChatEntry({
     AddChatEntryRequest req,
   });
 }

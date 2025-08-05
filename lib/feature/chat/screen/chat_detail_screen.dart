@@ -499,7 +499,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                   onTap: () {
                     context.read<ChatCubit>().createChat(
                       AddChatEntryRequest(
-                        // chatId: widget?['chat_id'];
+                       chatId: widget.data?['chat_id']
                       ),
                     );
                   },
