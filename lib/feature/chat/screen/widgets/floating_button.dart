@@ -61,7 +61,11 @@ class FlatingWidget extends StatelessWidget {
             keys?.currentState?.close();
             context.push(
               routeGroup,
-              extra: {'title': 'Create Group', 'subtitle': 'Group'},
+              extra: {
+                'title': 'Create Group',
+                'subtitle': 'Group',
+                'type': 'group',
+              },
             );
           },
           child: Padding(
@@ -89,7 +93,11 @@ class FlatingWidget extends StatelessWidget {
           onPressed: () {
             context.push(
               routeGroup,
-              extra: {'title': 'Create Broadcast', 'subtitle': 'Broadcast'},
+              extra: {
+                'title': 'Create Broadcast',
+                'subtitle': 'Broadcast',
+                'type': 'broadcast',
+              },
             );
           },
           child: Padding(

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/appbar.dart';
 import 'package:soxo_chat/feature/group/screen/widgets/build_item_widget.dart';
 import 'package:soxo_chat/feature/person_lists/cubit/person_lists_cubit.dart';
@@ -54,6 +55,7 @@ class GroupScreen extends StatelessWidget {
                   child: BlocConsumer<PersonListsCubit, PersonListsState>(
                     listener: (context, state) {
                       if (state.isCreate == ApiFetchStatus.success) {
+                        context.read<ChatCubit>().getChatList();
                         context.pop();
                       }
                     },
@@ -109,7 +111,7 @@ class GroupScreen extends StatelessWidget {
                                           .createChat(
                                             ChatRequest(
                                               mode: 'MIS',
-                                              type: 'group',
+                                              type: data?['type'],
                                               code: 'TEST',
                                               title: textEditingController.text,
                                               description: 'Test',
