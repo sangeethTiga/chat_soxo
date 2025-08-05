@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/appbar.dart';
 import 'package:soxo_chat/feature/group/screen/widgets/build_item_widget.dart';
 import 'package:soxo_chat/feature/person_lists/cubit/person_lists_cubit.dart';
 import 'package:soxo_chat/feature/person_lists/domain/models/chat_request/chat_request.dart';
+import 'package:soxo_chat/shared/app/enums/api_fetch_status.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
 import 'package:soxo_chat/shared/widgets/padding/main_padding.dart';
@@ -14,9 +16,9 @@ import 'package:soxo_chat/shared/widgets/text_fields/text_field_widget.dart';
 class GroupScreen extends StatelessWidget {
   final Map<String, dynamic>? data;
 
-   GroupScreen({super.key, this.data});
+  GroupScreen({super.key, this.data});
 
-  final TextEditingController textEditingController =TextEditingController();
+  final TextEditingController textEditingController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +51,12 @@ class GroupScreen extends StatelessWidget {
                 ),
                 child: MainPadding(
                   top: 18.h,
-                  child: BlocBuilder<PersonListsCubit, PersonListsState>(
+                  child: BlocConsumer<PersonListsCubit, PersonListsState>(
+                    listener: (context, state) {
+                      if (state.isCreate == ApiFetchStatus.success) {
+                        context.pop();
+                      }
+                    },
                     builder: (context, state) {
                       return Column(
                         children: [
@@ -97,17 +104,21 @@ class GroupScreen extends StatelessWidget {
                                   padding: EdgeInsets.only(top: 2.h),
                                   child: InkWell(
                                     onTap: () {
-                                      context.read<PersonListsCubit>().createChat(ChatRequest(
-                                        mode: 'MIS',
-                                        type: 'group',
-                                        code: 'TEST',
-                                        title: textEditingController.text,
-                                        description: 'Test',
-                                        status: 'Running',
-                                        createdBy: 1,
-                                        branchPtr: 'TR',
-                                         userChats: state.selectedUsers
-                                      ));
+                                      context
+                                          .read<PersonListsCubit>()
+                                          .createChat(
+                                            ChatRequest(
+                                              mode: 'MIS',
+                                              type: 'group',
+                                              code: 'TEST',
+                                              title: textEditingController.text,
+                                              description: 'Test',
+                                              status: 'Running',
+                                              createdBy: 1,
+                                              branchPtr: 'TR',
+                                              userChats: state.selectedUsers,
+                                            ),
+                                          );
                                     },
                                     child: Container(
                                       height: 47.h,
