@@ -243,9 +243,9 @@ class _SingleChatScreenState extends State<SingleChatScreen>
                               isSent: true,
                             ),
                             // PatientCardWebView(),
-                            SizedBox(
-                              height: 400.h,
-                              child: PatientCardWebView(),
+                            FixedSizeHtmlWidget(
+                              htmlContent: data?.content ?? '',
+                              isSentMessage: true,
                             ),
                           ],
                         );

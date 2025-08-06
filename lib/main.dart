@@ -11,7 +11,9 @@ import 'package:soxo_chat/shared/themes/app_theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   configureDependencies();
-
+  // if (Platform.isAndroid) {
+  //   WebView.platform = SurfaceAndroidWebView(); // or AndroidWebView()
+  // }
   runApp(MyApp());
 }
 

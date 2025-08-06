@@ -12,6 +12,7 @@ import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/domain/models/add_chat/add_chatentry_request.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/appbar.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/file_picker_widget.dart';
+import 'package:soxo_chat/feature/chat/screen/widgets/htm_Card.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/record_dialog.dart';
 import 'package:soxo_chat/shared/animation/empty_chat.dart';
 import 'package:soxo_chat/shared/app/enums/api_fetch_status.dart';
@@ -498,9 +499,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                 child: GestureDetector(
                   onTap: () {
                     context.read<ChatCubit>().createChat(
-                      AddChatEntryRequest(
-                       chatId: widget.data?['chat_id']
-                      ),
+                      AddChatEntryRequest(chatId: widget.data?['chat_id']),
                     );
                   },
                   child: Container(
@@ -942,7 +941,10 @@ class ChatBubbleMessage extends StatelessWidget {
 
   Widget _buildMessageContent(BuildContext context, bool isSentMessage) {
     if (_isHtmlContent(message)) {
-      return HtmlViewerScreen(htmlContent: message, title: 'SAN');
+      return FixedSizeHtmlWidget(
+        htmlContent: message,
+        isSentMessage: true,
+      );
     } else {
       return _buildTextMessage(isSentMessage);
     }
@@ -1109,7 +1111,7 @@ class _HtmlViewerScreenState extends State<HtmlViewerScreen> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Positioned.fill(child: WebViewWidget(controller: controller)),
+        WebViewWidget(controller: controller),
         if (isLoading) const Center(child: CircularProgressIndicator()),
       ],
     );
