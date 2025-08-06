@@ -407,9 +407,10 @@ class ChatCubit extends Cubit<ChatState> {
   Future<void> createChat(AddChatEntryRequest req) async {
     final res = await _chatRepositories.addChatEntry(req: req);
     if (res.data != null) {
-     emit(state.copyWith(chatEntry: res.data));
+      emit(state.copyWith(chatEntry: res.data));
     }
   }
+  //=-=-=-=-=-=-=-=-=-=
 
   @override
   Future<void> close() {

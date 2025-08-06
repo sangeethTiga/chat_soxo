@@ -295,7 +295,7 @@ void onChatItemTappedWithGo(int index, ChatState state, BuildContext context) {
     routeChatDetail,
     extra: {
       "title": state.chatList?[index].title,
-      "chatId": state.chatList?[index].chatId,
+      "chat_id": state.chatList?[index].chatId,
     },
   );
 }
