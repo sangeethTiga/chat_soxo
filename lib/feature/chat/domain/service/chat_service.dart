@@ -69,7 +69,7 @@ class ChatService implements ChatRepositories {
   }
 
   @override
-  Future<ResponseResult<ChatEntryResponse>> addChatEntry({
+  Future<ResponseResult<Entry>> addChatEntry({
     AddChatEntryRequest? req,
   }) async {
     final res = await NetworkProvider().post(
@@ -78,7 +78,7 @@ class ChatService implements ChatRepositories {
     );
     switch (res.statusCode) {
       case 200:
-        return ResponseResult(data: ChatEntryResponse.fromJson(res.data));
+        return ResponseResult(data: Entry.fromJson(res.data));
       default:
         throw ResponseResult(data: res.statusMessage);
     }

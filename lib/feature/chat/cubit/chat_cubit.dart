@@ -342,20 +342,30 @@ class ChatCubit extends Cubit<ChatState> {
 
   Future<void> getChatEntry({int? chatId, int? userId}) async {
     emit(state.copyWith(isChatEntry: ApiFetchStatus.loading));
-    final res = await _chatRepositories.chatEntry(chatId ?? 0, userId ?? 0);
-    if (res.data != null) {
+
+    try {
+      final res = await _chatRepositories.chatEntry(chatId ?? 0, userId ?? 0);
+      if (res.data != null) {
+        emit(
+          state.copyWith(
+            chatEntry: res.data,
+            isChatEntry: ApiFetchStatus.success,
+          ),
+        );
+      } else {
+        emit(
+          state.copyWith(isChatEntry: ApiFetchStatus.success, chatEntry: null),
+        );
+      }
+    } catch (e) {
       emit(
         state.copyWith(
-          chatEntry: res.data,
-          isChatEntry: ApiFetchStatus.success,
+          isChatEntry: ApiFetchStatus.failed,
+          errorMessage: e.toString(),
         ),
       );
-    } else {
-      emit(
-        state.copyWith(isChatEntry: ApiFetchStatus.success, chatEntry: null),
-      );
+      log('Error getting chat entry: $e');
     }
-    emit(state.copyWith(isChatEntry: ApiFetchStatus.failed));
   }
 
   Future<void> selectedTab(String value) async {
@@ -404,14 +414,88 @@ class ChatCubit extends Cubit<ChatState> {
     emit(state.copyWith(isArrow: false));
   }
 
-  Future<void> createChat(AddChatEntryRequest req) async {
-    final res = await _chatRepositories.addChatEntry(req: req);
-    if (res.data != null) {
-      emit(state.copyWith(chatEntry: res.data));
+  //=-=-=-=-=-=-=-=-=-=
+  Future<void> createChat(AddChatEntryRequest request) async {
+    final messageText = request.content?.trim();
+    if (messageText == null || messageText.isEmpty) return;
+
+    final tempMessage = Entry(
+      id: request.chatId,
+      content: request.content,
+      messageType: request.messageType,
+      senderId: request.senderId,
+      type: request.type,
+      typeValue: request.typeValue,
+      createdAt: DateTime.now().toIso8601String(),
+    );
+
+    final currentEntries = state.chatEntry?.entries ?? <Entry>[];
+    final updatedEntries = List<Entry>.from(currentEntries)..add(tempMessage);
+    emit(
+      state.copyWith(
+        chatEntry:
+            state.chatEntry?.copyWith(entries: updatedEntries) ??
+            ChatEntryResponse(entries: updatedEntries),
+      ),
+    );
+
+    try {
+      final res = await _chatRepositories.addChatEntry(req: request);
+
+      if (res.data != null) {
+        final serverEntry = Entry(
+          id: res.data?.id,
+          content: res.data!.content,
+          messageType: res.data!.messageType,
+          senderId: res.data!.senderId,
+          type: res.data!.type,
+          typeValue: res.data?.typeValue,
+          createdAt: res.data!.createdAt?.toString(),
+          chatId: res.data!.chatId,
+          thread: res.data?.thread,
+        );
+        final finalEntries = updatedEntries.map((entry) {
+          if (entry.id == tempMessage.id) {
+            return serverEntry;
+          }
+          return entry;
+        }).toList();
+        emit(
+          state.copyWith(
+            chatEntry: state.chatEntry?.copyWith(entries: finalEntries),
+            isChatEntry: ApiFetchStatus.success,
+          ),
+        );
+      } else {
+        final failedEntries = updatedEntries
+            .where((entry) => entry.id != tempMessage.id)
+            .toList();
+
+        emit(
+          state.copyWith(
+            chatEntry: state.chatEntry?.copyWith(entries: failedEntries),
+            isChatEntry: ApiFetchStatus.failed,
+            errorMessage: 'Failed to send message',
+          ),
+        );
+      }
+    } catch (e) {
+      final errorEntries = updatedEntries
+          .where((entry) => entry.id != tempMessage.id)
+          .toList();
+
+      emit(
+        state.copyWith(
+          chatEntry: state.chatEntry?.copyWith(entries: errorEntries),
+          isChatEntry: ApiFetchStatus.failed,
+          errorMessage: 'Error: ${e.toString()}',
+        ),
+      );
+      log('Error creating chat entry: $e');
     }
   }
-  //=-=-=-=-=-=-=-=-=-=
 
+  //=-=-=-=
   @override
   Future<void> close() {
     log('Closing ChatCubit...');

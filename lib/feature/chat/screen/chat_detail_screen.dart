@@ -43,15 +43,29 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
   late Animation<double> _pulseAnimation;
+  late ScrollController _scrollController;
+  bool _hasText = false;
 
   @override
   void initState() {
     super.initState();
     _messageController = TextEditingController();
+    _scrollController = ScrollController();
+    _messageController.addListener(_onTextChanged);
+
     _initializeAnimations();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _contentAnimationController.forward();
     });
+  }
+
+  void _onTextChanged() {
+    final hasText = _messageController.text.trim().isNotEmpty;
+    if (hasText != _hasText) {
+      setState(() {
+        _hasText = hasText;
+      });
+    }
   }
 
   void _initializeAnimations() {
@@ -105,7 +119,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     _arrowAnimationController.dispose();
     _contentAnimationController.dispose();
     _recordingAnimationController.dispose();
-    _messageController.dispose();
+    _scrollController.dispose();
+    _messageController.removeListener(_onTextChanged);
     super.dispose();
   }
 
@@ -142,6 +157,26 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     context.read<ChatCubit>().cancelRecording();
     _recordingAnimationController.stop();
     Navigator.pop(context);
+  }
+
+  Future<void> _sendMessage() async {
+    final messageText = _messageController.text.trim();
+    if (messageText.isEmpty) return;
+    _messageController.clear();
+    FocusScope.of(context).unfocus();
+    await context.read<ChatCubit>().createChat(
+      AddChatEntryRequest(
+        chatId: widget.data?['chat_id'],
+        senderId: 45,
+        type: 'N',
+        typeValue: 0,
+        messageType: 'text',
+        content: messageText,
+        source: 'Website',
+      ),
+    );
+
+    log('Message sent: $messageText');
   }
 
   @override
@@ -307,11 +342,27 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                   if (state.chatEntry?.entries?.isEmpty ?? true) {
                     return const AnimatedEmptyChatWidget();
                   }
+
                   return ListView.builder(
+                    controller: _scrollController,
+
                     padding: EdgeInsets.symmetric(horizontal: 16.w),
                     itemCount: state.chatEntry?.entries?.length,
                     itemBuilder: (context, index) {
                       final data = state.chatEntry?.entries?[index];
+
+                      if (index ==
+                          (state.chatEntry?.entries?.length ?? 0) - 1) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (_scrollController.hasClients) {
+                            _scrollController.animateTo(
+                              _scrollController.position.maxScrollExtent,
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeOut,
+                            );
+                          }
+                        });
+                      }
                       log('data: ${data?.content}');
 
                       log('index: $index');
@@ -384,16 +435,33 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                   6.horizontalSpace,
                   Padding(
                     padding: EdgeInsets.only(top: 5.h),
-                    child: Container(
-                      padding: EdgeInsets.only(left: 4.w),
-                      alignment: Alignment.center,
-                      height: 48.h,
-                      width: 48.w,
-                      decoration: BoxDecoration(
-                        color: Color(0x99F1F1F1),
-                        shape: BoxShape.circle,
+                    child: GestureDetector(
+                      onTap: () {
+                        _sendMessage();
+                        // log('message');
+                        // context.read<ChatCubit>().createChat(
+                        //   AddChatEntryRequest(
+                        //     chatId: widget.data?['chat_id'],
+                        //     senderId: 45,
+                        //     type: 'N',
+                        //     typeValue: 0,
+                        //     messageType: 'text',
+                        //     content: _messageController.text,
+                        //     source: 'Website',
+                        //   ),
+                        // );
+                      },
+                      child: Container(
+                        padding: EdgeInsets.only(left: 4.w),
+                        alignment: Alignment.center,
+                        height: 48.h,
+                        width: 48.w,
+                        decoration: BoxDecoration(
+                          color: Color(0x99F1F1F1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.send, color: kPrimaryColor),
                       ),
-                      child: Icon(Icons.send, color: kPrimaryColor),
                     ),
                   ),
                 ],
@@ -493,36 +561,61 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                 ),
               ),
               6.horizontalSpace,
-              Padding(
-                padding: EdgeInsets.only(top: 5.h),
-                child: GestureDetector(
-                  onTap: () {
-                    log('message');
-                    context.read<ChatCubit>().createChat(
-                      AddChatEntryRequest(
-                        chatId: widget.data?['chat_id'],
-                        senderId: 45,
-                        type: 'N',
-                        typeValue: 0,
-                        messageType: 'text',
-                        content: _messageController.text,
-                        source: 'Website',
-                      ),
-                    );
-                  },
-                  child: Container(
-                    padding: EdgeInsets.only(left: 4.w),
-                    alignment: Alignment.center,
-                    height: 48.h,
-                    width: 48.w,
-                    decoration: BoxDecoration(
-                      color: Color(0x99F1F1F1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(Icons.send, color: kPrimaryColor),
-                  ),
-                ),
+              AnimatedOpacity(
+                opacity: _hasText ? 1.0 : 0.0,
+                duration: Duration(milliseconds: 200),
+                child: _hasText
+                    ? Padding(
+                        padding: EdgeInsets.only(top: 5.h),
+                        child: GestureDetector(
+                          onTap: _sendMessage,
+                          child: Container(
+                            padding: EdgeInsets.only(left: 4.w),
+                            alignment: Alignment.center,
+                            height: 48.h,
+                            width: 48.w,
+                            decoration: BoxDecoration(
+                              color: kPrimaryColor,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(Icons.send, color: Colors.white),
+                          ),
+                        ),
+                      )
+                    : SizedBox.fromSize(),
               ),
+              // Padding(
+              //   padding: EdgeInsets.only(top: 5.h),
+              //   child: GestureDetector(
+              //     onTap: () {
+              //       log('message');
+              //       // context.read<ChatCubit>().createChat(
+              //       //   AddChatEntryRequest(
+              //       //     chatId: widget.data?['chat_id'],
+              //       //     senderId: 45,
+              //       //     type: 'N',
+              //       //     typeValue: 0,
+              //       //     messageType: 'text',
+              //       //     content: _messageController.text,
+              //       //     source: 'Website',
+              //       //   ),
+              //       // );
+
+              //       _sendMessage();
+              //     },
+              //     child: Container(
+              //       padding: EdgeInsets.only(left: 4.w),
+              //       alignment: Alignment.center,
+              //       height: 48.h,
+              //       width: 48.w,
+              //       decoration: BoxDecoration(
+              //         color: Color(0x99F1F1F1),
+              //         shape: BoxShape.circle,
+              //       ),
+              //       child: Icon(Icons.send, color: kPrimaryColor),
+              //     ),
+              //   ),
+              // ),
             ],
           ),
         ),
