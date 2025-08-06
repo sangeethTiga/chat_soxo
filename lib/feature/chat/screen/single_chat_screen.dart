@@ -8,12 +8,14 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/appbar.dart';
+import 'package:soxo_chat/feature/chat/screen/widgets/chat_bubble_widget.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/htm_Card.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/record_dialog.dart';
 import 'package:soxo_chat/shared/animation/empty_chat.dart';
 import 'package:soxo_chat/shared/app/enums/api_fetch_status.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
+import 'package:soxo_chat/shared/widgets/alert/alert_dialog_custom.dart';
 import 'package:soxo_chat/shared/widgets/padding/main_padding.dart';
 import 'package:soxo_chat/shared/widgets/shimmer/shimmer_category.dart';
 import 'package:soxo_chat/shared/widgets/text_fields/text_field_widget.dart';
@@ -292,7 +294,7 @@ class _SingleChatScreenState extends State<SingleChatScreen>
                           if (state.hasRecordingPermission) {
                             _startRecording(context);
                           } else {
-                            _showPermissionDialog(context);
+                            showPermissionDialog(context);
                           }
                         },
                         child: Padding(
@@ -453,160 +455,4 @@ class GroupCardWidget extends StatelessWidget {
       ],
     );
   }
-}
-
-class ChatBubbleMessage extends StatelessWidget {
-  final String message;
-  final String timestamp;
-  final bool isSent;
-  final String? senderName;
-  final String? avatarPath;
-  final bool showAvatar;
-
-  const ChatBubbleMessage({
-    super.key,
-    required this.message,
-    required this.timestamp,
-    required this.isSent,
-    this.senderName,
-    this.avatarPath,
-    this.showAvatar = true,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (isSent) {
-      return _buildSentMessage();
-    } else {
-      return _buildReceivedMessage();
-    }
-  }
-
-  Widget _buildSentMessage() {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: Container(
-        margin: EdgeInsets.only(bottom: 8.h, left: 50.w),
-        child: Bubble(
-          nip: BubbleNip.rightTop,
-          style: const BubbleStyle(elevation: 0, radius: Radius.circular(12)),
-          margin: const BubbleEdges.only(top: 10),
-          color: const Color(0xFFE8F5E8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                message,
-                style: const TextStyle(fontSize: 14, color: Color(0xFF4C4C4C)),
-              ),
-              Padding(
-                padding: EdgeInsets.only(left: 65.w, top: 5.h),
-                child: Text(
-                  timestamp,
-                  textAlign: TextAlign.end,
-                  style: FontPalette.hW400S14.copyWith(
-                    color: const Color(0XFFBBBBBB),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildReceivedMessage() {
-    return Container(
-      margin: EdgeInsets.only(bottom: 8.h, right: 50.w),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: EdgeInsets.only(top: 10.h),
-            child: Image.asset(
-              'assets/images/Rectangle 1.png',
-              fit: BoxFit.cover,
-              height: 28.h,
-              width: 28.w,
-            ),
-          ),
-          5.horizontalSpace,
-          Expanded(
-            child: Bubble(
-              nip: BubbleNip.leftTop,
-              style: const BubbleStyle(
-                elevation: 0,
-                radius: Radius.circular(12),
-              ),
-              margin: const BubbleEdges.only(top: 10),
-              color: const Color(0x99F1F1F1),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    senderName ?? 'Dr Habeeb',
-                    style: FontPalette.hW500S14.copyWith(color: kGreenColor),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          message,
-                          style: FontPalette.hW500S14.copyWith(
-                            color: const Color(0XFF4C4C4C),
-                          ),
-                        ),
-                      ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            timestamp,
-                            style: FontPalette.hW400S14.copyWith(
-                              color: const Color(0XFFBBBBBB),
-                            ),
-                          ),
-                          4.horizontalSpace,
-                          SvgPicture.asset('assets/icons/Receive.svg'),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-void _showPermissionDialog(BuildContext context) {
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Microphone Permission Required'),
-      content: const Text(
-        'This app needs microphone access to record voice messages. Please grant permission in settings.',
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        TextButton(
-          onPressed: () {
-            Navigator.pop(context);
-            openAppSettings();
-          },
-          child: const Text('Settings'),
-        ),
-      ],
-    ),
-  );
 }

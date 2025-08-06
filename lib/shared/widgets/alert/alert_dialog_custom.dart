@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
 
@@ -126,4 +127,28 @@ class CustomAlertDialog extends StatelessWidget {
           ],
     );
   }
+}
+void showPermissionDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Microphone Permission Required'),
+      content: const Text(
+        'This app needs microphone access to record voice messages. Please grant permission in settings.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+            openAppSettings();
+          },
+          child: const Text('Settings'),
+        ),
+      ],
+    ),
+  );
 }
