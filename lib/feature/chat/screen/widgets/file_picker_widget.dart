@@ -1,7 +1,5 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 
 void showFilePickerBottomSheet(BuildContext context) {
@@ -40,12 +38,14 @@ void showFilePickerBottomSheet(BuildContext context) {
           ListTile(
             leading: const Icon(Icons.photo_library, color: Colors.purple),
             title: const Text('Gallery'),
-            onTap: () => context.read<ChatCubit>().selectImageFromGallery(),
+            onTap: () =>
+                context.read<ChatCubit>().selectImageFromGallery(context),
           ),
           ListTile(
             leading: const Icon(Icons.camera_alt, color: Colors.blue),
             title: const Text('Camera'),
-            onTap: () => context.read<ChatCubit>().selectImageFromGallery(),
+            onTap: () =>
+                context.read<ChatCubit>().selectImageFromGallery(context),
           ),
 
           ListTile(
@@ -60,111 +60,3 @@ void showFilePickerBottomSheet(BuildContext context) {
     ),
   );
 }
-
-Future<void> pickFromGallery(BuildContext context) async {
-  Navigator.pop(context);
-  final ImagePicker picker = ImagePicker();
-  try {
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
-      // Handle selected image
-      print('Selected image: ${image.path}');
-      // You can process the file here
-    }
-  } catch (e) {
-    print('Error picking from gallery: $e');
-  }
-}
-
-Future<void> pickFromCamera(BuildContext context) async {
-  Navigator.pop(context);
-  final ImagePicker picker = ImagePicker();
-  try {
-    final XFile? image = await picker.pickImage(source: ImageSource.camera);
-    if (image != null) {
-      print('Captured image: ${image.path}');
-    }
-  } catch (e) {
-    print('Error taking photo: $e');
-  }
-}
-
-Future<void> pickImages(BuildContext context) async {
-  Navigator.pop(context);
-  final ImagePicker picker = ImagePicker();
-  try {
-    final List<XFile> images = await picker.pickMultiImage();
-    if (images.isNotEmpty) {
-      print('Selected ${images.length} images');
-      for (var image in images) {
-        print('Image: ${image.path}');
-      }
-    }
-  } catch (e) {
-    print('Error picking images: $e');
-  }
-}
-
-Future<void> pickPDF(BuildContext context) async {
-  Navigator.pop(context);
-  try {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf'],
-      allowMultiple: true,
-    );
-
-    if (result != null) {
-      for (var file in result.files) {
-        print('Selected PDF: ${file.name}, Path: ${file.path}');
-      }
-    }
-  } catch (e) {
-    print('Error picking PDF: $e');
-  }
-}
-
-Future<void> pickDocuments(BuildContext context) async {
-  Navigator.pop(context);
-  try {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: [
-        'pdf',
-        'doc',
-        'docx',
-        'txt',
-        'xls',
-        'xlsx',
-        'ppt',
-        'pptx',
-      ],
-      allowMultiple: true,
-    );
-
-    if (result != null) {
-      for (var file in result.files) {
-        print('Selected document: ${file.name}, Path: ${file.path}');
-      }
-    }
-  } catch (e) {
-    print('Error picking documents: $e');
-  }
-}
-
-// Future<void> pickAnyFile(BuildContext context) async {
-//   Navigator.pop(context);
-//   try {
-//     FilePickerResult? result = await FilePicker.platform.pickFiles(
-//       allowMultiple: true,
-//     );
-
-//     if (result != null) {
-//       for (var file in result.files) {
-//         print('Selected file: ${file.name}, Path: ${file.path}');
-//       }
-//     }
-//   } catch (e) {
-//     print('Error picking files: $e');
-//   }
-// }
