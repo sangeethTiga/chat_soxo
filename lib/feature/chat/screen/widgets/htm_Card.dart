@@ -17,7 +17,7 @@ class FixedSizeHtmlWidget extends StatefulWidget {
     super.key,
     required this.htmlContent,
     this.width = 350,
-    this.height = 400,
+    this.height = 500,
     this.isSentMessage = false,
     this.onFormSubmit,
     this.onLinkTap,

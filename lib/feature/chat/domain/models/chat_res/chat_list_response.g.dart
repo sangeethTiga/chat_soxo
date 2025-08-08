@@ -24,6 +24,7 @@ _$ChatListResponseImpl _$$ChatListResponseImplFromJson(
   userChats: (json['userChats'] as List<dynamic>?)
       ?.map((e) => UserChat.fromJson(e as Map<String, dynamic>))
       .toList(),
+  otherDetail1: json['otherDetail1'] as String?,
 );
 
 Map<String, dynamic> _$$ChatListResponseImplToJson(
@@ -42,6 +43,7 @@ Map<String, dynamic> _$$ChatListResponseImplToJson(
   'branchPtr': instance.branchPtr,
   'firmPtr': instance.firmPtr,
   'userChats': instance.userChats,
+  'otherDetail1': instance.otherDetail1,
 };
 
 _$UserChatImpl _$$UserChatImplFromJson(Map<String, dynamic> json) =>
@@ -53,6 +55,7 @@ _$UserChatImpl _$$UserChatImplFromJson(Map<String, dynamic> json) =>
       role: json['role'] as String?,
       lastSeenMsgId: (json['lastSeenMsgId'] as num?)?.toInt(),
       createdAt: json['createdAt'] as String?,
+      otherDetail1: json['otherDetail1'] as String?,
     );
 
 Map<String, dynamic> _$$UserChatImplToJson(_$UserChatImpl instance) =>
@@ -64,4 +67,5 @@ Map<String, dynamic> _$$UserChatImplToJson(_$UserChatImpl instance) =>
       'role': instance.role,
       'lastSeenMsgId': instance.lastSeenMsgId,
       'createdAt': instance.createdAt,
+      'otherDetail1': instance.otherDetail1,
     };

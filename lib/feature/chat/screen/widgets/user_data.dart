@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:developer';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -111,38 +115,45 @@ class ChatAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (imageUrl != null && imageUrl!.isNotEmpty) {
-      return Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(size / 2),
-          // boxShadow: [
-          //   BoxShadow(
-          //     color: Colors.black.withOpacity(0.1),
-          //     blurRadius: 4,
-          //     offset: const Offset(0, 2),
-          //   ),
-          // ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12.r),
-          child: Image.network(
-            imageUrl!,
-            width: size,
-            height: size,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return _buildInitialsAvatar();
-            },
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return _buildInitialsAvatar();
-            },
+      final List decodedList = jsonDecode(imageUrl!);
+      if (decodedList.isNotEmpty &&
+          decodedList.first['ProfilePicture'] != null) {
+        final base64Image = decodedList.first['ProfilePicture'] as String;
+        Uint8List imageBytes = base64Decode(base64Image);
+        log("IMAGE ++___.  $base64Image");
+        return Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(size / 2),
+            // boxShadow: [
+            //   BoxShadow(
+            //     color: Colors.black.withOpacity(0.1),
+            //     blurRadius: 4,
+            //     offset: const Offset(0, 2),
+            //   ),
+            // ],
           ),
-        ),
-      );
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12.r),
+            child: Image.memory(imageBytes),
+            // child: Image.network(
+            //   imageUrl!,
+            //   width: size,
+            //   height: size,
+            //   fit: BoxFit.cover,
+            //   errorBuilder: (context, error, stackTrace) {
+            //     return _buildInitialsAvatar();
+            //   },
+            //   loadingBuilder: (context, child, loadingProgress) {
+            //     if (loadingProgress == null) return child;
+            //     return _buildInitialsAvatar();
+            //   },
+            // ),
+          ),
+        );
+      }
     }
-
     return _buildInitialsAvatar();
   }
 

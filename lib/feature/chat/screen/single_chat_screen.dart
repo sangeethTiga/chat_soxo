@@ -245,7 +245,6 @@ class _SingleChatScreenState extends State<SingleChatScreen>
                             // PatientCardWebView(),
                             FixedSizeHtmlWidget(
                               htmlContent: data?.content ?? '',
-                              isSentMessage: true,
                             ),
                           ],
                         );

@@ -33,6 +33,7 @@ class ChatListResponse with _$ChatListResponse {
     @JsonKey(name: "branchPtr") String? branchPtr,
     @JsonKey(name: "firmPtr") String? firmPtr,
     @JsonKey(name: "userChats") List<UserChat>? userChats,
+    @JsonKey(name: "otherDetail1") String? otherDetail1,
   }) = _ChatListResponse;
 
   factory ChatListResponse.fromJson(Map<String, dynamic> json) =>
@@ -49,6 +50,7 @@ class UserChat with _$UserChat {
     @JsonKey(name: "role") String? role,
     @JsonKey(name: "lastSeenMsgId") int? lastSeenMsgId,
     @JsonKey(name: "createdAt") String? createdAt,
+    @JsonKey(name: "otherDetail1") String? otherDetail1,
   }) = _UserChat;
 
   factory UserChat.fromJson(Map<String, dynamic> json) =>

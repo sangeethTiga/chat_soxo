@@ -129,12 +129,16 @@ class ChatBubbleMessage extends StatelessWidget {
     bool isSentMessage,
     String html,
   ) {
-    if (html == 'html') {
-      return FixedSizeHtmlWidget(htmlContent: message, isSentMessage: true);
-    } else {
-      return _buildTextMessage(isSentMessage);
-    }
+    // if (html == 'html') {
+    return FixedSizeHtmlWidget(htmlContent: message);
   }
+  // {
+  //   return Text('Hello');
+  // }
+  //  else {
+  //   return _buildTextMessage(isSentMessage);
+  // }
+  // }
 
   Widget _buildTextMessage(bool isSentMessage) {
     return Text(

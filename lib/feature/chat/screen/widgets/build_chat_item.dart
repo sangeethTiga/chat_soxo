@@ -9,6 +9,7 @@ Widget buildChatItem({
   String? message,
   String? time,
   int? unreadCount,
+  String? imageUrl,
 }) {
   return Container(
     margin: EdgeInsets.only(bottom: 12),
@@ -19,7 +20,7 @@ Widget buildChatItem({
     ),
     child: Row(
       children: [
-        ChatAvatar(name: name ?? '', size: 50),
+        ChatAvatar(name: name ?? '', size: 50, imageUrl: imageUrl),
 
         12.horizontalSpace,
         Expanded(

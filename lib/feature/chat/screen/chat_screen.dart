@@ -246,7 +246,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                             400;
                         final itemOpacity = progress.clamp(0.0, 1.0);
                         final itemTranslate = (1 - itemOpacity) * 30;
-
                         return Transform.translate(
                           offset: Offset(0, itemTranslate),
                           child: Opacity(
@@ -255,6 +254,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                               onTap: () =>
                                   onChatItemTappedWithGo(index, state, context),
                               child: buildChatItem(
+                                imageUrl: data.otherDetail1 ?? '',
                                 name: data.title ?? '',
                                 message: data.description ?? '',
                                 time: getFormattedDate(data.updatedAt ?? ''),

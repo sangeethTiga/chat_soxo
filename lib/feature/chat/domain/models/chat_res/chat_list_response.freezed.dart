@@ -47,6 +47,8 @@ mixin _$ChatListResponse {
   String? get firmPtr => throw _privateConstructorUsedError;
   @JsonKey(name: "userChats")
   List<UserChat>? get userChats => throw _privateConstructorUsedError;
+  @JsonKey(name: "otherDetail1")
+  String? get otherDetail1 => throw _privateConstructorUsedError;
 
   /// Serializes this ChatListResponse to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -79,6 +81,7 @@ abstract class $ChatListResponseCopyWith<$Res> {
     @JsonKey(name: "branchPtr") String? branchPtr,
     @JsonKey(name: "firmPtr") String? firmPtr,
     @JsonKey(name: "userChats") List<UserChat>? userChats,
+    @JsonKey(name: "otherDetail1") String? otherDetail1,
   });
 }
 
@@ -110,6 +113,7 @@ class _$ChatListResponseCopyWithImpl<$Res, $Val extends ChatListResponse>
     Object? branchPtr = freezed,
     Object? firmPtr = freezed,
     Object? userChats = freezed,
+    Object? otherDetail1 = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -165,6 +169,10 @@ class _$ChatListResponseCopyWithImpl<$Res, $Val extends ChatListResponse>
                 ? _value.userChats
                 : userChats // ignore: cast_nullable_to_non_nullable
                       as List<UserChat>?,
+            otherDetail1: freezed == otherDetail1
+                ? _value.otherDetail1
+                : otherDetail1 // ignore: cast_nullable_to_non_nullable
+                      as String?,
           )
           as $Val,
     );
@@ -194,6 +202,7 @@ abstract class _$$ChatListResponseImplCopyWith<$Res>
     @JsonKey(name: "branchPtr") String? branchPtr,
     @JsonKey(name: "firmPtr") String? firmPtr,
     @JsonKey(name: "userChats") List<UserChat>? userChats,
+    @JsonKey(name: "otherDetail1") String? otherDetail1,
   });
 }
 
@@ -224,6 +233,7 @@ class __$$ChatListResponseImplCopyWithImpl<$Res>
     Object? branchPtr = freezed,
     Object? firmPtr = freezed,
     Object? userChats = freezed,
+    Object? otherDetail1 = freezed,
   }) {
     return _then(
       _$ChatListResponseImpl(
@@ -279,6 +289,10 @@ class __$$ChatListResponseImplCopyWithImpl<$Res>
             ? _value._userChats
             : userChats // ignore: cast_nullable_to_non_nullable
                   as List<UserChat>?,
+        otherDetail1: freezed == otherDetail1
+            ? _value.otherDetail1
+            : otherDetail1 // ignore: cast_nullable_to_non_nullable
+                  as String?,
       ),
     );
   }
@@ -301,6 +315,7 @@ class _$ChatListResponseImpl implements _ChatListResponse {
     @JsonKey(name: "branchPtr") this.branchPtr,
     @JsonKey(name: "firmPtr") this.firmPtr,
     @JsonKey(name: "userChats") final List<UserChat>? userChats,
+    @JsonKey(name: "otherDetail1") this.otherDetail1,
   }) : _userChats = userChats;
 
   factory _$ChatListResponseImpl.fromJson(Map<String, dynamic> json) =>
@@ -354,8 +369,12 @@ class _$ChatListResponseImpl implements _ChatListResponse {
   }
 
   @override
+  @JsonKey(name: "otherDetail1")
+  final String? otherDetail1;
+
+  @override
   String toString() {
-    return 'ChatListResponse(chatId: $chatId, mode: $mode, type: $type, code: $code, title: $title, description: $description, status: $status, createdBy: $createdBy, createdAt: $createdAt, updatedAt: $updatedAt, branchPtr: $branchPtr, firmPtr: $firmPtr, userChats: $userChats)';
+    return 'ChatListResponse(chatId: $chatId, mode: $mode, type: $type, code: $code, title: $title, description: $description, status: $status, createdBy: $createdBy, createdAt: $createdAt, updatedAt: $updatedAt, branchPtr: $branchPtr, firmPtr: $firmPtr, userChats: $userChats, otherDetail1: $otherDetail1)';
   }
 
   @override
@@ -383,7 +402,9 @@ class _$ChatListResponseImpl implements _ChatListResponse {
             const DeepCollectionEquality().equals(
               other._userChats,
               _userChats,
-            ));
+            ) &&
+            (identical(other.otherDetail1, otherDetail1) ||
+                other.otherDetail1 == otherDetail1));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -403,6 +424,7 @@ class _$ChatListResponseImpl implements _ChatListResponse {
     branchPtr,
     firmPtr,
     const DeepCollectionEquality().hash(_userChats),
+    otherDetail1,
   );
 
   /// Create a copy of ChatListResponse
@@ -437,6 +459,7 @@ abstract class _ChatListResponse implements ChatListResponse {
     @JsonKey(name: "branchPtr") final String? branchPtr,
     @JsonKey(name: "firmPtr") final String? firmPtr,
     @JsonKey(name: "userChats") final List<UserChat>? userChats,
+    @JsonKey(name: "otherDetail1") final String? otherDetail1,
   }) = _$ChatListResponseImpl;
 
   factory _ChatListResponse.fromJson(Map<String, dynamic> json) =
@@ -481,6 +504,9 @@ abstract class _ChatListResponse implements ChatListResponse {
   @override
   @JsonKey(name: "userChats")
   List<UserChat>? get userChats;
+  @override
+  @JsonKey(name: "otherDetail1")
+  String? get otherDetail1;
 
   /// Create a copy of ChatListResponse
   /// with the given fields replaced by the non-null parameter values.
@@ -510,6 +536,8 @@ mixin _$UserChat {
   int? get lastSeenMsgId => throw _privateConstructorUsedError;
   @JsonKey(name: "createdAt")
   String? get createdAt => throw _privateConstructorUsedError;
+  @JsonKey(name: "otherDetail1")
+  String? get otherDetail1 => throw _privateConstructorUsedError;
 
   /// Serializes this UserChat to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -534,6 +562,7 @@ abstract class $UserChatCopyWith<$Res> {
     @JsonKey(name: "role") String? role,
     @JsonKey(name: "lastSeenMsgId") int? lastSeenMsgId,
     @JsonKey(name: "createdAt") String? createdAt,
+    @JsonKey(name: "otherDetail1") String? otherDetail1,
   });
 }
 
@@ -559,6 +588,7 @@ class _$UserChatCopyWithImpl<$Res, $Val extends UserChat>
     Object? role = freezed,
     Object? lastSeenMsgId = freezed,
     Object? createdAt = freezed,
+    Object? otherDetail1 = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -590,6 +620,10 @@ class _$UserChatCopyWithImpl<$Res, $Val extends UserChat>
                 ? _value.createdAt
                 : createdAt // ignore: cast_nullable_to_non_nullable
                       as String?,
+            otherDetail1: freezed == otherDetail1
+                ? _value.otherDetail1
+                : otherDetail1 // ignore: cast_nullable_to_non_nullable
+                      as String?,
           )
           as $Val,
     );
@@ -613,6 +647,7 @@ abstract class _$$UserChatImplCopyWith<$Res>
     @JsonKey(name: "role") String? role,
     @JsonKey(name: "lastSeenMsgId") int? lastSeenMsgId,
     @JsonKey(name: "createdAt") String? createdAt,
+    @JsonKey(name: "otherDetail1") String? otherDetail1,
   });
 }
 
@@ -637,6 +672,7 @@ class __$$UserChatImplCopyWithImpl<$Res>
     Object? role = freezed,
     Object? lastSeenMsgId = freezed,
     Object? createdAt = freezed,
+    Object? otherDetail1 = freezed,
   }) {
     return _then(
       _$UserChatImpl(
@@ -668,6 +704,10 @@ class __$$UserChatImplCopyWithImpl<$Res>
             ? _value.createdAt
             : createdAt // ignore: cast_nullable_to_non_nullable
                   as String?,
+        otherDetail1: freezed == otherDetail1
+            ? _value.otherDetail1
+            : otherDetail1 // ignore: cast_nullable_to_non_nullable
+                  as String?,
       ),
     );
   }
@@ -684,6 +724,7 @@ class _$UserChatImpl implements _UserChat {
     @JsonKey(name: "role") this.role,
     @JsonKey(name: "lastSeenMsgId") this.lastSeenMsgId,
     @JsonKey(name: "createdAt") this.createdAt,
+    @JsonKey(name: "otherDetail1") this.otherDetail1,
   });
 
   factory _$UserChatImpl.fromJson(Map<String, dynamic> json) =>
@@ -710,10 +751,13 @@ class _$UserChatImpl implements _UserChat {
   @override
   @JsonKey(name: "createdAt")
   final String? createdAt;
+  @override
+  @JsonKey(name: "otherDetail1")
+  final String? otherDetail1;
 
   @override
   String toString() {
-    return 'UserChat(id: $id, chatId: $chatId, userId: $userId, type: $type, role: $role, lastSeenMsgId: $lastSeenMsgId, createdAt: $createdAt)';
+    return 'UserChat(id: $id, chatId: $chatId, userId: $userId, type: $type, role: $role, lastSeenMsgId: $lastSeenMsgId, createdAt: $createdAt, otherDetail1: $otherDetail1)';
   }
 
   @override
@@ -729,7 +773,9 @@ class _$UserChatImpl implements _UserChat {
             (identical(other.lastSeenMsgId, lastSeenMsgId) ||
                 other.lastSeenMsgId == lastSeenMsgId) &&
             (identical(other.createdAt, createdAt) ||
-                other.createdAt == createdAt));
+                other.createdAt == createdAt) &&
+            (identical(other.otherDetail1, otherDetail1) ||
+                other.otherDetail1 == otherDetail1));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -743,6 +789,7 @@ class _$UserChatImpl implements _UserChat {
     role,
     lastSeenMsgId,
     createdAt,
+    otherDetail1,
   );
 
   /// Create a copy of UserChat
@@ -768,6 +815,7 @@ abstract class _UserChat implements UserChat {
     @JsonKey(name: "role") final String? role,
     @JsonKey(name: "lastSeenMsgId") final int? lastSeenMsgId,
     @JsonKey(name: "createdAt") final String? createdAt,
+    @JsonKey(name: "otherDetail1") final String? otherDetail1,
   }) = _$UserChatImpl;
 
   factory _UserChat.fromJson(Map<String, dynamic> json) =
@@ -794,6 +842,9 @@ abstract class _UserChat implements UserChat {
   @override
   @JsonKey(name: "createdAt")
   String? get createdAt;
+  @override
+  @JsonKey(name: "otherDetail1")
+  String? get otherDetail1;
 
   /// Create a copy of UserChat
   /// with the given fields replaced by the non-null parameter values.

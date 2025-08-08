@@ -363,11 +363,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                           }
                         });
                       }
-                      log('data: ${data?.content}');
+                      log('datas: ${data?.content}');
 
                       log('index: $index');
                       if (state.chatEntry?.entries?.isNotEmpty ?? false) {
-                        log('data: ${data?.content}');
+                        log('data: ${data?.messageType}');
                         return Column(
                           children: [
                             SizedBox(height: 15.h),
@@ -433,37 +433,60 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                     ),
                   ),
                   6.horizontalSpace,
-                  Padding(
-                    padding: EdgeInsets.only(top: 5.h),
-                    child: GestureDetector(
-                      onTap: () {
-                        _sendMessage();
-                        // log('message');
-                        // context.read<ChatCubit>().createChat(
-                        //   AddChatEntryRequest(
-                        //     chatId: widget.data?['chat_id'],
-                        //     senderId: 45,
-                        //     type: 'N',
-                        //     typeValue: 0,
-                        //     messageType: 'text',
-                        //     content: _messageController.text,
-                        //     source: 'Website',
-                        //   ),
-                        // );
-                      },
-                      child: Container(
-                        padding: EdgeInsets.only(left: 4.w),
-                        alignment: Alignment.center,
-                        height: 48.h,
-                        width: 48.w,
-                        decoration: BoxDecoration(
-                          color: Color(0x99F1F1F1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(Icons.send, color: kPrimaryColor),
-                      ),
-                    ),
+                  AnimatedOpacity(
+                    opacity: _hasText ? 1.0 : 0.0,
+                    duration: Duration(milliseconds: 200),
+                    child: _hasText
+                        ? Padding(
+                            padding: EdgeInsets.only(top: 5.h),
+                            child: GestureDetector(
+                              onTap: _sendMessage,
+                              child: Container(
+                                padding: EdgeInsets.only(left: 4.w),
+                                alignment: Alignment.center,
+                                height: 48.h,
+                                width: 48.w,
+                                decoration: BoxDecoration(
+                                  color: kPrimaryColor,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(Icons.send, color: Colors.white),
+                              ),
+                            ),
+                          )
+                        : SizedBox.fromSize(),
                   ),
+                  // Padding(
+                  //   padding: EdgeInsets.only(top: 5.h),
+                  //   child: GestureDetector(
+                  //     onTap: () {
+                  //       _sendMessage();
+                  //       // log('message');
+                  //       // context.read<ChatCubit>().createChat(
+                  //       //   AddChatEntryRequest(
+                  //       //     chatId: widget.data?['chat_id'],
+                  //       //     senderId: 45,
+                  //       //     type: 'N',
+                  //       //     typeValue: 0,
+                  //       //     messageType: 'text',
+                  //       //     content: _messageController.text,
+                  //       //     source: 'Website',
+                  //       //   ),
+                  //       // );
+                  //     },
+                  //     child: Container(
+                  //       padding: EdgeInsets.only(left: 4.w),
+                  //       alignment: Alignment.center,
+                  //       height: 48.h,
+                  //       width: 48.w,
+                  //       decoration: BoxDecoration(
+                  //         color: Color(0x99F1F1F1),
+                  //         shape: BoxShape.circle,
+                  //       ),
+                  //       child: Icon(Icons.send, color: kPrimaryColor),
+                  //     ),
+                  //   ),
+                  // ),
                 ],
               ),
             ),
@@ -584,38 +607,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                       )
                     : SizedBox.fromSize(),
               ),
-              // Padding(
-              //   padding: EdgeInsets.only(top: 5.h),
-              //   child: GestureDetector(
-              //     onTap: () {
-              //       log('message');
-              //       // context.read<ChatCubit>().createChat(
-              //       //   AddChatEntryRequest(
-              //       //     chatId: widget.data?['chat_id'],
-              //       //     senderId: 45,
-              //       //     type: 'N',
-              //       //     typeValue: 0,
-              //       //     messageType: 'text',
-              //       //     content: _messageController.text,
-              //       //     source: 'Website',
-              //       //   ),
-              //       // );
-
-              //       _sendMessage();
-              //     },
-              //     child: Container(
-              //       padding: EdgeInsets.only(left: 4.w),
-              //       alignment: Alignment.center,
-              //       height: 48.h,
-              //       width: 48.w,
-              //       decoration: BoxDecoration(
-              //         color: Color(0x99F1F1F1),
-              //         shape: BoxShape.circle,
-              //       ),
-              //       child: Icon(Icons.send, color: kPrimaryColor),
-              //     ),
-              //   ),
-              // ),
             ],
           ),
         ),
