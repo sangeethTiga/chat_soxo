@@ -6,7 +6,6 @@ class ChatState extends Equatable {
   final Duration recordingDuration;
   final String? recordingPath;
   final bool hasRecordingPermission;
-  final List<ChatMessage> messages;
   final String? errorMessage;
   final List<ChatListResponse>? chatList;
   final List<ChatListResponse>? allChats;
@@ -25,7 +24,6 @@ class ChatState extends Equatable {
     this.recordingDuration = Duration.zero,
     this.recordingPath,
     this.hasRecordingPermission = false,
-    this.messages = const [],
     this.errorMessage,
     this.chatList,
     this.isChat = ApiFetchStatus.idle,
@@ -63,7 +61,6 @@ class ChatState extends Equatable {
       recordingPath: recordingPath ?? this.recordingPath,
       hasRecordingPermission:
           hasRecordingPermission ?? this.hasRecordingPermission,
-      messages: messages ?? this.messages,
       errorMessage: errorMessage ?? this.errorMessage,
       chatList: chatList ?? this.chatList,
       isChat: isChat ?? this.isChat,
@@ -84,7 +81,6 @@ class ChatState extends Equatable {
     recordingDuration,
     recordingPath,
     hasRecordingPermission,
-    messages,
     errorMessage,
     chatList,
     isChat,

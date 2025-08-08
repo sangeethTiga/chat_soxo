@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
+import 'package:soxo_chat/feature/chat/domain/models/add_chat/add_chatentry_request.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/appbar.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/chat_bubble_widget.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/htm_Card.dart';
@@ -129,7 +130,17 @@ class _SingleChatScreenState extends State<SingleChatScreen>
   }
 
   void _stopRecording() {
-    context.read<ChatCubit>().stopRecordingAndSend();
+    context.read<ChatCubit>().stopRecordingAndSend(
+      AddChatEntryRequest(
+        chatId: widget.data?['chat_id'],
+        senderId: 45,
+        type: 'N',
+        typeValue: 0,
+        messageType: 'voice',
+        content: 'Voice message',
+        source: 'Mobile',
+      ),
+    );
     _recordingAnimationController.stop();
     Navigator.pop(context);
   }

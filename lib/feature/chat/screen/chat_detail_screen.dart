@@ -148,7 +148,17 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   }
 
   void _stopRecording() {
-    context.read<ChatCubit>().stopRecordingAndSend();
+    context.read<ChatCubit>().stopRecordingAndSend(
+      AddChatEntryRequest(
+        chatId: widget.data?['chat_id'],
+        senderId: 45,
+        type: 'N',
+        typeValue: 0,
+        messageType: 'voice',
+        content: 'Voice message',
+        source: 'Mobile',
+      ),
+    );
     _recordingAnimationController.stop();
     Navigator.pop(context);
   }
@@ -361,6 +371,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                     itemCount: state.chatEntry?.entries?.length,
                     itemBuilder: (context, index) {
                       final data = state.chatEntry?.entries?[index];
+                      log("Why its Happen${data?.messageType}");
 
                       if (index ==
                           (state.chatEntry?.entries?.length ?? 0) - 1) {
@@ -384,6 +395,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                               message: data?.content ?? '',
                               timestamp: '12-2-2025 ,15:24',
                               isSent: true,
+                              chatMedias: data?.chatMedias,
                             ),
                           ],
                         );

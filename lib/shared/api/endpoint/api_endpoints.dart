@@ -8,4 +8,5 @@ class ApiEndpoints {
   static String addChatENtry = 'ChatEntry';
   static String userList = 'ChatUser';
   static String createChat = 'chat';
+  static String mediaType(String mediaId) => 'ChatEntry/$mediaId';
 }

@@ -253,7 +253,7 @@ mixin _$Entry {
   @JsonKey(name: "sender")
   Sender? get sender => throw _privateConstructorUsedError;
   @JsonKey(name: "chatMedias")
-  List<ChatMedia>? get chatMedias => throw _privateConstructorUsedError;
+  List<ChatMedias>? get chatMedias => throw _privateConstructorUsedError;
   @JsonKey(name: "userStatus")
   String? get userStatus => throw _privateConstructorUsedError;
   @JsonKey(name: "userChats")
@@ -285,7 +285,7 @@ abstract class $EntryCopyWith<$Res> {
     @JsonKey(name: "mediaIds") String? mediaIds,
     @JsonKey(name: "createdAt") String? createdAt,
     @JsonKey(name: "sender") Sender? sender,
-    @JsonKey(name: "chatMedias") List<ChatMedia>? chatMedias,
+    @JsonKey(name: "chatMedias") List<ChatMedias>? chatMedias,
     @JsonKey(name: "userStatus") String? userStatus,
     @JsonKey(name: "userChats") List<UserChat>? userChats,
   });
@@ -372,7 +372,7 @@ class _$EntryCopyWithImpl<$Res, $Val extends Entry>
             chatMedias: freezed == chatMedias
                 ? _value.chatMedias
                 : chatMedias // ignore: cast_nullable_to_non_nullable
-                      as List<ChatMedia>?,
+                      as List<ChatMedias>?,
             userStatus: freezed == userStatus
                 ? _value.userStatus
                 : userStatus // ignore: cast_nullable_to_non_nullable
@@ -421,7 +421,7 @@ abstract class _$$EntryImplCopyWith<$Res> implements $EntryCopyWith<$Res> {
     @JsonKey(name: "mediaIds") String? mediaIds,
     @JsonKey(name: "createdAt") String? createdAt,
     @JsonKey(name: "sender") Sender? sender,
-    @JsonKey(name: "chatMedias") List<ChatMedia>? chatMedias,
+    @JsonKey(name: "chatMedias") List<ChatMedias>? chatMedias,
     @JsonKey(name: "userStatus") String? userStatus,
     @JsonKey(name: "userChats") List<UserChat>? userChats,
   });
@@ -508,7 +508,7 @@ class __$$EntryImplCopyWithImpl<$Res>
         chatMedias: freezed == chatMedias
             ? _value._chatMedias
             : chatMedias // ignore: cast_nullable_to_non_nullable
-                  as List<ChatMedia>?,
+                  as List<ChatMedias>?,
         userStatus: freezed == userStatus
             ? _value.userStatus
             : userStatus // ignore: cast_nullable_to_non_nullable
@@ -537,7 +537,7 @@ class _$EntryImpl implements _Entry {
     @JsonKey(name: "mediaIds") this.mediaIds,
     @JsonKey(name: "createdAt") this.createdAt,
     @JsonKey(name: "sender") this.sender,
-    @JsonKey(name: "chatMedias") final List<ChatMedia>? chatMedias,
+    @JsonKey(name: "chatMedias") final List<ChatMedias>? chatMedias,
     @JsonKey(name: "userStatus") this.userStatus,
     @JsonKey(name: "userChats") final List<UserChat>? userChats,
   }) : _chatMedias = chatMedias,
@@ -579,10 +579,10 @@ class _$EntryImpl implements _Entry {
   @override
   @JsonKey(name: "sender")
   final Sender? sender;
-  final List<ChatMedia>? _chatMedias;
+  final List<ChatMedias>? _chatMedias;
   @override
   @JsonKey(name: "chatMedias")
-  List<ChatMedia>? get chatMedias {
+  List<ChatMedias>? get chatMedias {
     final value = _chatMedias;
     if (value == null) return null;
     if (_chatMedias is EqualUnmodifiableListView) return _chatMedias;
@@ -689,7 +689,7 @@ abstract class _Entry implements Entry {
     @JsonKey(name: "mediaIds") final String? mediaIds,
     @JsonKey(name: "createdAt") final String? createdAt,
     @JsonKey(name: "sender") final Sender? sender,
-    @JsonKey(name: "chatMedias") final List<ChatMedia>? chatMedias,
+    @JsonKey(name: "chatMedias") final List<ChatMedias>? chatMedias,
     @JsonKey(name: "userStatus") final String? userStatus,
     @JsonKey(name: "userChats") final List<UserChat>? userChats,
   }) = _$EntryImpl;
@@ -731,7 +731,7 @@ abstract class _Entry implements Entry {
   Sender? get sender;
   @override
   @JsonKey(name: "chatMedias")
-  List<ChatMedia>? get chatMedias;
+  List<ChatMedias>? get chatMedias;
   @override
   @JsonKey(name: "userStatus")
   String? get userStatus;
@@ -747,12 +747,12 @@ abstract class _Entry implements Entry {
       throw _privateConstructorUsedError;
 }
 
-ChatMedia _$ChatMediaFromJson(Map<String, dynamic> json) {
-  return _ChatMedia.fromJson(json);
+ChatMedias _$ChatMediasFromJson(Map<String, dynamic> json) {
+  return _ChatMedias.fromJson(json);
 }
 
 /// @nodoc
-mixin _$ChatMedia {
+mixin _$ChatMedias {
   @JsonKey(name: "id")
   int? get id => throw _privateConstructorUsedError;
   @JsonKey(name: "chatId")
@@ -780,20 +780,22 @@ mixin _$ChatMedia {
   @JsonKey(name: "uploadedAt")
   String? get uploadedAt => throw _privateConstructorUsedError;
 
-  /// Serializes this ChatMedia to a JSON map.
+  /// Serializes this ChatMedias to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
-  /// Create a copy of ChatMedia
+  /// Create a copy of ChatMedias
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
-  $ChatMediaCopyWith<ChatMedia> get copyWith =>
+  $ChatMediasCopyWith<ChatMedias> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class $ChatMediaCopyWith<$Res> {
-  factory $ChatMediaCopyWith(ChatMedia value, $Res Function(ChatMedia) then) =
-      _$ChatMediaCopyWithImpl<$Res, ChatMedia>;
+abstract class $ChatMediasCopyWith<$Res> {
+  factory $ChatMediasCopyWith(
+    ChatMedias value,
+    $Res Function(ChatMedias) then,
+  ) = _$ChatMediasCopyWithImpl<$Res, ChatMedias>;
   @useResult
   $Res call({
     @JsonKey(name: "id") int? id,
@@ -813,16 +815,16 @@ abstract class $ChatMediaCopyWith<$Res> {
 }
 
 /// @nodoc
-class _$ChatMediaCopyWithImpl<$Res, $Val extends ChatMedia>
-    implements $ChatMediaCopyWith<$Res> {
-  _$ChatMediaCopyWithImpl(this._value, this._then);
+class _$ChatMediasCopyWithImpl<$Res, $Val extends ChatMedias>
+    implements $ChatMediasCopyWith<$Res> {
+  _$ChatMediasCopyWithImpl(this._value, this._then);
 
   // ignore: unused_field
   final $Val _value;
   // ignore: unused_field
   final $Res Function($Val) _then;
 
-  /// Create a copy of ChatMedia
+  /// Create a copy of ChatMedias
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
@@ -902,12 +904,12 @@ class _$ChatMediaCopyWithImpl<$Res, $Val extends ChatMedia>
 }
 
 /// @nodoc
-abstract class _$$ChatMediaImplCopyWith<$Res>
-    implements $ChatMediaCopyWith<$Res> {
-  factory _$$ChatMediaImplCopyWith(
-    _$ChatMediaImpl value,
-    $Res Function(_$ChatMediaImpl) then,
-  ) = __$$ChatMediaImplCopyWithImpl<$Res>;
+abstract class _$$ChatMediasImplCopyWith<$Res>
+    implements $ChatMediasCopyWith<$Res> {
+  factory _$$ChatMediasImplCopyWith(
+    _$ChatMediasImpl value,
+    $Res Function(_$ChatMediasImpl) then,
+  ) = __$$ChatMediasImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -928,15 +930,15 @@ abstract class _$$ChatMediaImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$ChatMediaImplCopyWithImpl<$Res>
-    extends _$ChatMediaCopyWithImpl<$Res, _$ChatMediaImpl>
-    implements _$$ChatMediaImplCopyWith<$Res> {
-  __$$ChatMediaImplCopyWithImpl(
-    _$ChatMediaImpl _value,
-    $Res Function(_$ChatMediaImpl) _then,
+class __$$ChatMediasImplCopyWithImpl<$Res>
+    extends _$ChatMediasCopyWithImpl<$Res, _$ChatMediasImpl>
+    implements _$$ChatMediasImplCopyWith<$Res> {
+  __$$ChatMediasImplCopyWithImpl(
+    _$ChatMediasImpl _value,
+    $Res Function(_$ChatMediasImpl) _then,
   ) : super(_value, _then);
 
-  /// Create a copy of ChatMedia
+  /// Create a copy of ChatMedias
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
@@ -956,7 +958,7 @@ class __$$ChatMediaImplCopyWithImpl<$Res>
     Object? uploadedAt = freezed,
   }) {
     return _then(
-      _$ChatMediaImpl(
+      _$ChatMediasImpl(
         id: freezed == id
             ? _value.id
             : id // ignore: cast_nullable_to_non_nullable
@@ -1016,8 +1018,8 @@ class __$$ChatMediaImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$ChatMediaImpl implements _ChatMedia {
-  const _$ChatMediaImpl({
+class _$ChatMediasImpl implements _ChatMedias {
+  const _$ChatMediasImpl({
     @JsonKey(name: "id") this.id,
     @JsonKey(name: "chatId") this.chatId,
     @JsonKey(name: "mediaType") this.mediaType,
@@ -1033,8 +1035,8 @@ class _$ChatMediaImpl implements _ChatMedia {
     @JsonKey(name: "uploadedAt") this.uploadedAt,
   });
 
-  factory _$ChatMediaImpl.fromJson(Map<String, dynamic> json) =>
-      _$$ChatMediaImplFromJson(json);
+  factory _$ChatMediasImpl.fromJson(Map<String, dynamic> json) =>
+      _$$ChatMediasImplFromJson(json);
 
   @override
   @JsonKey(name: "id")
@@ -1078,14 +1080,14 @@ class _$ChatMediaImpl implements _ChatMedia {
 
   @override
   String toString() {
-    return 'ChatMedia(id: $id, chatId: $chatId, mediaType: $mediaType, mediaUrl: $mediaUrl, mediaSize: $mediaSize, fileName: $fileName, encryptionKey: $encryptionKey, encryptionLevel: $encryptionLevel, encryption: $encryption, status: $status, branchPtr: $branchPtr, firmPtr: $firmPtr, uploadedAt: $uploadedAt)';
+    return 'ChatMedias(id: $id, chatId: $chatId, mediaType: $mediaType, mediaUrl: $mediaUrl, mediaSize: $mediaSize, fileName: $fileName, encryptionKey: $encryptionKey, encryptionLevel: $encryptionLevel, encryption: $encryption, status: $status, branchPtr: $branchPtr, firmPtr: $firmPtr, uploadedAt: $uploadedAt)';
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$ChatMediaImpl &&
+            other is _$ChatMediasImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.chatId, chatId) || other.chatId == chatId) &&
             (identical(other.mediaType, mediaType) ||
@@ -1129,22 +1131,22 @@ class _$ChatMediaImpl implements _ChatMedia {
     uploadedAt,
   );
 
-  /// Create a copy of ChatMedia
+  /// Create a copy of ChatMedias
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
-  _$$ChatMediaImplCopyWith<_$ChatMediaImpl> get copyWith =>
-      __$$ChatMediaImplCopyWithImpl<_$ChatMediaImpl>(this, _$identity);
+  _$$ChatMediasImplCopyWith<_$ChatMediasImpl> get copyWith =>
+      __$$ChatMediasImplCopyWithImpl<_$ChatMediasImpl>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$ChatMediaImplToJson(this);
+    return _$$ChatMediasImplToJson(this);
   }
 }
 
-abstract class _ChatMedia implements ChatMedia {
-  const factory _ChatMedia({
+abstract class _ChatMedias implements ChatMedias {
+  const factory _ChatMedias({
     @JsonKey(name: "id") final int? id,
     @JsonKey(name: "chatId") final int? chatId,
     @JsonKey(name: "mediaType") final String? mediaType,
@@ -1158,10 +1160,10 @@ abstract class _ChatMedia implements ChatMedia {
     @JsonKey(name: "branchPtr") final String? branchPtr,
     @JsonKey(name: "firmPtr") final String? firmPtr,
     @JsonKey(name: "uploadedAt") final String? uploadedAt,
-  }) = _$ChatMediaImpl;
+  }) = _$ChatMediasImpl;
 
-  factory _ChatMedia.fromJson(Map<String, dynamic> json) =
-      _$ChatMediaImpl.fromJson;
+  factory _ChatMedias.fromJson(Map<String, dynamic> json) =
+      _$ChatMediasImpl.fromJson;
 
   @override
   @JsonKey(name: "id")
@@ -1203,11 +1205,11 @@ abstract class _ChatMedia implements ChatMedia {
   @JsonKey(name: "uploadedAt")
   String? get uploadedAt;
 
-  /// Create a copy of ChatMedia
+  /// Create a copy of ChatMedias
   /// with the given fields replaced by the non-null parameter values.
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$ChatMediaImplCopyWith<_$ChatMediaImpl> get copyWith =>
+  _$$ChatMediasImplCopyWith<_$ChatMediasImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 

@@ -286,7 +286,7 @@ void onChatItemTappedWithGo(int index, ChatState state, BuildContext context) {
 
   context.read<ChatCubit>().getChatEntry(
     chatId: state.chatList?[index].chatId,
-    userId: 2,
+    userId: 45,
   );
 
   context.read<ChatCubit>().initStateClear();

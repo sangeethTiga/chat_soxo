@@ -39,7 +39,7 @@ _$EntryImpl _$$EntryImplFromJson(Map<String, dynamic> json) => _$EntryImpl(
       ? null
       : Sender.fromJson(json['sender'] as Map<String, dynamic>),
   chatMedias: (json['chatMedias'] as List<dynamic>?)
-      ?.map((e) => ChatMedia.fromJson(e as Map<String, dynamic>))
+      ?.map((e) => ChatMedias.fromJson(e as Map<String, dynamic>))
       .toList(),
   userStatus: json['userStatus'] as String?,
   userChats: (json['userChats'] as List<dynamic>?)
@@ -65,8 +65,8 @@ Map<String, dynamic> _$$EntryImplToJson(_$EntryImpl instance) =>
       'userChats': instance.userChats,
     };
 
-_$ChatMediaImpl _$$ChatMediaImplFromJson(Map<String, dynamic> json) =>
-    _$ChatMediaImpl(
+_$ChatMediasImpl _$$ChatMediasImplFromJson(Map<String, dynamic> json) =>
+    _$ChatMediasImpl(
       id: (json['id'] as num?)?.toInt(),
       chatId: (json['chatId'] as num?)?.toInt(),
       mediaType: json['mediaType'] as String?,
@@ -82,7 +82,7 @@ _$ChatMediaImpl _$$ChatMediaImplFromJson(Map<String, dynamic> json) =>
       uploadedAt: json['uploadedAt'] as String?,
     );
 
-Map<String, dynamic> _$$ChatMediaImplToJson(_$ChatMediaImpl instance) =>
+Map<String, dynamic> _$$ChatMediasImplToJson(_$ChatMediasImpl instance) =>
     <String, dynamic>{
       'id': instance.id,
       'chatId': instance.chatId,

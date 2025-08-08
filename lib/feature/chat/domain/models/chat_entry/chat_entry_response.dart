@@ -1,11 +1,7 @@
-
-
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'chat_entry_response.freezed.dart';
 part 'chat_entry_response.g.dart';
-
-
 
 @freezed
 class ChatEntryResponse with _$ChatEntryResponse {
@@ -32,7 +28,7 @@ class Entry with _$Entry {
     @JsonKey(name: "mediaIds") String? mediaIds,
     @JsonKey(name: "createdAt") String? createdAt,
     @JsonKey(name: "sender") Sender? sender,
-    @JsonKey(name: "chatMedias") List<ChatMedia>? chatMedias,
+    @JsonKey(name: "chatMedias") List<ChatMedias>? chatMedias,
     @JsonKey(name: "userStatus") String? userStatus,
     @JsonKey(name: "userChats") List<UserChat>? userChats,
   }) = _Entry;
@@ -41,8 +37,8 @@ class Entry with _$Entry {
 }
 
 @freezed
-class ChatMedia with _$ChatMedia {
-  const factory ChatMedia({
+class ChatMedias with _$ChatMedias {
+  const factory ChatMedias({
     @JsonKey(name: "id") int? id,
     @JsonKey(name: "chatId") int? chatId,
     @JsonKey(name: "mediaType") String? mediaType,
@@ -56,10 +52,10 @@ class ChatMedia with _$ChatMedia {
     @JsonKey(name: "branchPtr") String? branchPtr,
     @JsonKey(name: "firmPtr") String? firmPtr,
     @JsonKey(name: "uploadedAt") String? uploadedAt,
-  }) = _ChatMedia;
+  }) = _ChatMedias;
 
-  factory ChatMedia.fromJson(Map<String, dynamic> json) =>
-      _$ChatMediaFromJson(json);
+  factory ChatMedias.fromJson(Map<String, dynamic> json) =>
+      _$ChatMediasFromJson(json);
 }
 
 @freezed
