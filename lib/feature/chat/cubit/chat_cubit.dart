@@ -285,7 +285,7 @@ class ChatCubit extends Cubit<ChatState> {
 
         // Load media files for this chat entry
         if (res.data?.entries != null) {
-          _loadMediaFilesForEntries(res.data!.entries!);
+          loadMediaFilesForEntries(res.data!.entries!);
         }
       } else {
         emit(
@@ -300,6 +300,27 @@ class ChatCubit extends Cubit<ChatState> {
         ),
       );
       log('Error getting chat entry: $e');
+    }
+  }
+
+  Future<void> loadMediaFile(ChatMedias media) async {
+    await _loadMediaFile(media);
+  }
+
+  // Make sure these getter methods are also public in your ChatCubit:
+  String? getFileUrl(String mediaId) => _fileUrls[mediaId];
+  String? getFileType(String mediaId) => _fileTypes[mediaId];
+  bool isFileLoading(String mediaId) => _loadingFiles[mediaId] ?? false;
+
+  // Optional: Method to check if a file is already loaded
+  bool isFileLoaded(String mediaId) => _fileUrls.containsKey(mediaId);
+
+  // Optional: Method to preload multiple media files
+  Future<void> loadMultipleMediaFiles(List<ChatMedias> mediaList) async {
+    for (final media in mediaList) {
+      if (media.id != null && !isFileLoaded(media.id.toString())) {
+        await _loadMediaFile(media);
+      }
     }
   }
 
@@ -475,7 +496,7 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   // Media Loading Methods
-  Future<void> _loadMediaFilesForEntries(List<Entry> entries) async {
+  Future<void> loadMediaFilesForEntries(List<Entry> entries) async {
     for (final entry in entries) {
       if (entry.chatMedias != null && entry.chatMedias!.isNotEmpty) {
         for (final media in entry.chatMedias!) {
@@ -490,7 +511,7 @@ class ChatCubit extends Cubit<ChatState> {
 
     final String mediaId = media.id.toString();
 
-    if (_fileUrls.containsKey(mediaId)) return; // Already loaded
+    if (_fileUrls.containsKey(mediaId)) return;
 
     _loadingFiles[mediaId] = true;
 
@@ -510,9 +531,9 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   // Getters for UI
-  String? getFileUrl(String mediaId) => _fileUrls[mediaId];
-  String? getFileType(String mediaId) => _fileTypes[mediaId];
-  bool isFileLoading(String mediaId) => _loadingFiles[mediaId] ?? false;
+  // String? getFileUrl(String mediaId) => _fileUrls[mediaId];
+  // String? getFileType(String mediaId) => _fileTypes[mediaId];
+  // bool isFileLoading(String mediaId) => _loadingFiles[mediaId] ?? false;
 
   // Tab Management
   Future<void> selectedTab(String value) async {

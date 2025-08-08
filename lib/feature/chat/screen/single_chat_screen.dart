@@ -8,7 +8,6 @@ import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/domain/models/add_chat/add_chatentry_request.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/appbar.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/chat_bubble_widget.dart';
-import 'package:soxo_chat/feature/chat/screen/widgets/htm_Card.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/record_dialog.dart';
 import 'package:soxo_chat/shared/animation/empty_chat.dart';
 import 'package:soxo_chat/shared/app/enums/api_fetch_status.dart';
@@ -254,9 +253,9 @@ class _SingleChatScreenState extends State<SingleChatScreen>
                               isSent: true,
                             ),
                             // PatientCardWebView(),
-                            FixedSizeHtmlWidget(
-                              htmlContent: data?.content ?? '',
-                            ),
+                            // FixedSizeHtmlWidget(
+                            //   htmlContent: data?.content ?? '',
+                            // ),
                           ],
                         );
                       } else {

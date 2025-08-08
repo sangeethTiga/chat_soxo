@@ -53,7 +53,6 @@ dependencies:
   freezed: ^2.5.7
   json_serializable: ^6.9.5
   build_runner: ^2.4.15
-  flutter_widget_from_html: ^0.17.0
   flutter_expandable_fab: ^2.5.2
   # chat_bubbles: ^1.7.0
   bubble: ^1.2.1
@@ -67,6 +66,8 @@ dependencies:
   flutter_html: ^3.0.0
   html: ^0.15.6
   audioplayers: ^6.5.0
+  syncfusion_flutter_pdfviewer: ^30.2.4
+  flutter_pdfview: ^1.4.1+1
   # firebase_core: ^4.0.0
   # firebase_messaging: ^16.0.0
 

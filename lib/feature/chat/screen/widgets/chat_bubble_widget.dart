@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_entry/chat_entry_response.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/htm_Card.dart';
+import 'package:soxo_chat/feature/chat/screen/widgets/pdf_viewer_screen.dart'; // Import your MediaPreviewWidget
 
 class ChatBubbleMessage extends StatefulWidget {
   final String? type;
@@ -52,13 +53,6 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
 
   @override
   Widget build(BuildContext context) {
-    print('Message type: ${widget.type}');
-    print('Chat medias: ${widget.chatMedias?.length ?? 0}');
-    if (widget.chatMedias != null) {
-      for (var media in widget.chatMedias!) {
-        print('Media type: ${media.mediaType}, fileName: ${media.fileName}');
-      }
-    }
     return Align(
       alignment: widget.isSent ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -73,15 +67,13 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildMessageContent(),
-            // _buildImageContent(),
-            // if (widget.chatMedias?.any(
-            //       (media) =>
-            //           media.mediaType == 'document' ||
-            //           media.fileName?.toLowerCase().endsWith('.pdf') == true,
-            //     ) ??
-            //     false)
-            //   _buildDocumentContent()
-            // else
+
+            // Media attachments section
+            if (widget.chatMedias != null && widget.chatMedias!.isNotEmpty) ...[
+              SizedBox(height: 8.h),
+              _buildMediaAttachments(),
+            ],
+
             SizedBox(height: 4.h),
             Text(
               widget.timestamp,
@@ -98,6 +90,17 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
       case 'html':
         return FixedSizeHtmlWidget(htmlContent: widget.message);
 
+      case 'voice':
+        return _buildVoiceMessage();
+
+      case 'file':
+      case 'image':
+      case 'document':
+        // For these types, we'll show the message text (if any) and media will be shown separately
+        return widget.message.isNotEmpty
+            ? _buildTextContent()
+            : const SizedBox.shrink();
+
       default:
         return _buildTextContent();
     }
@@ -110,315 +113,119 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
     );
   }
 
-  Widget _buildImageContent() {
-    if (widget.chatMedias?.isNotEmpty ?? false) {
-      return Column(
-        children: [
-          ...widget.chatMedias!
-              .where((media) => media.mediaType == 'image')
-              .map(
-                (media) => Container(
-                  margin: EdgeInsets.only(bottom: 8.h),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8.r),
-                    child: Image.network(
-                      'http://20.244.37.96:5002${media.mediaUrl}',
-                      width: 200.w,
-                      height: 150.h,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          width: 200.w,
-                          height: 150.h,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[300],
-                            borderRadius: BorderRadius.circular(8.r),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.broken_image,
-                                size: 40.sp,
-                                color: Colors.grey,
-                              ),
-                              SizedBox(height: 8.h),
-                              Text(
-                                media.fileName ?? 'Image',
-                                style: TextStyle(
-                                  fontSize: 12.sp,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ),
-          if (widget.message.isNotEmpty) ...[
-            SizedBox(height: 8.h),
-            Text(
-              widget.message,
-              style: TextStyle(fontSize: 14.sp, color: Colors.black87),
-            ),
-          ],
-        ],
-      );
-    }
-    return _buildTextContent();
-  }
-
-  Widget _buildDocumentContent() {
-    if (widget.chatMedias?.isNotEmpty ?? false) {
-      return Column(
-        children: [
-          ...widget.chatMedias!
-              .where(
-                (media) =>
-                    media.mediaType == 'document' ||
-                    media.fileName?.toLowerCase().endsWith('.pdf') == true,
-              )
-              .map(
-                (media) => Container(
-                  margin: EdgeInsets.only(bottom: 8.h),
-                  padding: EdgeInsets.all(12.w),
-                  decoration: BoxDecoration(
-                    color: Colors.red[50],
-                    borderRadius: BorderRadius.circular(8.r),
-                    border: Border.all(color: Colors.red[200]!),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.picture_as_pdf,
-                        color: Colors.red,
-                        size: 32.sp,
-                      ),
-                      SizedBox(width: 12.w),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              media.fileName ?? 'Document',
-                              style: TextStyle(
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.black87,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            SizedBox(height: 4.h),
-                            Text(
-                              _formatFileSize(media.mediaSize ?? 0),
-                              style: TextStyle(
-                                fontSize: 12.sp,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () => _downloadFile(media.mediaUrl),
-                        icon: Icon(Icons.download, color: Colors.red),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-          if (widget.message.isNotEmpty) ...[
-            SizedBox(height: 8.h),
-            Text(
-              widget.message,
-              style: TextStyle(fontSize: 14.sp, color: Colors.black87),
-            ),
-          ],
-        ],
-      );
-    }
-    return _buildTextContent();
-  }
-
-  Widget _buildVoiceContent() {
-    if (widget.chatMedias?.isNotEmpty ?? false) {
-      final voiceMedia = widget.chatMedias!.firstWhere(
-        (media) => media.mediaType == 'audio' || media.mediaType == 'voice',
-        orElse: () => widget.chatMedias!.first,
-      );
-
-      return Container(
-        padding: EdgeInsets.all(12.w),
-        decoration: BoxDecoration(
-          color: Colors.blue[50],
-          borderRadius: BorderRadius.circular(20.r),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            GestureDetector(
-              onTap: () => _togglePlayPause(voiceMedia.mediaUrl),
-              child: Container(
-                padding: EdgeInsets.all(8.w),
-                decoration: BoxDecoration(
-                  color: Colors.blue,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  _isPlaying ? Icons.pause : Icons.play_arrow,
-                  color: Colors.white,
-                  size: 20.sp,
-                ),
-              ),
-            ),
-            SizedBox(width: 12.w),
-            Expanded(
-              child: Column(
-                children: [
-                  LinearProgressIndicator(
-                    value: _duration.inMilliseconds > 0
-                        ? _position.inMilliseconds / _duration.inMilliseconds
-                        : 0.0,
-                    backgroundColor: Colors.grey[300],
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-                  ),
-                  SizedBox(height: 4.h),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _formatDuration(_position),
-                        style: TextStyle(
-                          fontSize: 10.sp,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      Text(
-                        _formatDuration(_duration),
-                        style: TextStyle(
-                          fontSize: 10.sp,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    return _buildTextContent();
-  }
-
-  Widget _buildVideoContent() {
-    if (widget.chatMedias?.isNotEmpty ?? false) {
-      final videoMedia = widget.chatMedias!.firstWhere(
-        (media) => media.mediaType == 'video',
-        orElse: () => widget.chatMedias!.first,
-      );
-
-      return Container(
-        margin: EdgeInsets.only(bottom: 8.h),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(8.r),
-          child: Stack(
-            children: [
-              Container(
-                width: 200.w,
-                height: 150.h,
-                color: Colors.black12,
-                child: Center(
-                  child: Icon(
-                    Icons.play_circle_fill,
-                    size: 50.sp,
-                    color: Colors.white70,
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: 8.h,
-                right: 8.w,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(4.r),
-                  ),
-                  child: Text(
-                    videoMedia.fileName ?? 'Video',
-                    style: TextStyle(fontSize: 10.sp, color: Colors.white),
-                  ),
-                ),
-              ),
-            ],
+  Widget _buildVoiceMessage() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.mic, size: 16.sp, color: Colors.grey[600]),
+        SizedBox(width: 8.w),
+        Text(
+          'Voice message',
+          style: TextStyle(
+            fontSize: 14.sp,
+            color: Colors.black87,
+            fontStyle: FontStyle.italic,
           ),
         ),
-      );
-    }
-    return _buildTextContent();
+      ],
+    );
   }
 
-  Future<void> _togglePlayPause(String? audioUrl) async {
-    if (audioUrl == null) return;
-
-    if (_isPlaying) {
-      await _audioPlayer.pause();
-    } else {
-      await _audioPlayer.play(UrlSource('http://20.244.37.96:5002$audioUrl'));
-    }
+  Widget _buildMediaAttachments() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Media grid for multiple attachments
+        if (widget.chatMedias!.length > 1)
+          _buildMediaGrid()
+        else
+          // Single media item
+          _buildSingleMedia(widget.chatMedias!.first),
+      ],
+    );
   }
 
-  void _downloadFile(String? fileUrl) {
-    if (fileUrl != null) {
-      // Implement file download logic
-      // You can use packages like dio for downloading
-      print('Downloading file: http://20.244.37.96:5002$fileUrl');
-    }
+  Widget _buildSingleMedia(ChatMedias media) {
+    return Container(
+      constraints: BoxConstraints(maxWidth: 200.w, maxHeight: 200.h),
+      child: MediaPreviewWidget(media: media),
+    );
   }
 
-  String _formatFileSize(int bytes) {
-    if (bytes <= 0) return '0 B';
-    const suffixes = ['B', 'KB', 'MB', 'GB'];
-    int i = (bytes.bitLength - 1) ~/ 10;
-    return '${(bytes / (1 << (i * 10))).toStringAsFixed(1)} ${suffixes[i]}';
-  }
+  Widget _buildMediaGrid() {
+    final mediaCount = widget.chatMedias!.length;
 
-  String _formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, "0");
-    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
-    String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
-    return "$twoDigitMinutes:$twoDigitSeconds";
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Display all media items vertically (column-wise)
+        ...widget.chatMedias!.asMap().entries.map((entry) {
+          final index = entry.key;
+          final media = entry.value;
+          final isLast = index == mediaCount - 1;
+
+          return Container(
+            margin: EdgeInsets.only(bottom: isLast ? 0 : 8.h),
+            constraints: BoxConstraints(
+              maxHeight: 120.h,
+              maxWidth: double.infinity,
+            ),
+            child: MediaPreviewWidget(media: media),
+          );
+        }),
+
+        // Show count indicator if there are many items
+        if (mediaCount > 3)
+          Container(
+            margin: EdgeInsets.only(top: 8.h),
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(12.r),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: Text(
+              '$mediaCount attachments',
+              style: TextStyle(
+                fontSize: 12.sp,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+      ],
+    );
   }
 }
 
-// Widget _buildMessageContent(
-//   BuildContext context,
-//   bool isSentMessage,
-//   String html,
-// ) {
-//   // if (html == 'html') {
-//   return FixedSizeHtmlWidget(htmlContent: message);
-// }
-//   // {
-//   //   return Text('Hello');
-//   // }
-//   //  else {
-//   //   return _buildTextMessage(isSentMessage);
-//   // }
-//   // }
+// Additional helper widget for better media layout
+class MediaContainer extends StatelessWidget {
+  final ChatMedias media;
+  final double? width;
+  final double? height;
+  final BorderRadius? borderRadius;
 
-// //   Widget _buildTextMessage(bool isSentMessage) {
-// //     return Text(
-// //       message,
-// //       style: isSentMessage
-// //           ? const TextStyle(fontSize: 14, color: Color(0xFF4C4C4C))
-// //           : FontPalette.hW500S14.copyWith(color: const Color(0XFF4C4C4C)),
-// //     );
-// //   }
-// // }
+  const MediaContainer({
+    super.key,
+    required this.media,
+    this.width,
+    this.height,
+    this.borderRadius,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        borderRadius: borderRadius ?? BorderRadius.circular(8.r),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: ClipRRect(
+        borderRadius: borderRadius ?? BorderRadius.circular(8.r),
+        child: MediaPreviewWidget(media: media),
+      ),
+    );
+  }
+}
