@@ -28,35 +28,29 @@ class ChatCubit extends Cubit<ChatState> {
   final ChatRepositories _chatRepositories;
   final ImagePicker _imagePicker = ImagePicker();
 
-  // Optimized media file storage with instant updates
   final Map<String, String> _fileUrls = {};
   final Map<String, String> _fileTypes = {};
   final Map<String, bool> _loadingFiles = {};
   final Map<String, DateTime> _fileCacheTimestamps = {};
   final Set<String> _failedLoads = {};
 
-  // Batch update control
   Timer? _batchUpdateTimer;
   bool _hasPendingUpdates = false;
   bool _isDisposed = false;
 
   static const Duration _cacheExpiration = Duration(hours: 2);
-  static const Duration _batchDelay = Duration(milliseconds: 16); // 60fps
+  static const Duration _batchDelay = Duration(milliseconds: 16);
 
   ChatCubit(this._chatRepositories) : super(InitilaChatState()) {
     _initializePermissions();
   }
 
-  // INSTANT UI UPDATES - Core Methods
-
-  /// Immediately emit state updates without delay
   void _emitInstant(ChatState newState) {
     if (!_isDisposed) {
       emit(newState);
     }
   }
 
-  /// Batch UI updates for media loading to prevent excessive rebuilds
   void _scheduleMediaUpdate() {
     if (_isDisposed) return;
 
@@ -76,7 +70,6 @@ class ChatCubit extends Cubit<ChatState> {
     });
   }
 
-  // UI State Management - INSTANT UPDATES
   Future<void> arrowSelected() async {
     _emitInstant(state.copyWith(isArrow: !state.isArrow));
   }
@@ -89,7 +82,7 @@ class ChatCubit extends Cubit<ChatState> {
     _emitInstant(state.copyWith(errorMessage: null));
   }
 
-  // Permission Management - INSTANT UPDATES
+  //==================== Permission Management - INSTANT UPDATES
   Future<void> _initializePermissions() async {
     try {
       final status = await Permission.microphone.request();
@@ -115,7 +108,7 @@ class ChatCubit extends Cubit<ChatState> {
     }
   }
 
-  // Voice Recording Methods - INSTANT UPDATES
+  //=============== Voice Recording Methods - INSTANT UPDATES
   Future<void> startRecording() async {
     try {
       log('Starting recording...');
@@ -147,7 +140,6 @@ class ChatCubit extends Cubit<ChatState> {
           path: recordingPath,
         );
 
-        // INSTANT UI UPDATE
         _emitInstant(
           state.copyWith(
             isRecording: true,
@@ -197,7 +189,6 @@ class ChatCubit extends Cubit<ChatState> {
           final fileSize = await file.length();
 
           if (fileSize > 0) {
-            // Create and send voice message through createChat
             await createChat(
               AddChatEntryRequest(
                 chatId: req.chatId,
@@ -211,7 +202,6 @@ class ChatCubit extends Cubit<ChatState> {
               files: [file],
             );
 
-            // INSTANT UI UPDATE - Reset recording state
             _emitInstant(
               state.copyWith(
                 isRecording: false,
@@ -261,7 +251,6 @@ class ChatCubit extends Cubit<ChatState> {
         }
       }
 
-      // INSTANT UI UPDATE
       _emitInstant(
         state.copyWith(
           isRecording: false,
@@ -276,7 +265,6 @@ class ChatCubit extends Cubit<ChatState> {
     }
   }
 
-  // Message Methods - INSTANT UPDATES
   void sendTextMessage(String message, AddChatEntryRequest req) {
     if (message.trim().isEmpty) return;
 
@@ -293,7 +281,7 @@ class ChatCubit extends Cubit<ChatState> {
     createChat(request);
   }
 
-  // Chat API Methods - INSTANT UPDATES
+  //================== Chat API Methods - INSTANT UPDATES
   Future<void> getChatList() async {
     // INSTANT UI UPDATE - Show loading immediately
     _emitInstant(state.copyWith(isChat: ApiFetchStatus.loading));
@@ -332,14 +320,6 @@ class ChatCubit extends Cubit<ChatState> {
   Future<void> getChatEntry({int? chatId, int? userId}) async {
     final currentChatId = chatId ?? 0;
 
-    // Check if same chat is already loaded - INSTANT RETURN
-    // if (state.chatEntry?.entries?.first.chatId == currentChatId &&
-    //     state.isChatEntry == ApiFetchStatus.success) {
-    //   log('Chat entry already loaded for chatId: $currentChatId');
-    //   return;
-    // }
-
-    // INSTANT UI UPDATE - Show loading immediately
     _emitInstant(state.copyWith(isChatEntry: ApiFetchStatus.loading));
 
     try {
@@ -380,8 +360,6 @@ class ChatCubit extends Cubit<ChatState> {
   // Background Media Loading - NO UI BLOCKING
   void _loadMediaInBackground(List<Entry> entries) {
     if (_isDisposed) return;
-
-    // Fire and forget - don't await
     unawaited(_loadMediaFilesOptimized(entries));
   }
 
@@ -390,8 +368,6 @@ class ChatCubit extends Cubit<ChatState> {
 
     try {
       final mediaToLoad = <ChatMedias>[];
-
-      // Collect media that needs loading
       for (final entry in entries) {
         if (entry.chatMedias?.isNotEmpty == true) {
           for (final media in entry.chatMedias!) {
@@ -410,20 +386,13 @@ class ChatCubit extends Cubit<ChatState> {
 
       log('Background loading ${mediaToLoad.length} media files');
 
-      // Load files concurrently in small batches
       const batchSize = 3;
       for (int i = 0; i < mediaToLoad.length; i += batchSize) {
         if (_isDisposed) break;
-
         final batch = mediaToLoad.skip(i).take(batchSize);
         final futures = batch.map(_loadSingleMediaFile);
-
         await Future.wait(futures, eagerError: false);
-
-        // Schedule UI update after each batch
         _scheduleMediaUpdate();
-
-        // Small delay between batches
         if (i + batchSize < mediaToLoad.length) {
           await Future.delayed(const Duration(milliseconds: 50));
         }
@@ -435,15 +404,10 @@ class ChatCubit extends Cubit<ChatState> {
 
   Future<void> _loadSingleMediaFile(ChatMedias media) async {
     if (_isDisposed || media.id == null || media.mediaUrl == null) return;
-
     final String mediaId = media.id.toString();
-
-    // Skip if already loading or failed recently
     if (_loadingFiles[mediaId] == true || _failedLoads.contains(mediaId)) {
       return;
     }
-
-    // Check cache validity
     if (_isFileLoadedAndValid(mediaId)) {
       return;
     }
@@ -452,25 +416,16 @@ class ChatCubit extends Cubit<ChatState> {
 
     try {
       final fileData = await _chatRepositories.getFileFromApi(media.mediaUrl!);
-
       if (_isDisposed) return;
-
-      // Store in cache
       _fileUrls[mediaId] = fileData['data'] ?? '';
       _fileTypes[mediaId] = fileData['type'] ?? 'unknown';
       _fileCacheTimestamps[mediaId] = DateTime.now();
-
-      // Remove from failed loads if successful
       _failedLoads.remove(mediaId);
 
       log('Loaded media: $mediaId, type: ${fileData['type']}');
     } catch (e) {
       log('Error loading media $mediaId: $e');
-
-      // Add to failed loads to prevent retry spam
       _failedLoads.add(mediaId);
-
-      // Clean up
       _fileUrls.remove(mediaId);
       _fileTypes.remove(mediaId);
       _fileCacheTimestamps.remove(mediaId);
@@ -479,21 +434,16 @@ class ChatCubit extends Cubit<ChatState> {
     }
   }
 
-  // Public method for on-demand loading - INSTANT UI FEEDBACK
   Future<void> loadMediaFile(ChatMedias media) async {
     if (_isDisposed) return;
-
-    // Start loading immediately without blocking
     unawaited(_loadSingleMediaFile(media));
-
-    // Provide instant feedback to UI
     if (media.id != null) {
       _loadingFiles[media.id.toString()] = true;
       _scheduleMediaUpdate();
     }
   }
 
-  // Enhanced createChat with INSTANT optimistic updates
+  //=============== Enhanced createChat with INSTANT optimistic updates
   Future<void> createChat(
     AddChatEntryRequest request, {
     List<File>? files,
@@ -506,13 +456,8 @@ class ChatCubit extends Cubit<ChatState> {
           messageText.isEmpty && files?.isEmpty != false) {
         return;
       }
-
       final filesToSend = files ?? state.selectedFiles ?? [];
-
-      // Generate unique temp ID
       final tempId = DateTime.now().millisecondsSinceEpoch;
-
-      // Create optimistic message with temp ID
       final tempMessage = Entry(
         id: tempId,
         content: request.content ?? "File attachment",
@@ -523,8 +468,6 @@ class ChatCubit extends Cubit<ChatState> {
         createdAt: DateTime.now().toIso8601String(),
         chatId: request.chatId,
       );
-
-      // INSTANT UI UPDATE - Add optimistic message immediately
       final currentEntries = state.chatEntry?.entries ?? <Entry>[];
       final updatedEntries = List<Entry>.from(currentEntries)..add(tempMessage);
 
@@ -533,11 +476,9 @@ class ChatCubit extends Cubit<ChatState> {
           chatEntry:
               state.chatEntry?.copyWith(entries: updatedEntries) ??
               ChatEntryResponse(entries: updatedEntries),
-          selectedFiles: [], // Clear selected files immediately
+          selectedFiles: [],
         ),
       );
-
-      // Make API call in background
       final res = await _chatRepositories.addChatEntry(
         req: request,
         files: filesToSend,
@@ -546,7 +487,6 @@ class ChatCubit extends Cubit<ChatState> {
       if (_isDisposed) return;
 
       if (res.data != null) {
-        // Replace optimistic message with server response
         final serverEntry = Entry(
           id: res.data!.id,
           content: res.data!.content,
@@ -563,8 +503,6 @@ class ChatCubit extends Cubit<ChatState> {
         final finalEntries = updatedEntries.map((entry) {
           return entry.id == tempId ? serverEntry : entry;
         }).toList();
-
-        // INSTANT UI UPDATE - Replace with server data
         _emitInstant(
           state.copyWith(
             chatEntry: state.chatEntry?.copyWith(entries: finalEntries),
@@ -572,12 +510,10 @@ class ChatCubit extends Cubit<ChatState> {
           ),
         );
 
-        // Load media for new message if it has attachments
         if (serverEntry.chatMedias?.isNotEmpty == true) {
           _loadMediaInBackground([serverEntry]);
         }
       } else {
-        // Remove failed message instantly
         final failedEntries = updatedEntries
             .where((entry) => entry.id != tempId)
             .toList();

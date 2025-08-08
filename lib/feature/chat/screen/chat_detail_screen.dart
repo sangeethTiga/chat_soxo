@@ -174,9 +174,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     final hasFiles =
         context.read<ChatCubit>().state.selectedFiles?.isNotEmpty ?? false;
     final selectedFiles = context.read<ChatCubit>().state.selectedFiles ?? [];
-    log(
-      'Screen: Selected files count: ${selectedFiles.length}',
-    ); // Add this log
+    log('Screen: Selected files count: ${selectedFiles.length}');
 
     if (messageText.isEmpty && !hasFiles) return;
 
