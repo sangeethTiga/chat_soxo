@@ -166,7 +166,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   }
 }
 
-// Separate widget for chat content to prevent unnecessary rebuilds
 class ChatContent extends StatefulWidget {
   final Map<String, dynamic>? data;
   final VoidCallback onArrowTap;
@@ -214,7 +213,6 @@ class _ChatContentState extends State<ChatContent> {
   }
 }
 
-// Separate widget for group content
 class GroupContent extends StatelessWidget {
   final VoidCallback onArrowTap;
   final Animation<double> arrowAnimation;
@@ -286,7 +284,6 @@ class GroupContent extends StatelessWidget {
   }
 }
 
-// Separate widget for chat header to avoid rebuilds
 class ChatHeader extends StatelessWidget {
   final Map<String, dynamic>? data;
 
@@ -417,7 +414,6 @@ class ChatMessagesList extends StatelessWidget {
             final messageData = entries[index];
             log("Message type: ${messageData.messageType}");
 
-            // Auto-scroll to bottom for last message
             if (index == entries.length - 1) {
               _scrollToBottom();
             }

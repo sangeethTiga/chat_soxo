@@ -506,7 +506,7 @@ class ChatCubit extends Cubit<ChatState> {
         _emitInstant(
           state.copyWith(
             chatEntry: state.chatEntry?.copyWith(entries: finalEntries),
-            isChatEntry: ApiFetchStatus.success,
+            // isChatEntry: ApiFetchStatus.success,
           ),
         );
 
@@ -521,7 +521,7 @@ class ChatCubit extends Cubit<ChatState> {
         _emitInstant(
           state.copyWith(
             chatEntry: state.chatEntry?.copyWith(entries: failedEntries),
-            isChatEntry: ApiFetchStatus.failed,
+            // isChatEntry: ApiFetchStatus.failed,
             errorMessage: 'Failed to send message',
           ),
         );
@@ -531,7 +531,7 @@ class ChatCubit extends Cubit<ChatState> {
       if (!_isDisposed) {
         _emitInstant(
           state.copyWith(
-            isChatEntry: ApiFetchStatus.failed,
+            // isChatEntry: ApiFetchStatus.failed,
             errorMessage: 'Error: ${e.toString()}',
           ),
         );
