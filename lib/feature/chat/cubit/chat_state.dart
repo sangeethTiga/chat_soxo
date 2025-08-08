@@ -15,6 +15,9 @@ class ChatState extends Equatable {
   final ChatEntryResponse? chatEntry;
   final ApiFetchStatus? isChatEntry;
   final String? selectedTab;
+  final List<File>? selectedFiles;
+  final bool isUploadingFiles;
+  final double uploadProgress;
 
   const ChatState({
     this.isArrow = false,
@@ -30,6 +33,9 @@ class ChatState extends Equatable {
     this.isChatEntry = ApiFetchStatus.idle,
     this.selectedTab,
     this.allChats,
+    this.selectedFiles,
+    this.isUploadingFiles = false,
+    this.uploadProgress = 0.0,
   });
 
   ChatState copyWith({
@@ -46,6 +52,9 @@ class ChatState extends Equatable {
     ApiFetchStatus? isChatEntry,
     String? selectedTab,
     List<ChatListResponse>? allChats,
+    List<File>? selectedFiles,
+    bool? isUploadingFiles,
+    double? uploadProgress,
   }) {
     return ChatState(
       isArrow: isArrow ?? this.isArrow,
@@ -62,6 +71,9 @@ class ChatState extends Equatable {
       isChatEntry: isChatEntry ?? this.isChatEntry,
       selectedTab: selectedTab ?? this.selectedTab,
       allChats: allChats ?? this.allChats,
+      selectedFiles: selectedFiles ?? this.selectedFiles,
+      isUploadingFiles: isUploadingFiles ?? this.isUploadingFiles,
+      uploadProgress: uploadProgress ?? this.uploadProgress,
     );
   }
 
@@ -80,6 +92,9 @@ class ChatState extends Equatable {
     isChatEntry,
     selectedTab,
     allChats,
+    selectedFiles,
+    isUploadingFiles,
+    uploadProgress,
   ];
 }
 

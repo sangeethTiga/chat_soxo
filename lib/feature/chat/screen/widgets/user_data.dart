@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -120,7 +119,6 @@ class ChatAvatar extends StatelessWidget {
           decodedList.first['ProfilePicture'] != null) {
         final base64Image = decodedList.first['ProfilePicture'] as String;
         Uint8List imageBytes = base64Decode(base64Image);
-        log("IMAGE ++___.  $base64Image");
         return Container(
           width: size,
           height: size,

@@ -161,9 +161,18 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
 
   Future<void> _sendMessage() async {
     final messageText = _messageController.text.trim();
-    if (messageText.isEmpty) return;
+    final hasFiles =
+        context.read<ChatCubit>().state.selectedFiles?.isNotEmpty ?? false;
+    final selectedFiles = context.read<ChatCubit>().state.selectedFiles ?? [];
+    log(
+      'Screen: Selected files count: ${selectedFiles.length}',
+    ); // Add this log
+
+    if (messageText.isEmpty && !hasFiles) return;
+
     _messageController.clear();
     FocusScope.of(context).unfocus();
+
     await context.read<ChatCubit>().createChat(
       AddChatEntryRequest(
         chatId: widget.data?['chat_id'],
@@ -171,9 +180,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
         type: 'N',
         typeValue: 0,
         messageType: 'text',
-        content: messageText,
+        content: messageText.isNotEmpty ? messageText : 'File attachment',
         source: 'Website',
+        attachedFiles: selectedFiles,
       ),
+      files: selectedFiles,
     );
 
     log('Message sent: $messageText');
@@ -363,11 +374,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                           }
                         });
                       }
-                      log('datas: ${data?.content}');
 
-                      log('index: $index');
                       if (state.chatEntry?.entries?.isNotEmpty ?? false) {
-                        log('data: ${data?.messageType}');
                         return Column(
                           children: [
                             SizedBox(height: 15.h),
@@ -456,37 +464,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                           )
                         : SizedBox.fromSize(),
                   ),
-                  // Padding(
-                  //   padding: EdgeInsets.only(top: 5.h),
-                  //   child: GestureDetector(
-                  //     onTap: () {
-                  //       _sendMessage();
-                  //       // log('message');
-                  //       // context.read<ChatCubit>().createChat(
-                  //       //   AddChatEntryRequest(
-                  //       //     chatId: widget.data?['chat_id'],
-                  //       //     senderId: 45,
-                  //       //     type: 'N',
-                  //       //     typeValue: 0,
-                  //       //     messageType: 'text',
-                  //       //     content: _messageController.text,
-                  //       //     source: 'Website',
-                  //       //   ),
-                  //       // );
-                  //     },
-                  //     child: Container(
-                  //       padding: EdgeInsets.only(left: 4.w),
-                  //       alignment: Alignment.center,
-                  //       height: 48.h,
-                  //       width: 48.w,
-                  //       decoration: BoxDecoration(
-                  //         color: Color(0x99F1F1F1),
-                  //         shape: BoxShape.circle,
-                  //       ),
-                  //       child: Icon(Icons.send, color: kPrimaryColor),
-                  //     ),
-                  //   ),
-                  // ),
                 ],
               ),
             ),

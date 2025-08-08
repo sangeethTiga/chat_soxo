@@ -4,6 +4,8 @@ import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -22,6 +24,7 @@ class ChatCubit extends Cubit<ChatState> {
   final AudioRecorder _audioRecorder = AudioRecorder();
   Timer? _recordingTimer;
   final ChatRepositories _chatRepositories;
+  final ImagePicker _imagePicker = ImagePicker();
 
   ChatCubit(this._chatRepositories) : super(InitilaChatState()) {
     _initializePermissions();
@@ -171,6 +174,27 @@ class ChatCubit extends Cubit<ChatState> {
           log('File exists, size: $fileSize bytes');
 
           if (fileSize > 0) {
+            await createChat(
+              AddChatEntryRequest(
+                chatId: null, // Set appropriate chatId
+                senderId: 45, // Set appropriate senderId
+                type: 'N',
+                typeValue: 0,
+                messageType: 'voice',
+                content: 'Voice message',
+                source: 'Website',
+              ),
+              files: [file], // Pass the voice file
+            );
+
+            emit(
+              state.copyWith(
+                isRecording: false,
+                recordingDuration: Duration.zero,
+                recordingPath: null,
+                errorMessage: null,
+              ),
+            );
             final voiceMessage = ChatMessage(
               id: DateTime.now().millisecondsSinceEpoch.toString(),
               content: state.recordingPath!,
@@ -415,13 +439,29 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   //=-=-=-=-=-=-=-=-=-=
-  Future<void> createChat(AddChatEntryRequest request) async {
+  Future<void> createChat(
+    AddChatEntryRequest request, {
+    List<File>? files,
+  }) async {
     final messageText = request.content?.trim();
     if (messageText == null || messageText.isEmpty) return;
+    final filesToSend = files ?? state.selectedFiles ?? [];
 
+    final hasFiles =
+        (files?.isNotEmpty ?? false) ||
+        (state.selectedFiles?.isNotEmpty ?? false);
+    if (filesToSend.isNotEmpty) {
+      final firstFile = filesToSend.first;
+      final extension = firstFile.path.split('.').last.toLowerCase();
+      if (['jpg', 'jpeg', 'png', 'gif'].contains(extension)) {
+        // messageType = 'image';
+      } else if (extension == 'pdf') {
+        // messageType = 'document';
+      }
+    }
     final tempMessage = Entry(
       id: request.chatId,
-      content: request.content,
+      content: request.content ?? "File attachment",
       messageType: request.messageType,
       senderId: request.senderId,
       type: request.type,
@@ -440,7 +480,10 @@ class ChatCubit extends Cubit<ChatState> {
     );
 
     try {
-      final res = await _chatRepositories.addChatEntry(req: request);
+      final res = await _chatRepositories.addChatEntry(
+        req: request,
+        files: filesToSend,
+      );
 
       if (res.data != null) {
         final serverEntry = Entry(
@@ -464,6 +507,7 @@ class ChatCubit extends Cubit<ChatState> {
           state.copyWith(
             chatEntry: state.chatEntry?.copyWith(entries: finalEntries),
             isChatEntry: ApiFetchStatus.success,
+            selectedFiles: state.selectedFiles,
           ),
         );
       } else {
@@ -493,6 +537,86 @@ class ChatCubit extends Cubit<ChatState> {
       );
       log('Error creating chat entry: $e');
     }
+  }
+
+  Future<void> selectFiles() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png', 'gif'],
+        allowMultiple: true,
+      );
+
+      if (result != null) {
+        List<File> files = result.paths.map((path) => File(path!)).toList();
+        List<File> currentFiles = state.selectedFiles ?? [];
+        List<File> updatedFiles = [...currentFiles, ...files];
+
+        emit(state.copyWith(selectedFiles: updatedFiles));
+        log('Selected ${files.length} files');
+      }
+    } catch (e) {
+      emit(state.copyWith(errorMessage: 'Error selecting files: $e'));
+      log('Error selecting files: $e');
+    }
+  }
+
+  Future<void> selectImageFromGallery() async {
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1920,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        List<File> currentFiles = state.selectedFiles ?? [];
+        List<File> updatedFiles = [...currentFiles, File(image.path)];
+
+        emit(state.copyWith(selectedFiles: updatedFiles));
+        log('Selected image from gallery: ${image.path}');
+      }
+    } catch (e) {
+      emit(state.copyWith(errorMessage: 'Error selecting image: $e'));
+      log('Error selecting image: $e');
+    }
+  }
+
+  Future<void> selectImageFromCamera() async {
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 1920,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        List<File> currentFiles = state.selectedFiles ?? [];
+        List<File> updatedFiles = [...currentFiles, File(image.path)];
+
+        emit(state.copyWith(selectedFiles: updatedFiles));
+        log('Captured image from camera: ${image.path}');
+      }
+    } catch (e) {
+      emit(state.copyWith(errorMessage: 'Error capturing image: $e'));
+      log('Error capturing image: $e');
+    }
+  }
+
+  void removeSelectedFile(int index) {
+    if (state.selectedFiles != null && index < state.selectedFiles!.length) {
+      List<File> updatedFiles = List.from(state.selectedFiles!);
+      updatedFiles.removeAt(index);
+      emit(state.copyWith(selectedFiles: updatedFiles));
+      log('Removed file at index $index');
+    }
+  }
+
+  void clearSelectedFiles() {
+    emit(state.copyWith(selectedFiles: []));
+    log('Cleared all selected files');
   }
 
   //=-=-=-=

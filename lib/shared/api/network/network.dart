@@ -50,11 +50,32 @@ class NetworkProvider {
           );
           String fullUrl = baseUrl + options.path;
           log('Full URL: $fullUrl');
-          if (options.contentType == 'multipart/form-data') {
-            log('Request = ${options.data}', name: options.path);
+
+          // Fix: Handle FormData logging properly - DON'T use jsonEncode on FormData
+          if (options.data is FormData) {
+            final formData = options.data as FormData;
+            log('Request Type: FormData');
+            log('FormData fields:');
+            for (var field in formData.fields) {
+              log('  ${field.key}: ${field.value}');
+            }
+            if (formData.files.isNotEmpty) {
+              log('FormData files:');
+              for (var file in formData.files) {
+                log('  ${file.key}: ${file.value.filename}');
+              }
+            }
+          } else if (options.data != null) {
+            // Only use jsonEncode for non-FormData
+            try {
+              log('Request = ${jsonEncode(options.data)}', name: options.path);
+            } catch (e) {
+              log('Request = ${options.data.toString()}', name: options.path);
+            }
           } else {
-            log('Request = ${jsonEncode(options.data)}', name: options.path);
+            log('Request Type: No data');
           }
+
           log(
             '------------------------------------------------------------------------------------------------',
           );
@@ -62,20 +83,71 @@ class NetworkProvider {
           if (options.headers.containsKey('auth')) {
             options.headers.remove('auth');
           } else {
-            // final String? token = await AuthUtils.instance.readAccessToken;
-
             log("Access token  $token");
             if (token != "") {
               options.headers.addEntries(
                 {'Authorization': 'Bearer $token', "userName": "post"}.entries,
               );
             }
-
             log("token $token");
           }
 
           return handler.next(options);
         },
+        // onRequest: (options, handler) async {
+        //   log(
+        //     '------------------------------------------------------------------------------------------------',
+        //   );
+        //   if (options.data is FormData) {
+        //     final formData = options.data as FormData;
+        //     log('Request Type: FormData');
+        //     log('FormData fields:');
+        //     for (var field in formData.fields) {
+        //       log('  ${field.key}: ${field.value}');
+        //     }
+        //     if (formData.files.isNotEmpty) {
+        //       log('FormData files:');
+        //       for (var file in formData.files) {
+        //         log(
+        //           '  ${file.key}: ${file.value.filename} (${file.value.length} bytes)',
+        //         );
+        //       }
+        //     }
+        //   } else if (options.data != null) {
+        //     log('Request Type: JSON');
+        //     log('Request = ${jsonEncode(options.data)}', name: options.path);
+        //   } else {
+        //     log('Request Type: No data');
+        //   }
+        //   //=-=-=-===============================
+        //   String fullUrl = baseUrl + options.path;
+        //   log('Full URL: $fullUrl');
+        //   if (options.contentType == 'multipart/form-data') {
+        //     log('Request = ${options.data}', name: options.path);
+        //   } else {
+        //     log('Request = ${jsonEncode(options.data)}', name: options.path);
+        //   }
+        //   log(
+        //     '------------------------------------------------------------------------------------------------',
+        //   );
+
+        //   if (options.headers.containsKey('auth')) {
+        //     options.headers.remove('auth');
+        //   } else {
+        //     // final String? token = await AuthUtils.instance.readAccessToken;
+
+        //     log("Access token  $token");
+        //     if (token != "") {
+        //       options.headers.addEntries(
+        //         {'Authorization': 'Bearer $token', "userName": "post"}.entries,
+        //       );
+        //     }
+
+        //     log("token $token");
+        //   }
+
+        //   return handler.next(options);
+        // },
         onResponse: (response, handler) {
           log(
             '************************************************************************************************',
@@ -85,12 +157,40 @@ class NetworkProvider {
             name: response.requestOptions.path,
           );
           log(
+            'Response Status: ${response.statusCode}',
+            name: response.requestOptions.path,
+          );
+          log(
+            'Response Headers: ${response.headers}',
+            name: response.requestOptions.path,
+          );
+          log(
+            'Response Data: ${response.data.toString()}',
+            name: response.requestOptions.path,
+          );
+          log(
             '************************************************************************************************',
           );
 
           return handler.next(response);
         },
         onError: (error, handler) async {
+          log(
+            'Error Status: ${error.response?.statusCode}',
+            name: error.requestOptions.path,
+          );
+          log(
+            'Error Headers: ${error.response?.headers}',
+            name: error.requestOptions.path,
+          );
+          log(
+            'Error Data: ${error.response?.data}',
+            name: error.requestOptions.path,
+          );
+          log(
+            'Error Message: ${error.message}',
+            name: error.requestOptions.path,
+          );
           if (error.error is SocketException ||
               error.type == DioExceptionType.connectionError) {
             return handler.reject(
@@ -191,9 +291,12 @@ class NetworkProvider {
           );
           break;
         case 'POST':
+          final postData = data is FormData
+              ? data
+              : Helper().removeNullValues(data ?? {});
           response = await _dio.post<T>(
             path,
-            data: Helper().removeNullValues(data ?? {}),
+            data: postData,
             queryParameters: queryParameters,
             options: options,
             cancelToken: cancelToken,
@@ -240,6 +343,39 @@ class NetworkProvider {
 
       return response;
     } catch (error) {
+      return Future.error(error);
+    }
+  }
+
+  // Add this method to your NetworkProvider class
+  Future<Response<T>> postFormData<T>(
+    String path, {
+    required FormData formData,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+    void Function(int, int)? onSendProgress,
+    void Function(int, int)? onReceiveProgress,
+  }) async {
+    try {
+      log('NetworkProvider: Sending FormData to $path');
+
+      final response = await _dio.post<T>(
+        path,
+        data: formData, // Pass FormData directly
+        queryParameters: queryParameters,
+        options:
+            options ??
+            Options(headers: {'Content-Type': 'multipart/form-data'}),
+        cancelToken: cancelToken,
+        onSendProgress: onSendProgress,
+        onReceiveProgress: onReceiveProgress,
+      );
+
+      log('NetworkProvider: FormData response status ${response.statusCode}');
+      return response;
+    } catch (error) {
+      log('NetworkProvider: FormData error - $error');
       return Future.error(error);
     }
   }

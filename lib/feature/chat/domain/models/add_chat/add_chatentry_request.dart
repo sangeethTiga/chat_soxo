@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'add_chatentry_request.freezed.dart';
@@ -14,6 +16,8 @@ class AddChatEntryRequest with _$AddChatEntryRequest {
     @JsonKey(name: "content") String? content,
     @JsonKey(name: "source") String? source,
     @JsonKey(name: "chatMedias") List<ChatMedia>? chatMedias,
+    @JsonKey(includeFromJson: false, includeToJson: false)
+    List<File>? attachedFiles,
   }) = _AddChatEntryRequest;
 
   factory AddChatEntryRequest.fromJson(Map<String, dynamic> json) =>
