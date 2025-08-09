@@ -17,6 +17,7 @@ import 'package:soxo_chat/shared/app/enums/api_fetch_status.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
 import 'package:soxo_chat/shared/routes/routes.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
+import 'package:soxo_chat/shared/utils/auth/auth_utils.dart';
 import 'package:soxo_chat/shared/widgets/alert/alert_dialog_custom.dart';
 import 'package:soxo_chat/shared/widgets/padding/main_padding.dart';
 import 'package:soxo_chat/shared/widgets/shimmer/shimmer_category.dart';
@@ -424,29 +425,38 @@ class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
   }
 
   Widget _buildMessagesList(List<Entry> entries) {
-    return ListView.builder(
-      cacheExtent: 2000,
+    return FutureBuilder(
+      future: AuthUtils.instance.readUserData(),
+      builder: (context, asyncSnapshot) {
+        return ListView.builder(
+          cacheExtent: 2000,
 
-      controller: _scrollController,
-      padding: EdgeInsets.symmetric(horizontal: 16.w),
-      itemCount: entries.length,
-      itemBuilder: (context, index) {
-        final messageData = entries[index];
+          controller: _scrollController,
+          padding: EdgeInsets.symmetric(horizontal: 16.w),
+          itemCount: entries.length,
+          itemBuilder: (context, index) {
+            final messageData = entries[index];
 
-        // Auto-scroll to bottom when new message is added
-        if (index == entries.length - 1) {
-          _scrollToBottom();
-        }
-
-        return Padding(
-          padding: EdgeInsets.only(top: 15.h),
-          child: ChatBubbleMessage(
-            type: messageData.messageType,
-            message: messageData.content ?? '',
-            timestamp: '12-2-2025 ,15:24',
-            isSent: true,
-            chatMedias: messageData.chatMedias,
-          ),
+            // Auto-scroll to bottom when new message is added
+            if (index == entries.length - 1) {
+              _scrollToBottom();
+            }
+            final int userId =
+                int.tryParse(
+                  asyncSnapshot.data?.result?.userId.toString() ?? '0',
+                ) ??
+                0;
+            return Padding(
+              padding: EdgeInsets.only(top: 15.h),
+              child: ChatBubbleMessage(
+                type: messageData.messageType,
+                message: messageData.content ?? '',
+                timestamp: '12-2-2025 ,15:24',
+                isSent: messageData.senderId == userId ? true : false,
+                chatMedias: messageData.chatMedias,
+              ),
+            );
+          },
         );
       },
     );
@@ -522,12 +532,13 @@ class _UnifiedMessageInputState extends State<UnifiedMessageInput>
     );
   }
 
-  void _stopRecording() {
+  void _stopRecording() async {
+    final user = await AuthUtils.instance.readUserData();
     if (!widget.isGroup) {
       context.read<ChatCubit>().stopRecordingAndSend(
         AddChatEntryRequest(
           chatId: widget.chatData?['chat_id'],
-          senderId: 45,
+          senderId: int.tryParse(user?.result?.userId.toString() ?? '1'),
           type: 'N',
           typeValue: 0,
           messageType: 'voice',
@@ -549,6 +560,7 @@ class _UnifiedMessageInputState extends State<UnifiedMessageInput>
 
   Future<void> _sendMessage() async {
     final messageText = _messageController.text.trim();
+    final user = await AuthUtils.instance.readUserData();
 
     if (widget.isGroup) {
       _handleGroupMessage(messageText);
@@ -564,7 +576,7 @@ class _UnifiedMessageInputState extends State<UnifiedMessageInput>
     await context.read<ChatCubit>().createChat(
       AddChatEntryRequest(
         chatId: widget.chatData?['chat_id'],
-        senderId: 45,
+        senderId: int.tryParse(user?.result?.userId.toString() ?? '1'),
         type: 'N',
         typeValue: 0,
         messageType: 'text',

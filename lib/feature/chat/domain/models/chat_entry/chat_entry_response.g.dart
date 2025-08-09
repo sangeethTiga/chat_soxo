@@ -36,13 +36,14 @@ _$EntryImpl _$$EntryImplFromJson(Map<String, dynamic> json) => _$EntryImpl(
   mediaIds: json['mediaIds'] as String?,
   createdAt: json['createdAt'] as String?,
   pinned: json['pinned'] as String?,
+  userStatus: json['userStatus'] as String?,
+  direction: json['direction'] as String?,
   sender: json['sender'] == null
       ? null
       : Sender.fromJson(json['sender'] as Map<String, dynamic>),
   chatMedias: (json['chatMedias'] as List<dynamic>?)
       ?.map((e) => ChatMedias.fromJson(e as Map<String, dynamic>))
       .toList(),
-  userStatus: json['userStatus'] as String?,
   userChats: (json['userChats'] as List<dynamic>?)
       ?.map((e) => UserChat.fromJson(e as Map<String, dynamic>))
       .toList(),
@@ -61,9 +62,10 @@ Map<String, dynamic> _$$EntryImplToJson(_$EntryImpl instance) =>
       'mediaIds': instance.mediaIds,
       'createdAt': instance.createdAt,
       'pinned': instance.pinned,
+      'userStatus': instance.userStatus,
+      'direction': instance.direction,
       'sender': instance.sender,
       'chatMedias': instance.chatMedias,
-      'userStatus': instance.userStatus,
       'userChats': instance.userChats,
     };
 

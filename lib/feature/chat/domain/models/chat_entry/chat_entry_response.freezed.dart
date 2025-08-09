@@ -252,12 +252,14 @@ mixin _$Entry {
   String? get createdAt => throw _privateConstructorUsedError;
   @JsonKey(name: "pinned")
   String? get pinned => throw _privateConstructorUsedError;
+  @JsonKey(name: "userStatus")
+  String? get userStatus => throw _privateConstructorUsedError;
+  @JsonKey(name: "direction")
+  String? get direction => throw _privateConstructorUsedError;
   @JsonKey(name: "sender")
   Sender? get sender => throw _privateConstructorUsedError;
   @JsonKey(name: "chatMedias")
   List<ChatMedias>? get chatMedias => throw _privateConstructorUsedError;
-  @JsonKey(name: "userStatus")
-  String? get userStatus => throw _privateConstructorUsedError;
   @JsonKey(name: "userChats")
   List<UserChat>? get userChats => throw _privateConstructorUsedError;
 
@@ -287,9 +289,10 @@ abstract class $EntryCopyWith<$Res> {
     @JsonKey(name: "mediaIds") String? mediaIds,
     @JsonKey(name: "createdAt") String? createdAt,
     @JsonKey(name: "pinned") String? pinned,
+    @JsonKey(name: "userStatus") String? userStatus,
+    @JsonKey(name: "direction") String? direction,
     @JsonKey(name: "sender") Sender? sender,
     @JsonKey(name: "chatMedias") List<ChatMedias>? chatMedias,
-    @JsonKey(name: "userStatus") String? userStatus,
     @JsonKey(name: "userChats") List<UserChat>? userChats,
   });
 
@@ -322,9 +325,10 @@ class _$EntryCopyWithImpl<$Res, $Val extends Entry>
     Object? mediaIds = freezed,
     Object? createdAt = freezed,
     Object? pinned = freezed,
+    Object? userStatus = freezed,
+    Object? direction = freezed,
     Object? sender = freezed,
     Object? chatMedias = freezed,
-    Object? userStatus = freezed,
     Object? userChats = freezed,
   }) {
     return _then(
@@ -373,6 +377,14 @@ class _$EntryCopyWithImpl<$Res, $Val extends Entry>
                 ? _value.pinned
                 : pinned // ignore: cast_nullable_to_non_nullable
                       as String?,
+            userStatus: freezed == userStatus
+                ? _value.userStatus
+                : userStatus // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            direction: freezed == direction
+                ? _value.direction
+                : direction // ignore: cast_nullable_to_non_nullable
+                      as String?,
             sender: freezed == sender
                 ? _value.sender
                 : sender // ignore: cast_nullable_to_non_nullable
@@ -381,10 +393,6 @@ class _$EntryCopyWithImpl<$Res, $Val extends Entry>
                 ? _value.chatMedias
                 : chatMedias // ignore: cast_nullable_to_non_nullable
                       as List<ChatMedias>?,
-            userStatus: freezed == userStatus
-                ? _value.userStatus
-                : userStatus // ignore: cast_nullable_to_non_nullable
-                      as String?,
             userChats: freezed == userChats
                 ? _value.userChats
                 : userChats // ignore: cast_nullable_to_non_nullable
@@ -429,9 +437,10 @@ abstract class _$$EntryImplCopyWith<$Res> implements $EntryCopyWith<$Res> {
     @JsonKey(name: "mediaIds") String? mediaIds,
     @JsonKey(name: "createdAt") String? createdAt,
     @JsonKey(name: "pinned") String? pinned,
+    @JsonKey(name: "userStatus") String? userStatus,
+    @JsonKey(name: "direction") String? direction,
     @JsonKey(name: "sender") Sender? sender,
     @JsonKey(name: "chatMedias") List<ChatMedias>? chatMedias,
-    @JsonKey(name: "userStatus") String? userStatus,
     @JsonKey(name: "userChats") List<UserChat>? userChats,
   });
 
@@ -464,9 +473,10 @@ class __$$EntryImplCopyWithImpl<$Res>
     Object? mediaIds = freezed,
     Object? createdAt = freezed,
     Object? pinned = freezed,
+    Object? userStatus = freezed,
+    Object? direction = freezed,
     Object? sender = freezed,
     Object? chatMedias = freezed,
-    Object? userStatus = freezed,
     Object? userChats = freezed,
   }) {
     return _then(
@@ -515,6 +525,14 @@ class __$$EntryImplCopyWithImpl<$Res>
             ? _value.pinned
             : pinned // ignore: cast_nullable_to_non_nullable
                   as String?,
+        userStatus: freezed == userStatus
+            ? _value.userStatus
+            : userStatus // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        direction: freezed == direction
+            ? _value.direction
+            : direction // ignore: cast_nullable_to_non_nullable
+                  as String?,
         sender: freezed == sender
             ? _value.sender
             : sender // ignore: cast_nullable_to_non_nullable
@@ -523,10 +541,6 @@ class __$$EntryImplCopyWithImpl<$Res>
             ? _value._chatMedias
             : chatMedias // ignore: cast_nullable_to_non_nullable
                   as List<ChatMedias>?,
-        userStatus: freezed == userStatus
-            ? _value.userStatus
-            : userStatus // ignore: cast_nullable_to_non_nullable
-                  as String?,
         userChats: freezed == userChats
             ? _value._userChats
             : userChats // ignore: cast_nullable_to_non_nullable
@@ -551,9 +565,10 @@ class _$EntryImpl implements _Entry {
     @JsonKey(name: "mediaIds") this.mediaIds,
     @JsonKey(name: "createdAt") this.createdAt,
     @JsonKey(name: "pinned") this.pinned,
+    @JsonKey(name: "userStatus") this.userStatus,
+    @JsonKey(name: "direction") this.direction,
     @JsonKey(name: "sender") this.sender,
     @JsonKey(name: "chatMedias") final List<ChatMedias>? chatMedias,
-    @JsonKey(name: "userStatus") this.userStatus,
     @JsonKey(name: "userChats") final List<UserChat>? userChats,
   }) : _chatMedias = chatMedias,
        _userChats = userChats;
@@ -595,6 +610,12 @@ class _$EntryImpl implements _Entry {
   @JsonKey(name: "pinned")
   final String? pinned;
   @override
+  @JsonKey(name: "userStatus")
+  final String? userStatus;
+  @override
+  @JsonKey(name: "direction")
+  final String? direction;
+  @override
   @JsonKey(name: "sender")
   final Sender? sender;
   final List<ChatMedias>? _chatMedias;
@@ -608,9 +629,6 @@ class _$EntryImpl implements _Entry {
     return EqualUnmodifiableListView(value);
   }
 
-  @override
-  @JsonKey(name: "userStatus")
-  final String? userStatus;
   final List<UserChat>? _userChats;
   @override
   @JsonKey(name: "userChats")
@@ -624,7 +642,7 @@ class _$EntryImpl implements _Entry {
 
   @override
   String toString() {
-    return 'Entry(id: $id, type: $type, typeValue: $typeValue, chatId: $chatId, senderId: $senderId, messageType: $messageType, thread: $thread, content: $content, mediaIds: $mediaIds, createdAt: $createdAt, pinned: $pinned, sender: $sender, chatMedias: $chatMedias, userStatus: $userStatus, userChats: $userChats)';
+    return 'Entry(id: $id, type: $type, typeValue: $typeValue, chatId: $chatId, senderId: $senderId, messageType: $messageType, thread: $thread, content: $content, mediaIds: $mediaIds, createdAt: $createdAt, pinned: $pinned, userStatus: $userStatus, direction: $direction, sender: $sender, chatMedias: $chatMedias, userChats: $userChats)';
   }
 
   @override
@@ -648,13 +666,15 @@ class _$EntryImpl implements _Entry {
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.pinned, pinned) || other.pinned == pinned) &&
+            (identical(other.userStatus, userStatus) ||
+                other.userStatus == userStatus) &&
+            (identical(other.direction, direction) ||
+                other.direction == direction) &&
             (identical(other.sender, sender) || other.sender == sender) &&
             const DeepCollectionEquality().equals(
               other._chatMedias,
               _chatMedias,
             ) &&
-            (identical(other.userStatus, userStatus) ||
-                other.userStatus == userStatus) &&
             const DeepCollectionEquality().equals(
               other._userChats,
               _userChats,
@@ -676,9 +696,10 @@ class _$EntryImpl implements _Entry {
     mediaIds,
     createdAt,
     pinned,
+    userStatus,
+    direction,
     sender,
     const DeepCollectionEquality().hash(_chatMedias),
-    userStatus,
     const DeepCollectionEquality().hash(_userChats),
   );
 
@@ -709,9 +730,10 @@ abstract class _Entry implements Entry {
     @JsonKey(name: "mediaIds") final String? mediaIds,
     @JsonKey(name: "createdAt") final String? createdAt,
     @JsonKey(name: "pinned") final String? pinned,
+    @JsonKey(name: "userStatus") final String? userStatus,
+    @JsonKey(name: "direction") final String? direction,
     @JsonKey(name: "sender") final Sender? sender,
     @JsonKey(name: "chatMedias") final List<ChatMedias>? chatMedias,
-    @JsonKey(name: "userStatus") final String? userStatus,
     @JsonKey(name: "userChats") final List<UserChat>? userChats,
   }) = _$EntryImpl;
 
@@ -751,14 +773,17 @@ abstract class _Entry implements Entry {
   @JsonKey(name: "pinned")
   String? get pinned;
   @override
+  @JsonKey(name: "userStatus")
+  String? get userStatus;
+  @override
+  @JsonKey(name: "direction")
+  String? get direction;
+  @override
   @JsonKey(name: "sender")
   Sender? get sender;
   @override
   @JsonKey(name: "chatMedias")
   List<ChatMedias>? get chatMedias;
-  @override
-  @JsonKey(name: "userStatus")
-  String? get userStatus;
   @override
   @JsonKey(name: "userChats")
   List<UserChat>? get userChats;

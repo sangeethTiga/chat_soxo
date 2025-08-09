@@ -13,7 +13,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 import 'package:soxo_chat/feature/chat/domain/models/add_chat/add_chatentry_request.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_entry/chat_entry_response.dart';
-import 'package:soxo_chat/feature/chat/domain/models/chat_model/chat_models.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_res/chat_list_response.dart';
 import 'package:soxo_chat/feature/chat/domain/repositories/chat_repositories.dart';
 import 'package:soxo_chat/shared/app/enums/api_fetch_status.dart';

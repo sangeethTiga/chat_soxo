@@ -46,7 +46,6 @@ class ChatState extends Equatable {
     Duration? recordingDuration,
     String? recordingPath,
     bool? hasRecordingPermission,
-    List<ChatMessage>? messages,
     String? errorMessage,
     List<ChatListResponse>? chatList,
     ApiFetchStatus? isChat,
