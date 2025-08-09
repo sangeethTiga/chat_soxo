@@ -11,7 +11,57 @@ import 'package:path_provider/path_provider.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_entry/chat_entry_response.dart';
 
-/// Optimized media preview widget with improved performance and error handling
+/// Enhanced cache with better state management
+class _MediaCache {
+  static final Map<String, Uint8List> _imageCache = {};
+  static final Map<String, String> _filePathCache = {};
+  static final Set<String> _loadingItems = {};
+  static final Set<String> _failedItems = {};
+
+  static Uint8List? getImage(String key) => _imageCache[key];
+  static void setImage(String key, Uint8List data) {
+    _imageCache[key] = data;
+    _failedItems.remove(key);
+  }
+
+  static String? getFilePath(String key) => _filePathCache[key];
+  static void setFilePath(String key, String path) {
+    _filePathCache[key] = path;
+    _failedItems.remove(key);
+  }
+
+  static bool isLoading(String key) => _loadingItems.contains(key);
+  static void setLoading(String key) {
+    _loadingItems.add(key);
+    _failedItems.remove(key);
+  }
+
+  static void clearLoading(String key) => _loadingItems.remove(key);
+
+  static bool hasFailed(String key) => _failedItems.contains(key);
+  static void setFailed(String key) {
+    _failedItems.add(key);
+    _loadingItems.remove(key);
+  }
+
+  static void clearFailed(String key) => _failedItems.remove(key);
+
+  static void clear() {
+    _imageCache.clear();
+    _filePathCache.clear();
+    _loadingItems.clear();
+    _failedItems.clear();
+  }
+
+  static void clearForMedia(String key) {
+    _imageCache.remove(key);
+    _filePathCache.remove(key);
+    _loadingItems.remove(key);
+    _failedItems.remove(key);
+  }
+}
+
+/// Instant loading media preview widget
 class MediaPreviewWidget extends StatelessWidget {
   final ChatMedias? media;
   final bool isInChatBubble;
@@ -32,135 +82,16 @@ class MediaPreviewWidget extends StatelessWidget {
 
     final mediaId = media!.id.toString();
 
-    // Use BlocSelector to only rebuild when specific media state changes
-    return BlocSelector<ChatCubit, ChatState, _MediaData>(
-      selector: (state) {
-        final cubit = context.read<ChatCubit>();
-        return _MediaData(
-          fileUrl: cubit.getFileUrl(mediaId),
-          fileType: cubit.getFileType(mediaId),
-          isLoading: cubit.isFileLoading(mediaId),
-        );
-      },
-      builder: (context, mediaData) {
-        return _MediaContentBuilder(
-          media: media!,
-          fileUrl: mediaData.fileUrl,
-          fileType: mediaData.fileType,
-          isLoading: mediaData.isLoading,
-          isInChatBubble: isInChatBubble,
-          maxWidth: maxWidth,
-          maxHeight: maxHeight,
-        );
-      },
-    );
-  }
-}
-
-/// Immutable data class for media state
-class _MediaData {
-  final String? fileUrl;
-  final String? fileType;
-  final bool isLoading;
-
-  const _MediaData({this.fileUrl, this.fileType, this.isLoading = false});
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is _MediaData &&
-          runtimeType == other.runtimeType &&
-          fileUrl == other.fileUrl &&
-          fileType == other.fileType &&
-          isLoading == other.isLoading;
-
-  @override
-  int get hashCode => fileUrl.hashCode ^ fileType.hashCode ^ isLoading.hashCode;
-}
-
-/// Builds media content based on type and state
-class _MediaContentBuilder extends StatelessWidget {
-  final ChatMedias media;
-  final String? fileUrl;
-  final String? fileType;
-  final bool isLoading;
-  final bool isInChatBubble;
-  final double? maxWidth;
-  final double? maxHeight;
-
-  const _MediaContentBuilder({
-    required this.media,
-    required this.fileUrl,
-    required this.fileType,
-    required this.isLoading,
-    required this.isInChatBubble,
-    this.maxWidth,
-    this.maxHeight,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (fileUrl == null && !isLoading) {
-      context.read<ChatCubit>().loadMediaFile(media);
-    }
-
-    if (isLoading) {
-      return _LoadingWidget(
-        isInChatBubble: isInChatBubble,
-        maxWidth: maxWidth,
-        maxHeight: maxHeight,
-      );
-    }
-
-    if (fileUrl == null) {
-      return _ErrorWidget(
-        message: 'Media not available',
-        isInChatBubble: isInChatBubble,
-        maxWidth: maxWidth,
-        maxHeight: maxHeight,
-      );
-    }
-
-    return _MediaByType(
-      fileUrl: fileUrl!,
-      fileType: fileType ?? 'unknown',
-      mediaId: media.id.toString(),
-      isInChatBubble: isInChatBubble,
-      maxWidth: maxWidth,
-      maxHeight: maxHeight,
-    );
-  }
-}
-
-/// Alternative implementation using BlocBuilder for better state management
-class MediaPreviewWidgetV2 extends StatelessWidget {
-  final ChatMedias? media;
-  final bool isInChatBubble;
-  final double? maxWidth;
-  final double? maxHeight;
-
-  const MediaPreviewWidgetV2({
-    super.key,
-    required this.media,
-    this.isInChatBubble = true,
-    this.maxWidth,
-    this.maxHeight,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (media?.id == null) return const SizedBox.shrink();
-
-    return BlocBuilder<ChatCubit, ChatState>(
-      builder: (context, state) {
-        final mediaId = media!.id.toString();
-        final cubit = context.read<ChatCubit>();
-
+    // Use a more efficient approach - get cubit instance once
+    return Builder(
+      builder: (context) {
+        final cubit = context.watch<ChatCubit>();
         final fileUrl = cubit.getFileUrl(mediaId);
         final fileType = cubit.getFileType(mediaId);
         final isLoading = cubit.isFileLoading(mediaId);
 
-        return _MediaContentBuilder(
+        return _InstantMediaBuilder(
+          key: ValueKey('media_$mediaId'), // Prevent unnecessary rebuilds
           media: media!,
           fileUrl: fileUrl,
           fileType: fileType,
@@ -174,7 +105,193 @@ class MediaPreviewWidgetV2 extends StatelessWidget {
   }
 }
 
-class _MediaByType extends StatelessWidget {
+/// Optimized media builder with better error handling
+class _InstantMediaBuilder extends StatelessWidget {
+  final ChatMedias media;
+  final String? fileUrl;
+  final String? fileType;
+  final bool isLoading;
+  final bool isInChatBubble;
+  final double? maxWidth;
+  final double? maxHeight;
+
+  const _InstantMediaBuilder({
+    super.key,
+    required this.media,
+    required this.fileUrl,
+    required this.fileType,
+    required this.isLoading,
+    required this.isInChatBubble,
+    this.maxWidth,
+    this.maxHeight,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final mediaId = media.id.toString();
+
+    // Debug logging to track the issue
+    debugPrint(
+      'Media $mediaId: fileUrl=$fileUrl, isLoading=$isLoading, type=$fileType',
+    );
+
+    // Check cache first for instant loading
+    if (fileUrl != null && !_MediaCache.isLoading(mediaId)) {
+      return _MediaTypeDispatcher(
+        fileUrl: fileUrl!,
+        fileType: fileType ?? _inferTypeFromMedia(media),
+        mediaId: mediaId,
+        isInChatBubble: isInChatBubble,
+        maxWidth: maxWidth,
+        maxHeight: maxHeight,
+      );
+    }
+
+    // If we have media data but no fileUrl, try to process it directly
+    if (fileUrl == null && !isLoading && !_MediaCache.isLoading(mediaId)) {
+      // Check if media has direct data we can use
+      if (media.mediaUrl != null && media.mediaUrl!.isNotEmpty) {
+        debugPrint('Using media.url directly: ${media.mediaUrl}');
+        return _MediaTypeDispatcher(
+          fileUrl: media.mediaUrl!,
+          fileType: fileType ?? _inferTypeFromMedia(media),
+          mediaId: mediaId,
+          isInChatBubble: isInChatBubble,
+          maxWidth: maxWidth,
+          maxHeight: maxHeight,
+        );
+      }
+
+      // Try to trigger loading
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          debugPrint('Triggering loadMediaFile for $mediaId');
+          context.read<ChatCubit>().loadMediaFile(media);
+        }
+      });
+
+      // Set loading state to prevent multiple requests
+      _MediaCache.setLoading(mediaId);
+    }
+
+    // Show loading state
+    if (isLoading || _MediaCache.isLoading(mediaId)) {
+      return _CompactLoadingWidget(
+        isInChatBubble: isInChatBubble,
+        maxWidth: maxWidth,
+        maxHeight: maxHeight,
+      );
+    }
+
+    // Only show error after giving it a chance to load
+    return FutureBuilder(
+      future: _waitAndCheckAgain(context, mediaId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _CompactLoadingWidget(
+            isInChatBubble: isInChatBubble,
+            maxWidth: maxWidth,
+            maxHeight: maxHeight,
+          );
+        }
+
+        final result = snapshot.data;
+        if (result != null && result.isNotEmpty) {
+          return _MediaTypeDispatcher(
+            fileUrl: result,
+            fileType: fileType ?? _inferTypeFromMedia(media),
+            mediaId: mediaId,
+            isInChatBubble: isInChatBubble,
+            maxWidth: maxWidth,
+            maxHeight: maxHeight,
+          );
+        }
+
+        // Final fallback - show error
+        debugPrint('Media $mediaId finally unavailable after all attempts');
+        return _CompactErrorWidget(
+          message: 'Media unavailable',
+          isInChatBubble: isInChatBubble,
+          maxWidth: maxWidth,
+          maxHeight: maxHeight,
+        );
+      },
+    );
+  }
+
+  /// Wait a moment and check again for the file URL
+  Future<String?> _waitAndCheckAgain(
+    BuildContext context,
+    String mediaId,
+  ) async {
+    // Wait a short time for async operations to complete
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    if (context.mounted) {
+      final cubit = context.read<ChatCubit>();
+      final url = cubit.getFileUrl(mediaId);
+      if (url != null) {
+        _MediaCache.clearLoading(mediaId);
+        return url;
+      }
+
+      // Check if we can use media.url directly
+      if (media.mediaUrl != null && media.mediaUrl!.isNotEmpty) {
+        return media.mediaUrl;
+      }
+    }
+
+    _MediaCache.clearLoading(mediaId);
+    return null;
+  }
+
+  /// Infer file type from media object properties
+  String _inferTypeFromMedia(ChatMedias media) {
+    // Check media properties for type hints
+    if (media.mediaUrl != null && media.mediaType!.isNotEmpty) {
+      return media.mediaType!.toLowerCase();
+    }
+
+    // Check URL extension
+    final url = media.mediaUrl ?? '';
+    if (url.contains('.')) {
+      final extension = url.split('.').last.toLowerCase();
+      switch (extension) {
+        case 'jpg':
+        case 'jpeg':
+        case 'png':
+        case 'gif':
+        case 'webp':
+          return 'image';
+        case 'mp3':
+        case 'm4a':
+        case 'wav':
+        case 'ogg':
+          return 'audio';
+        case 'pdf':
+          return 'document';
+        case 'mp4':
+        case 'mov':
+        case 'avi':
+          return 'video';
+      }
+    }
+
+    // Check MIME type patterns in data URLs
+    if (url.startsWith('data:')) {
+      if (url.contains('image/')) return 'image';
+      if (url.contains('audio/')) return 'audio';
+      if (url.contains('video/')) return 'video';
+      if (url.contains('application/pdf')) return 'document';
+    }
+
+    // Default fallback
+    return 'unknown';
+  }
+}
+
+/// Optimized media type dispatcher
+class _MediaTypeDispatcher extends StatelessWidget {
   final String fileUrl;
   final String fileType;
   final String mediaId;
@@ -182,7 +299,7 @@ class _MediaByType extends StatelessWidget {
   final double? maxWidth;
   final double? maxHeight;
 
-  const _MediaByType({
+  const _MediaTypeDispatcher({
     required this.fileUrl,
     required this.fileType,
     required this.mediaId,
@@ -199,8 +316,9 @@ class _MediaByType extends StatelessWidget {
       case 'jpeg':
       case 'png':
       case 'gif':
-        return _ImagePreview(
+        return _InstantImagePreview(
           fileUrl: fileUrl,
+          mediaId: mediaId,
           isInChatBubble: isInChatBubble,
           maxWidth: maxWidth,
           maxHeight: maxHeight,
@@ -211,7 +329,7 @@ class _MediaByType extends StatelessWidget {
       case 'm4a':
       case 'wav':
       case 'voice':
-        return _AudioPreview(
+        return _InstantAudioPreview(
           fileUrl: fileUrl,
           mediaId: mediaId,
           isInChatBubble: isInChatBubble,
@@ -221,7 +339,7 @@ class _MediaByType extends StatelessWidget {
 
       case 'document':
       case 'pdf':
-        return _DocumentPreview(
+        return _InstantDocumentPreview(
           fileUrl: fileUrl,
           mediaId: mediaId,
           isInChatBubble: isInChatBubble,
@@ -230,7 +348,7 @@ class _MediaByType extends StatelessWidget {
         );
 
       default:
-        return _UnknownFilePreview(
+        return _GenericFilePreview(
           isInChatBubble: isInChatBubble,
           maxWidth: maxWidth,
           maxHeight: maxHeight,
@@ -239,15 +357,17 @@ class _MediaByType extends StatelessWidget {
   }
 }
 
-/// Optimized image preview with memory management and caching
-class _ImagePreview extends StatelessWidget {
+/// Instant image preview with aggressive caching
+class _InstantImagePreview extends StatelessWidget {
   final String fileUrl;
+  final String mediaId;
   final bool isInChatBubble;
   final double? maxWidth;
   final double? maxHeight;
 
-  const _ImagePreview({
+  const _InstantImagePreview({
     required this.fileUrl,
+    required this.mediaId,
     required this.isInChatBubble,
     this.maxWidth,
     this.maxHeight,
@@ -262,166 +382,143 @@ class _ImagePreview extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8.r),
-        child: _CachedImageWidget(
+        child: _CachedImageDisplay(
           fileUrl: fileUrl,
+          mediaId: mediaId,
           isInChatBubble: isInChatBubble,
-          maxWidth: maxWidth,
-          maxHeight: maxHeight,
         ),
       ),
     );
   }
 }
 
-/// Cached image widget that prevents unnecessary rebuilds
-class _CachedImageWidget extends StatefulWidget {
+/// Cached image display with instant loading
+class _CachedImageDisplay extends StatelessWidget {
   final String fileUrl;
+  final String mediaId;
   final bool isInChatBubble;
-  final double? maxWidth;
-  final double? maxHeight;
 
-  const _CachedImageWidget({
+  const _CachedImageDisplay({
     required this.fileUrl,
+    required this.mediaId,
     required this.isInChatBubble,
-    this.maxWidth,
-    this.maxHeight,
   });
 
   @override
-  State<_CachedImageWidget> createState() => _CachedImageWidgetState();
-}
-
-class _CachedImageWidgetState extends State<_CachedImageWidget> {
-  Uint8List? _cachedImageBytes;
-  bool _isLoading = false;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadImage();
-  }
-
-  @override
-  void didUpdateWidget(_CachedImageWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.fileUrl != widget.fileUrl) {
-      _loadImage();
-    }
-  }
-
-  Future<void> _loadImage() async {
-    if (!mounted) return;
-
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      if (widget.fileUrl.startsWith('data:')) {
-        final base64Data = widget.fileUrl.contains(',')
-            ? widget.fileUrl.split(',').last
-            : widget.fileUrl;
-        _cachedImageBytes = base64Decode(base64Data);
-      } else if (widget.fileUrl.startsWith('http')) {
-        // For network images, we'll use Image.network directly
-        _cachedImageBytes = null;
-      } else {
-        final file = File(widget.fileUrl);
-        if (await file.exists()) {
-          _cachedImageBytes = await file.readAsBytes();
-        } else {
-          throw Exception('File not found');
-        }
-      }
-    } catch (e) {
-      log('Image loading error: $e');
-      if (mounted) {
-        setState(() => _error = 'Failed to load image');
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return _LoadingWidget(
-        isInChatBubble: widget.isInChatBubble,
-        maxWidth: widget.maxWidth,
-        maxHeight: widget.maxHeight,
-      );
-    }
-
-    if (_error != null) {
-      return _ErrorWidget(
-        message: _error!,
-        isInChatBubble: widget.isInChatBubble,
-        maxWidth: widget.maxWidth,
-        maxHeight: widget.maxHeight,
-      );
-    }
-
-    if (_cachedImageBytes != null) {
+    // Check cache first for instant display
+    final cachedImage = _MediaCache.getImage(mediaId);
+    if (cachedImage != null) {
       return Image.memory(
-        _cachedImageBytes!,
+        cachedImage,
         fit: BoxFit.cover,
-        cacheWidth: widget.isInChatBubble ? 400 : null,
-        errorBuilder: (context, error, stackTrace) {
-          return _ErrorWidget(
-            message: 'Invalid image',
-            isInChatBubble: widget.isInChatBubble,
-            maxWidth: widget.maxWidth,
-            maxHeight: widget.maxHeight,
-          );
+        cacheWidth: isInChatBubble ? 400 : null,
+      );
+    }
+
+    // For data URLs, decode immediately
+    if (fileUrl.startsWith('data:')) {
+      return FutureBuilder<Uint8List?>(
+        future: _decodeBase64Image(fileUrl, mediaId),
+        builder: (context, snapshot) {
+          if (snapshot.hasData && snapshot.data != null) {
+            return Image.memory(
+              snapshot.data!,
+              fit: BoxFit.cover,
+              cacheWidth: isInChatBubble ? 400 : null,
+            );
+          }
+          if (snapshot.hasError) {
+            return _CompactErrorWidget(
+              message: 'Invalid image',
+              isInChatBubble: isInChatBubble,
+            );
+          }
+          return _CompactLoadingWidget(isInChatBubble: isInChatBubble);
         },
       );
-    } else if (widget.fileUrl.startsWith('http')) {
+    }
+
+    // For network URLs
+    if (fileUrl.startsWith('http')) {
       return Image.network(
-        widget.fileUrl,
+        fileUrl,
         fit: BoxFit.cover,
-        cacheWidth: widget.isInChatBubble ? 400 : null,
+        cacheWidth: isInChatBubble ? 400 : null,
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
-          return _LoadingWidget(
-            isInChatBubble: widget.isInChatBubble,
-            maxWidth: widget.maxWidth,
-            maxHeight: widget.maxHeight,
-          );
+          return _CompactLoadingWidget(isInChatBubble: isInChatBubble);
         },
         errorBuilder: (context, error, stackTrace) {
-          return _ErrorWidget(
+          return _CompactErrorWidget(
             message: 'Failed to load',
-            isInChatBubble: widget.isInChatBubble,
-            maxWidth: widget.maxWidth,
-            maxHeight: widget.maxHeight,
+            isInChatBubble: isInChatBubble,
           );
         },
       );
     }
 
-    return _ErrorWidget(
-      message: 'Unsupported image format',
-      isInChatBubble: widget.isInChatBubble,
-      maxWidth: widget.maxWidth,
-      maxHeight: widget.maxHeight,
+    // For file paths
+    return FutureBuilder<Uint8List?>(
+      future: _loadFileImage(fileUrl, mediaId),
+      builder: (context, snapshot) {
+        if (snapshot.hasData && snapshot.data != null) {
+          return Image.memory(
+            snapshot.data!,
+            fit: BoxFit.cover,
+            cacheWidth: isInChatBubble ? 400 : null,
+          );
+        }
+        if (snapshot.hasError) {
+          return _CompactErrorWidget(
+            message: 'File not found',
+            isInChatBubble: isInChatBubble,
+          );
+        }
+        return _CompactLoadingWidget(isInChatBubble: isInChatBubble);
+      },
     );
+  }
+
+  Future<Uint8List?> _decodeBase64Image(String dataUrl, String mediaId) async {
+    try {
+      final base64Data = dataUrl.contains(',')
+          ? dataUrl.split(',').last
+          : dataUrl;
+      final bytes = base64Decode(base64Data);
+      _MediaCache.setImage(mediaId, bytes);
+      return bytes;
+    } catch (e) {
+      log('Base64 decode error: $e');
+      return null;
+    }
+  }
+
+  Future<Uint8List?> _loadFileImage(String filePath, String mediaId) async {
+    try {
+      final file = File(filePath);
+      if (await file.exists()) {
+        final bytes = await file.readAsBytes();
+        _MediaCache.setImage(mediaId, bytes);
+        return bytes;
+      }
+      return null;
+    } catch (e) {
+      log('File load error: $e');
+      return null;
+    }
   }
 }
 
-/// Audio preview with optimized player
-class _AudioPreview extends StatelessWidget {
+/// Instant audio preview with cached file paths
+class _InstantAudioPreview extends StatelessWidget {
   final String fileUrl;
   final String mediaId;
   final bool isInChatBubble;
   final double? maxWidth;
   final double? maxHeight;
 
-  const _AudioPreview({
+  const _InstantAudioPreview({
     required this.fileUrl,
     required this.mediaId,
     required this.isInChatBubble,
@@ -436,7 +533,7 @@ class _AudioPreview extends StatelessWidget {
       constraints: BoxConstraints(
         maxHeight: maxHeight ?? (isInChatBubble ? 80.h : 120.h),
       ),
-      child: OptimizedAudioPlayer(
+      child: _InstantAudioPlayer(
         fileUrl: fileUrl,
         mediaId: mediaId,
         isCompact: isInChatBubble,
@@ -445,15 +542,189 @@ class _AudioPreview extends StatelessWidget {
   }
 }
 
-/// Document preview with tap handling
-class _DocumentPreview extends StatelessWidget {
+/// Instant audio player with file caching
+class _InstantAudioPlayer extends StatefulWidget {
+  final String fileUrl;
+  final String mediaId;
+  final bool isCompact;
+
+  const _InstantAudioPlayer({
+    required this.fileUrl,
+    required this.mediaId,
+    this.isCompact = true,
+  });
+
+  @override
+  State<_InstantAudioPlayer> createState() => _InstantAudioPlayerState();
+}
+
+class _InstantAudioPlayerState extends State<_InstantAudioPlayer> {
+  AudioPlayer? _audioPlayer;
+  bool _isPlaying = false;
+  bool _isReady = false;
+  Duration _duration = Duration.zero;
+  Duration _position = Duration.zero;
+  String? _filePath;
+
+  @override
+  void initState() {
+    super.initState();
+    _prepareAudioInstantly();
+  }
+
+  Future<void> _prepareAudioInstantly() async {
+    // Check cache first
+    final cachedPath = _MediaCache.getFilePath(widget.mediaId);
+    if (cachedPath != null && await File(cachedPath).exists()) {
+      _filePath = cachedPath;
+      _initializePlayer();
+      return;
+    }
+
+    try {
+      if (widget.fileUrl.startsWith('data:')) {
+        _filePath = await _FileUtils.saveBase64ToFile(
+          widget.fileUrl,
+          'audio_${widget.mediaId}.m4a',
+        );
+        if (_filePath != null) {
+          _MediaCache.setFilePath(widget.mediaId, _filePath!);
+        }
+      } else {
+        _filePath = widget.fileUrl;
+        _MediaCache.setFilePath(widget.mediaId, _filePath!);
+      }
+
+      if (_filePath != null && await File(_filePath!).exists()) {
+        _initializePlayer();
+      }
+    } catch (e) {
+      log('Audio preparation error: $e');
+    }
+  }
+
+  void _initializePlayer() {
+    if (mounted) {
+      setState(() => _isReady = true);
+      _audioPlayer = AudioPlayer();
+
+      _audioPlayer!.onDurationChanged.listen((duration) {
+        if (mounted) setState(() => _duration = duration);
+      });
+
+      _audioPlayer!.onPositionChanged.listen((position) {
+        if (mounted) setState(() => _position = position);
+      });
+
+      _audioPlayer!.onPlayerStateChanged.listen((state) {
+        if (mounted) setState(() => _isPlaying = state == PlayerState.playing);
+      });
+    }
+  }
+
+  Future<void> _togglePlayPause() async {
+    if (_audioPlayer == null || _filePath == null) return;
+
+    try {
+      if (_isPlaying) {
+        await _audioPlayer!.pause();
+      } else {
+        await _audioPlayer!.play(DeviceFileSource(_filePath!));
+      }
+    } catch (e) {
+      log('Audio playback error: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _audioPlayer?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_isReady) {
+      return _CompactLoadingWidget(isInChatBubble: widget.isCompact);
+    }
+
+    return Container(
+      padding: EdgeInsets.all(widget.isCompact ? 8.w : 12.w),
+      decoration: BoxDecoration(
+        color: Colors.blue[50],
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: Colors.blue[200]!),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTap: _togglePlayPause,
+            child: Container(
+              width: widget.isCompact ? 32.w : 40.w,
+              height: widget.isCompact ? 32.h : 40.h,
+              decoration: BoxDecoration(
+                color: Colors.blue[600],
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                _isPlaying ? Icons.pause : Icons.play_arrow,
+                color: Colors.white,
+                size: widget.isCompact ? 16.sp : 20.sp,
+              ),
+            ),
+          ),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.mic, size: 12.sp, color: Colors.blue[600]),
+                    SizedBox(width: 4.w),
+                    Text(
+                      'Voice message',
+                      style: TextStyle(
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.blue[700],
+                      ),
+                    ),
+                  ],
+                ),
+                if (widget.isCompact) ...[
+                  SizedBox(height: 2.h),
+                  Text(
+                    _formatDuration(_duration),
+                    style: TextStyle(fontSize: 10.sp, color: Colors.grey[600]),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDuration(Duration duration) {
+    final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+}
+
+/// Instant document preview
+class _InstantDocumentPreview extends StatelessWidget {
   final String fileUrl;
   final String mediaId;
   final bool isInChatBubble;
   final double? maxWidth;
   final double? maxHeight;
 
-  const _DocumentPreview({
+  const _InstantDocumentPreview({
     required this.fileUrl,
     required this.mediaId,
     required this.isInChatBubble,
@@ -485,31 +756,15 @@ class _DocumentPreview extends StatelessWidget {
               ),
               SizedBox(width: 8.w),
               Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'PDF Document',
-                      style: TextStyle(
-                        fontSize: isInChatBubble ? 12.sp : 14.sp,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.red[700],
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (!isInChatBubble) ...[
-                      SizedBox(height: 2.h),
-                      Text(
-                        'Tap to view',
-                        style: TextStyle(
-                          fontSize: 10.sp,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ],
+                child: Text(
+                  'PDF Document',
+                  style: TextStyle(
+                    fontSize: isInChatBubble ? 12.sp : 14.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.red[700],
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -521,44 +776,48 @@ class _DocumentPreview extends StatelessWidget {
 
   Future<void> _handleDocumentTap(BuildContext context) async {
     try {
-      String? filePath;
+      String? filePath = _MediaCache.getFilePath(mediaId);
 
-      if (fileUrl.startsWith('data:')) {
-        filePath = await _FileUtils.saveBase64ToFile(
-          fileUrl,
-          'temp_pdf_$mediaId.pdf',
-        );
-      } else if (fileUrl.startsWith('/') || File(fileUrl).existsSync()) {
-        filePath = fileUrl;
+      if (filePath == null) {
+        if (fileUrl.startsWith('data:')) {
+          filePath = await _FileUtils.saveBase64ToFile(
+            fileUrl,
+            'document_$mediaId.pdf',
+          );
+          if (filePath != null) {
+            _MediaCache.setFilePath(mediaId, filePath);
+          }
+        } else {
+          filePath = fileUrl;
+        }
       }
 
       if (filePath != null && await File(filePath).exists()) {
-        // Navigate to PDF viewer
-        // Navigator.push(context, MaterialPageRoute(builder: (_) => PdfViewScreen(filePath: filePath!)));
         log('Opening PDF: $filePath');
+        // Navigator.push(context, MaterialPageRoute(builder: (_) => PdfViewScreen(filePath: filePath!)));
       } else {
-        _showErrorSnackBar(context, 'PDF file not found or invalid');
+        _showSnackBar(context, 'PDF file not found');
       }
     } catch (e) {
       log('Document open error: $e');
-      _showErrorSnackBar(context, 'Failed to open document');
+      _showSnackBar(context, 'Failed to open document');
     }
   }
 
-  void _showErrorSnackBar(BuildContext context, String message) {
+  void _showSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
-/// Reusable widgets for common states
-class _LoadingWidget extends StatelessWidget {
+/// Compact loading widget
+class _CompactLoadingWidget extends StatelessWidget {
   final bool isInChatBubble;
   final double? maxWidth;
   final double? maxHeight;
 
-  const _LoadingWidget({
+  const _CompactLoadingWidget({
     required this.isInChatBubble,
     this.maxWidth,
     this.maxHeight,
@@ -567,24 +826,31 @@ class _LoadingWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: maxWidth ?? (isInChatBubble ? 100.w : 200.w),
-      height: maxHeight ?? (isInChatBubble ? 100.h : 200.h),
+      width: maxWidth ?? (isInChatBubble ? 80.w : 120.w),
+      height: maxHeight ?? (isInChatBubble ? 60.h : 80.h),
       decoration: BoxDecoration(
         color: Colors.grey[100],
         borderRadius: BorderRadius.circular(8.r),
       ),
-      child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      child: Center(
+        child: SizedBox(
+          width: 20.w,
+          height: 20.h,
+          child: const CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
     );
   }
 }
 
-class _ErrorWidget extends StatelessWidget {
+/// Compact error widget
+class _CompactErrorWidget extends StatelessWidget {
   final String message;
   final bool isInChatBubble;
   final double? maxWidth;
   final double? maxHeight;
 
-  const _ErrorWidget({
+  const _CompactErrorWidget({
     required this.message,
     required this.isInChatBubble,
     this.maxWidth,
@@ -594,8 +860,8 @@ class _ErrorWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: maxWidth ?? (isInChatBubble ? 100.w : 150.w),
-      height: maxHeight ?? (isInChatBubble ? 80.h : 100.h),
+      width: maxWidth ?? (isInChatBubble ? 80.w : 120.w),
+      height: maxHeight ?? (isInChatBubble ? 60.h : 80.h),
       decoration: BoxDecoration(
         color: Colors.red[50],
         borderRadius: BorderRadius.circular(8.r),
@@ -604,24 +870,12 @@ class _ErrorWidget extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.error_outline,
-            size: isInChatBubble ? 24.sp : 32.sp,
-            color: Colors.red[600],
-          ),
-          SizedBox(height: 4.h),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 8.w),
-            child: Text(
-              message,
-              style: TextStyle(
-                fontSize: isInChatBubble ? 8.sp : 10.sp,
-                color: Colors.red[600],
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
+          Icon(Icons.error_outline, size: 16.sp, color: Colors.red[600]),
+          SizedBox(height: 2.h),
+          Text(
+            message,
+            style: TextStyle(fontSize: 8.sp, color: Colors.red[600]),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -629,12 +883,13 @@ class _ErrorWidget extends StatelessWidget {
   }
 }
 
-class _UnknownFilePreview extends StatelessWidget {
+/// Generic file preview
+class _GenericFilePreview extends StatelessWidget {
   final bool isInChatBubble;
   final double? maxWidth;
   final double? maxHeight;
 
-  const _UnknownFilePreview({
+  const _GenericFilePreview({
     required this.isInChatBubble,
     this.maxWidth,
     this.maxHeight,
@@ -643,7 +898,7 @@ class _UnknownFilePreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: maxWidth ?? (isInChatBubble ? 100.w : 150.w),
+      width: maxWidth ?? (isInChatBubble ? 80.w : 120.w),
       height: maxHeight ?? (isInChatBubble ? 60.h : 80.h),
       decoration: BoxDecoration(
         color: Colors.grey[100],
@@ -653,321 +908,34 @@ class _UnknownFilePreview extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.insert_drive_file,
-            size: isInChatBubble ? 24.sp : 32.sp,
-            color: Colors.grey[600],
-          ),
-          SizedBox(height: 4.h),
-          Text(
-            'File',
-            style: TextStyle(
-              fontSize: isInChatBubble ? 10.sp : 12.sp,
-              color: Colors.grey[600],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Optimized audio player with better state management and memoization
-class OptimizedAudioPlayer extends StatefulWidget {
-  final String fileUrl;
-  final String mediaId;
-  final bool isCompact;
-
-  const OptimizedAudioPlayer({
-    super.key,
-    required this.fileUrl,
-    required this.mediaId,
-    this.isCompact = true,
-  });
-
-  @override
-  State<OptimizedAudioPlayer> createState() => _OptimizedAudioPlayerState();
-}
-
-class _OptimizedAudioPlayerState extends State<OptimizedAudioPlayer>
-    with AutomaticKeepAliveClientMixin {
-  late AudioPlayer _audioPlayer;
-
-  // State variables
-  bool _isPlaying = false;
-  bool _isLoading = false;
-  bool _hasError = false;
-  Duration _duration = Duration.zero;
-  Duration _position = Duration.zero;
-  String? _filePath;
-  String? _currentFileUrl;
-
-  // Keep the widget alive to prevent unnecessary rebuilds
-  @override
-  bool get wantKeepAlive => true;
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeAudioPlayer();
-  }
-
-  @override
-  void didUpdateWidget(OptimizedAudioPlayer oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Only reinitialize if the file URL actually changed
-    if (oldWidget.fileUrl != widget.fileUrl) {
-      _currentFileUrl = null;
-      _prepareAudio();
-    }
-  }
-
-  void _initializeAudioPlayer() {
-    _audioPlayer = AudioPlayer();
-    _setupAudioListeners();
-    _prepareAudio();
-  }
-
-  void _setupAudioListeners() {
-    _audioPlayer.onDurationChanged.listen((duration) {
-      if (mounted) setState(() => _duration = duration);
-    });
-
-    _audioPlayer.onPositionChanged.listen((position) {
-      if (mounted) setState(() => _position = position);
-    });
-
-    _audioPlayer.onPlayerStateChanged.listen((state) {
-      if (mounted) setState(() => _isPlaying = state == PlayerState.playing);
-    });
-
-    _audioPlayer.onPlayerComplete.listen((_) {
-      if (mounted) {
-        setState(() {
-          _isPlaying = false;
-          _position = Duration.zero;
-        });
-      }
-    });
-  }
-
-  Future<void> _prepareAudio() async {
-    // Avoid re-preparing the same file
-    if (_currentFileUrl == widget.fileUrl && _filePath != null) return;
-
-    if (!mounted) return;
-
-    setState(() {
-      _isLoading = true;
-      _hasError = false;
-    });
-
-    try {
-      if (widget.fileUrl.startsWith('data:')) {
-        _filePath = await _FileUtils.saveBase64ToFile(
-          widget.fileUrl,
-          'temp_audio_${widget.mediaId}.m4a',
-        );
-      } else {
-        _filePath = widget.fileUrl;
-      }
-
-      if (_filePath == null || !await File(_filePath!).exists()) {
-        throw Exception('Audio file not found');
-      }
-
-      _currentFileUrl = widget.fileUrl;
-    } catch (e) {
-      log('Audio preparation error: $e');
-      if (mounted) setState(() => _hasError = true);
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _togglePlayPause() async {
-    if (_filePath == null || _hasError) return;
-
-    try {
-      if (_isPlaying) {
-        await _audioPlayer.pause();
-      } else {
-        await _audioPlayer.play(DeviceFileSource(_filePath!));
-      }
-    } catch (e) {
-      log('Audio playback error: $e');
-      if (mounted) setState(() => _hasError = true);
-    }
-  }
-
-  @override
-  void dispose() {
-    _audioPlayer.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context); // Required for AutomaticKeepAliveClientMixin
-
-    if (_isLoading) return _buildLoadingState();
-    if (_hasError) return _buildErrorState();
-    return _buildPlayerState();
-  }
-
-  Widget _buildLoadingState() {
-    return Container(
-      padding: EdgeInsets.all(12.w),
-      decoration: _getContainerDecoration(),
-      child: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-          SizedBox(width: 8),
-          Text('Loading audio...'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorState() {
-    return Container(
-      padding: EdgeInsets.all(12.w),
-      decoration: _getContainerDecoration(isError: true),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.error_outline, size: 16.sp, color: Colors.red[600]),
-          const SizedBox(width: 8),
-          const Text('Audio error'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPlayerState() {
-    return Container(
-      padding: EdgeInsets.all(widget.isCompact ? 8.w : 12.w),
-      decoration: _getContainerDecoration(),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildPlayButton(),
-          SizedBox(width: 8.w),
-          Expanded(child: _buildProgressSection()),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPlayButton() {
-    return GestureDetector(
-      onTap: _togglePlayPause,
-      child: Container(
-        width: widget.isCompact ? 32.w : 40.w,
-        height: widget.isCompact ? 32.h : 40.h,
-        decoration: BoxDecoration(
-          color: Colors.blue[600],
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          _isPlaying ? Icons.pause : Icons.play_arrow,
-          color: Colors.white,
-          size: widget.isCompact ? 16.sp : 20.sp,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProgressSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          children: [
-            Icon(
-              Icons.mic,
-              size: widget.isCompact ? 12.sp : 14.sp,
-              color: Colors.blue[600],
-            ),
-            SizedBox(width: 4.w),
-            Text(
-              'Voice message',
-              style: TextStyle(
-                fontSize: widget.isCompact ? 10.sp : 12.sp,
-                fontWeight: FontWeight.w500,
-                color: Colors.blue[700],
-              ),
-            ),
-          ],
-        ),
-        if (widget.isCompact) ...[
+          Icon(Icons.insert_drive_file, size: 20.sp, color: Colors.grey[600]),
           SizedBox(height: 2.h),
           Text(
-            _formatDuration(_duration),
-            style: TextStyle(fontSize: 10.sp, color: Colors.grey[600]),
+            'File',
+            style: TextStyle(fontSize: 8.sp, color: Colors.grey[600]),
           ),
-        ] else
-          _buildFullProgress(),
-      ],
+        ],
+      ),
     );
-  }
-
-  Widget _buildFullProgress() {
-    return Column(
-      children: [
-        SizedBox(height: 4.h),
-        LinearProgressIndicator(
-          value: _duration.inSeconds > 0
-              ? _position.inSeconds / _duration.inSeconds
-              : 0.0,
-          backgroundColor: Colors.grey[300],
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.blue[600]!),
-        ),
-        SizedBox(height: 2.h),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              _formatDuration(_position),
-              style: TextStyle(fontSize: 10.sp, color: Colors.grey[600]),
-            ),
-            Text(
-              _formatDuration(_duration),
-              style: TextStyle(fontSize: 10.sp, color: Colors.grey[600]),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  BoxDecoration _getContainerDecoration({bool isError = false}) {
-    return BoxDecoration(
-      color: isError ? Colors.red[50] : Colors.blue[50],
-      borderRadius: BorderRadius.circular(8.r),
-      border: Border.all(color: isError ? Colors.red[200]! : Colors.blue[200]!),
-    );
-  }
-
-  String _formatDuration(Duration duration) {
-    final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '$minutes:$seconds';
   }
 }
 
-/// Utility class for file operations
+/// Optimized file utils with caching
 class _FileUtils {
+  static final Map<String, String> _pathCache = {};
+
   static Future<String?> saveBase64ToFile(
     String base64Data,
     String fileName,
   ) async {
+    // Check cache first
+    if (_pathCache.containsKey(fileName)) {
+      final cachedPath = _pathCache[fileName]!;
+      if (await File(cachedPath).exists()) {
+        return cachedPath;
+      }
+    }
+
     try {
       String cleanBase64 = base64Data;
       if (base64Data.contains(',')) {
@@ -978,6 +946,8 @@ class _FileUtils {
       final directory = await getTemporaryDirectory();
       final file = File('${directory.path}/$fileName');
       await file.writeAsBytes(bytes);
+
+      _pathCache[fileName] = file.path;
       return file.path;
     } catch (e) {
       log('Error saving base64 to file: $e');

@@ -6,7 +6,6 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path_provider/path_provider.dart';
@@ -580,7 +579,6 @@ class ChatCubit extends Cubit<ChatState> {
 
       if (image != null && !_isDisposed) {
         _addSelectedFile(File(image.path));
-        context.pop();
         log('Selected image from gallery: ${image.path}');
       }
     } catch (e) {
