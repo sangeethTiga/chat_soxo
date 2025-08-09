@@ -245,14 +245,11 @@ class _InstantMediaBuilder extends StatelessWidget {
     return null;
   }
 
-  /// Infer file type from media object properties
   String _inferTypeFromMedia(ChatMedias media) {
-    // Check media properties for type hints
     if (media.mediaUrl != null && media.mediaType!.isNotEmpty) {
       return media.mediaType!.toLowerCase();
     }
 
-    // Check URL extension
     final url = media.mediaUrl ?? '';
     if (url.contains('.')) {
       final extension = url.split('.').last.toLowerCase();

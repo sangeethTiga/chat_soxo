@@ -12,6 +12,9 @@
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:injectable/injectable.dart' as _i526;
 
+import '../../feature/auth/cubit/auth_cubit.dart' as _i543;
+import '../../feature/auth/domain/repositories/auth_repositories.dart' as _i499;
+import '../../feature/auth/domain/service/auth_service.dart' as _i1061;
 import '../../feature/chat/cubit/chat_cubit.dart' as _i46;
 import '../../feature/chat/domain/repositories/chat_repositories.dart' as _i507;
 import '../../feature/chat/domain/service/chat_service.dart' as _i409;
@@ -35,11 +38,15 @@ extension GetItInjectableX on _i174.GetIt {
     gh.singleton<_i287.GlobalCartNotifier>(() => _i287.GlobalCartNotifier());
     gh.lazySingleton<_i507.ChatRepositories>(() => _i409.ChatService());
     gh.lazySingleton<_i387.PersonListRepositories>(() => _i281.PersonService());
+    gh.lazySingleton<_i499.AuthRepositories>(() => _i1061.AuthService());
     gh.factory<_i486.PersonListsCubit>(
       () => _i486.PersonListsCubit(gh<_i387.PersonListRepositories>()),
     );
     gh.factory<_i46.ChatCubit>(
       () => _i46.ChatCubit(gh<_i507.ChatRepositories>()),
+    );
+    gh.factory<_i543.AuthCubit>(
+      () => _i543.AuthCubit(gh<_i499.AuthRepositories>()),
     );
     return this;
   }

@@ -27,6 +27,8 @@ class Entry with _$Entry {
     @JsonKey(name: "content") String? content,
     @JsonKey(name: "mediaIds") String? mediaIds,
     @JsonKey(name: "createdAt") String? createdAt,
+    @JsonKey(name: "pinned") String? pinned,
+
     @JsonKey(name: "sender") Sender? sender,
     @JsonKey(name: "chatMedias") List<ChatMedias>? chatMedias,
     @JsonKey(name: "userStatus") String? userStatus,

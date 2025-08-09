@@ -206,60 +206,69 @@ class GroupContent extends StatelessWidget {
         ),
         const Spacer(),
         const UnifiedMessageInput(isGroup: true),
-        SizedBox(height: 28.h),
+        20.verticalSpace,
       ],
     );
   }
 
   Widget _buildGroupList() {
-    return ListView.separated(
-      cacheExtent: 2000,
-      padding: EdgeInsets.zero,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: 3,
-      itemBuilder: (context, index) {
-        return AnimatedBuilder(
-          animation: contentAnimation,
-          builder: (context, child) {
-            final slideAnimation =
-                Tween<Offset>(
-                  begin: const Offset(0, 0.5),
-                  end: Offset.zero,
-                ).animate(
-                  CurvedAnimation(
-                    parent: contentAnimation,
-                    curve: Interval(
-                      index * 0.2,
-                      0.6 + (index * 0.2),
-                      curve: Curves.easeOutCubic,
-                    ),
+    return BlocSelector<ChatCubit, ChatState, List<Entry>>(
+      selector: (state) {
+        return state.chatEntry?.entries ?? [];
+      },
+      builder: (context, state) {
+        final pinnedList = state.where((e) => e.pinned == 'Y').toList();
+        return ListView.builder(
+          cacheExtent: 2000,
+          padding: EdgeInsets.zero,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: pinnedList.length,
+          itemBuilder: (context, index) {
+            final data = pinnedList[index];
+
+            return AnimatedBuilder(
+              animation: contentAnimation,
+              builder: (context, child) {
+                final slideAnimation =
+                    Tween<Offset>(
+                      begin: const Offset(0, 0.5),
+                      end: Offset.zero,
+                    ).animate(
+                      CurvedAnimation(
+                        parent: contentAnimation,
+                        curve: Interval(
+                          index * 0.2,
+                          0.6 + (index * 0.2),
+                          curve: Curves.easeOutCubic,
+                        ),
+                      ),
+                    );
+
+                final fadeAnimation = Tween<double>(begin: 0.0, end: 1.0)
+                    .animate(
+                      CurvedAnimation(
+                        parent: contentAnimation,
+                        curve: Interval(
+                          index * 0.1,
+                          0.5 + (index * 0.1),
+                          curve: Curves.easeIn,
+                        ),
+                      ),
+                    );
+
+                return SlideTransition(
+                  position: slideAnimation,
+                  child: FadeTransition(
+                    opacity: fadeAnimation,
+                    child: GroupCardWidget(title: 'jskdhf'),
                   ),
                 );
-
-            final fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-              CurvedAnimation(
-                parent: contentAnimation,
-                curve: Interval(
-                  index * 0.1,
-                  0.5 + (index * 0.1),
-                  curve: Curves.easeIn,
-                ),
-              ),
-            );
-
-            return SlideTransition(
-              position: slideAnimation,
-              child: FadeTransition(
-                opacity: fadeAnimation,
-                child: const GroupCardWidget(),
-              ),
+              },
             );
           },
         );
       },
-      separatorBuilder: (context, index) =>
-          const Divider(color: Color(0XFFE3E3E3), thickness: 0),
     );
   }
 }
@@ -711,7 +720,8 @@ class AnimatedDividerCard extends StatelessWidget {
 }
 
 class GroupCardWidget extends StatelessWidget {
-  const GroupCardWidget({super.key});
+  final String? title;
+  const GroupCardWidget({super.key, this.title});
 
   @override
   Widget build(BuildContext context) {
@@ -736,7 +746,7 @@ class GroupCardWidget extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Group Chat',
+                  title ?? '',
                   style: FontPalette.hW700S14.copyWith(color: Colors.black87),
                 ),
                 const SizedBox(height: 4),

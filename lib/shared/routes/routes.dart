@@ -4,3 +4,4 @@ const String routePerson = '/person';
 const String routeChatDetail = '/chatdetail';
 const String routeNotification = '/notifcation';
 const String routeSingleChat = '/singleChat';
+const String routeSignIn = '/signIn';

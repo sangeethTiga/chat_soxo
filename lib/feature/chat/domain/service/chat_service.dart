@@ -13,6 +13,7 @@ import 'package:soxo_chat/feature/chat/domain/models/chat_res/chat_list_response
 import 'package:soxo_chat/feature/chat/domain/repositories/chat_repositories.dart';
 import 'package:soxo_chat/shared/api/endpoint/api_endpoints.dart';
 import 'package:soxo_chat/shared/api/network/network.dart';
+import 'package:soxo_chat/shared/utils/auth/auth_utils.dart';
 import 'package:soxo_chat/shared/utils/result.dart';
 
 @LazySingleton(as: ChatRepositories)
@@ -242,7 +243,8 @@ class ChatService implements ChatRepositories {
         ApiEndpoints.mediaType(media ?? ''),
         options: Options(
           headers: {
-            'Authorization': 'Bearer $token', // Use your actual token
+            'Authorization':
+                'Bearer ${await AuthUtils.instance.readAccessToken}', // Use your actual token
           },
           responseType: ResponseType.bytes,
         ),

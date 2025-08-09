@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:soxo_chat/feature/auth/screen/auth_screen.dart';
 import 'package:soxo_chat/feature/chat/screen/chat_detail_screen.dart';
 import 'package:soxo_chat/feature/chat/screen/chat_screen.dart';
 import 'package:soxo_chat/feature/chat/screen/single_chat_screen.dart';
@@ -12,8 +13,10 @@ import 'package:soxo_chat/shared/routes/routes.dart';
 class RouteGenerator {
   static GoRouter generateRoute() {
     return GoRouter(
-      initialLocation: routeRoot,
+      initialLocation: routeSignIn,
       routes: [
+        GoRoute(path: routeSignIn, builder: (context, state) => SignInScreen()),
+
         GoRoute(path: routeRoot, builder: (context, state) => ChatScreen()),
         GoRoute(
           path: routeGroup,

@@ -35,6 +35,7 @@ _$EntryImpl _$$EntryImplFromJson(Map<String, dynamic> json) => _$EntryImpl(
   content: json['content'] as String?,
   mediaIds: json['mediaIds'] as String?,
   createdAt: json['createdAt'] as String?,
+  pinned: json['pinned'] as String?,
   sender: json['sender'] == null
       ? null
       : Sender.fromJson(json['sender'] as Map<String, dynamic>),
@@ -59,6 +60,7 @@ Map<String, dynamic> _$$EntryImplToJson(_$EntryImpl instance) =>
       'content': instance.content,
       'mediaIds': instance.mediaIds,
       'createdAt': instance.createdAt,
+      'pinned': instance.pinned,
       'sender': instance.sender,
       'chatMedias': instance.chatMedias,
       'userStatus': instance.userStatus,
