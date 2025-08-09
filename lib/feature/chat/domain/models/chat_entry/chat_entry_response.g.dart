@@ -106,6 +106,7 @@ Map<String, dynamic> _$$ChatMediasImplToJson(_$ChatMediasImpl instance) =>
 _$SenderImpl _$$SenderImplFromJson(Map<String, dynamic> json) => _$SenderImpl(
   id: (json['id'] as num?)?.toInt(),
   name: json['name'] as String?,
+  imageUrl: json['otherDetails'] as String?,
   sentMessages: json['sentMessages'] as List<dynamic>?,
 );
 
@@ -113,6 +114,7 @@ Map<String, dynamic> _$$SenderImplToJson(_$SenderImpl instance) =>
     <String, dynamic>{
       'id': instance.id,
       'name': instance.name,
+      'otherDetails': instance.imageUrl,
       'sentMessages': instance.sentMessages,
     };
 

@@ -12,6 +12,7 @@ import 'package:soxo_chat/feature/chat/screen/widgets/appbar.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/chat_bubble_widget.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/file_picker_widget.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/record_dialog.dart';
+import 'package:soxo_chat/feature/chat/screen/widgets/user_data.dart';
 import 'package:soxo_chat/shared/animation/empty_chat.dart';
 import 'package:soxo_chat/shared/app/enums/api_fetch_status.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
@@ -171,16 +172,36 @@ class ChatContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        ChatHeader(data: data),
-        AnimatedDividerCard(
-          onArrowTap: onToggleTap,
-          arrowAnimation: arrowAnimation,
-        ),
-        const Expanded(child: OptimizedChatMessagesList()),
-        MessageInputSection(chatData: data),
-      ],
+    return BlocSelector<ChatCubit, ChatState, List<Entry>>(
+      selector: (state) {
+        return state.chatEntry?.entries ?? [];
+      },
+      builder: (context, state) {
+        final pinnedEntries = state
+            .where((e) => (e.pinned ?? '').trim().toUpperCase() == 'Y')
+            .toList();
+        return Column(
+          children: [
+            if ((pinnedEntries.isNotEmpty)) ...{
+              GroupCardWidget(
+                title: (pinnedEntries.isNotEmpty)
+                    ? pinnedEntries[0].sender?.name
+                    : '',
+                imageUrl: (pinnedEntries.isNotEmpty)
+                    ? pinnedEntries[0].sender?.imageUrl
+                    : '',
+              ),
+              AnimatedDividerCard(
+                onArrowTap: onToggleTap,
+                arrowAnimation: arrowAnimation,
+              ),
+            },
+
+            const Expanded(child: OptimizedChatMessagesList()),
+            MessageInputSection(chatData: data),
+          ],
+        );
+      },
     );
   }
 }
@@ -219,7 +240,10 @@ class GroupContent extends StatelessWidget {
         return state.chatEntry?.entries ?? [];
       },
       builder: (context, state) {
-        final pinnedList = state.where((e) => e.pinned == 'Y').toList();
+        final pinnedList = state
+            .where((e) => (e.pinned ?? '').trim().toUpperCase() == 'Y')
+            .toList();
+
         return ListView.builder(
           cacheExtent: 2000,
           padding: EdgeInsets.zero,
@@ -232,6 +256,25 @@ class GroupContent extends StatelessWidget {
             return AnimatedBuilder(
               animation: contentAnimation,
               builder: (context, child) {
+                // Calculate safe interval values that don't exceed 1.0
+                final totalItems = pinnedList.length;
+                final normalizedIndex =
+                    index / (totalItems > 1 ? totalItems - 1 : 1);
+
+                // For slide animation: start at 0, end before 1.0
+                final slideStart = normalizedIndex * 0.3; // Max start: 0.3
+                final slideEnd = (slideStart + 0.4).clamp(
+                  0.0,
+                  1.0,
+                ); // Ensure we don't exceed 1.0
+
+                // For fade animation: start earlier, end earlier
+                final fadeStart = normalizedIndex * 0.2; // Max start: 0.2
+                final fadeEnd = (fadeStart + 0.3).clamp(
+                  0.0,
+                  1.0,
+                ); // Ensure we don't exceed 1.0
+
                 final slideAnimation =
                     Tween<Offset>(
                       begin: const Offset(0, 0.5),
@@ -240,8 +283,8 @@ class GroupContent extends StatelessWidget {
                       CurvedAnimation(
                         parent: contentAnimation,
                         curve: Interval(
-                          index * 0.2,
-                          0.6 + (index * 0.2),
+                          slideStart,
+                          slideEnd,
                           curve: Curves.easeOutCubic,
                         ),
                       ),
@@ -252,8 +295,8 @@ class GroupContent extends StatelessWidget {
                       CurvedAnimation(
                         parent: contentAnimation,
                         curve: Interval(
-                          index * 0.1,
-                          0.5 + (index * 0.1),
+                          fadeStart,
+                          fadeEnd,
                           curve: Curves.easeIn,
                         ),
                       ),
@@ -263,7 +306,11 @@ class GroupContent extends StatelessWidget {
                   position: slideAnimation,
                   child: FadeTransition(
                     opacity: fadeAnimation,
-                    child: GroupCardWidget(title: 'jskdhf'),
+                    child: GroupCardWidget(
+                      title: data.sender?.name,
+                      imageUrl: data.sender?.imageUrl,
+                      chatId: data.chatId ?? 0,
+                    ),
                   ),
                 );
               },
@@ -273,6 +320,71 @@ class GroupContent extends StatelessWidget {
       },
     );
   }
+  // Widget _buildGroupList() {
+  //   return BlocSelector<ChatCubit, ChatState, List<Entry>>(
+  //     selector: (state) {
+  //       return state.chatEntry?.entries ?? [];
+  //     },
+  //     builder: (context, state) {
+  //       final pinnedList = state
+  //           .where((e) => (e.pinned ?? '').trim().toUpperCase() == 'Y')
+  //           .toList();
+  //       return ListView.builder(
+  //         cacheExtent: 2000,
+  //         padding: EdgeInsets.zero,
+  //         shrinkWrap: true,
+  //         physics: const NeverScrollableScrollPhysics(),
+  //         itemCount: pinnedList.length,
+  //         itemBuilder: (context, index) {
+  //           final data = pinnedList[index];
+
+  //           return AnimatedBuilder(
+  //             animation: contentAnimation,
+  //             builder: (context, child) {
+  //               final slideAnimation =
+  //                   Tween<Offset>(
+  //                     begin: const Offset(0, 0.5),
+  //                     end: Offset.zero,
+  //                   ).animate(
+  //                     CurvedAnimation(
+  //                       parent: contentAnimation,
+  //                       curve: Interval(
+  //                         index * 0.2,
+  //                         0.6 + (index * 0.2),
+  //                         curve: Curves.easeOutCubic,
+  //                       ),
+  //                     ),
+  //                   );
+
+  //               final fadeAnimation = Tween<double>(begin: 0.0, end: 1.0)
+  //                   .animate(
+  //                     CurvedAnimation(
+  //                       parent: contentAnimation,
+  //                       curve: Interval(
+  //                         index * 0.1,
+  //                         0.5 + (index * 0.1),
+  //                         curve: Curves.easeIn,
+  //                       ),
+  //                     ),
+  //                   );
+
+  //               return SlideTransition(
+  //                 position: slideAnimation,
+  //                 child: FadeTransition(
+  //                   opacity: fadeAnimation,
+  //                   child: GroupCardWidget(
+  //                     title: data.sender?.name,
+  //                     imageUrl: data.sender?.imageUrl,
+  //                   ),
+  //                 ),
+  //               );
+  //             },
+  //           );
+  //         },
+  //       );
+  //     },
+  //   );
+  // }
 }
 
 class ChatHeader extends StatelessWidget {
@@ -282,80 +394,88 @@ class ChatHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pinnedLists = context.select(
+      (ChatCubit cubit) => cubit.state.chatEntry?.entries,
+    );
+    final pinnedList = pinnedLists
+        ?.where((e) => (e.pinned ?? '').trim().toUpperCase() == 'Y')
+        .toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [_buildMainHeader(context), _buildStatusInfo()],
-    );
-  }
-
-  Widget _buildMainHeader(BuildContext context) {
-    return InkWell(
-      onTap: () => _navigateToSingleChat(context),
-      child: MainPadding(
-        top: 16.h,
-        bottom: 0,
-        child: Row(
-          children: [
-            SvgPicture.asset('assets/icons/mynaui_pin-solid.svg'),
-            SizedBox(width: 5.w),
-            Image.asset('assets/images/Rectangle 1.png'),
-            SizedBox(width: 5.w),
-            Expanded(child: _buildHeaderText()),
-            SvgPicture.asset('assets/icons/clock.svg'),
-            SizedBox(width: 5.w),
-            const Text('45 min'),
-          ],
+      children: [
+        GroupCardWidget(
+          title: (pinnedList?.isNotEmpty ?? false)
+              ? pinnedList![0].sender?.name
+              : '',
+          imageUrl: (pinnedList?.isNotEmpty ?? false)
+              ? pinnedList![0].sender?.imageUrl
+              : '',
         ),
-      ),
+      ],
     );
   }
+  //_buildMainHeader(context)
+  // Widget _buildMainHeader(BuildContext context) {
+  //   return InkWell(
+  //     onTap: () => _navigateToSingleChat(context),
+  //     child: MainPadding(
+  //       top: 16.h,
+  //       bottom: 0,
+  //       child: Row(
+  //         children: [
+  //           SvgPicture.asset('assets/icons/mynaui_pin-solid.svg'),
+  //           SizedBox(width: 5.w),
+  //           Image.asset('assets/images/Rectangle 1.png'),
+  //           SizedBox(width: 5.w),
+  //           // Expanded(child: _buildHeaderText()),
+  //           SvgPicture.asset('assets/icons/clock.svg'),
+  //           SizedBox(width: 5.w),
+  //           const Text('45 min'),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
-  Widget _buildHeaderText() {
-    return RichText(
-      text: TextSpan(
-        text: 'Anoop TS  ',
-        style: FontPalette.hW700S14.copyWith(color: const Color(0XFF515978)),
-        children: [
-          TextSpan(
-            text: 'send request to case',
-            style: FontPalette.hW500S14.copyWith(
-              color: const Color(0XFF515978),
-            ),
-          ),
-        ],
-      ),
-      overflow: TextOverflow.ellipsis,
-      maxLines: 2,
-    );
-  }
+  // Widget _buildHeaderText() {
+  //   return RichText(
+  //     text: TextSpan(
+  //       text: 'Anoop TS  ',
+  //       style: FontPalette.hW700S14.copyWith(color: const Color(0XFF515978)),
+  //       children: [
+  //         TextSpan(
+  //           text: 'send request to case',
+  //           style: FontPalette.hW500S14.copyWith(
+  //             color: const Color(0XFF515978),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //     overflow: TextOverflow.ellipsis,
+  //     maxLines: 2,
+  //   );
+  // }
 
-  Widget _buildStatusInfo() {
-    return Padding(
-      padding: EdgeInsets.only(left: 34.w),
-      child: Row(
-        children: [
-          Text(
-            '3 Replayed , 4 Pending',
-            style: FontPalette.hW500S12.copyWith(
-              color: const Color(0XFF166FF6),
-            ),
-          ),
-          SizedBox(width: 5.w),
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: SvgPicture.asset('assets/icons/Eye.svg'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _navigateToSingleChat(BuildContext context) {
-    context.push(
-      routeSingleChat,
-      extra: {"title": data?['title'], 'chat_id': '2'},
-    );
-  }
+  // Widget _buildStatusInfo() {
+  //   return Padding(
+  //     padding: EdgeInsets.only(left: 34.w),
+  //     child: Row(
+  //       children: [
+  //         Text(
+  //           '3 Replayed , 4 Pending',
+  //           style: FontPalette.hW500S12.copyWith(
+  //             color: const Color(0XFF166FF6),
+  //           ),
+  //         ),
+  //         SizedBox(width: 5.w),
+  //         Padding(
+  //           padding: const EdgeInsets.only(top: 8),
+  //           child: SvgPicture.asset('assets/icons/Eye.svg'),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 }
 
 class OptimizedChatMessagesList extends StatefulWidget {
@@ -712,9 +832,10 @@ class AnimatedDividerCard extends StatelessWidget {
     return InkWell(
       onTap: onArrowTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.only(left: 0.w, right: 12, top: 0, bottom: 0),
         child: Row(
           children: [
+            const Expanded(child: Divider()),
             AnimatedBuilder(
               animation: arrowAnimation,
               builder: (context, child) {
@@ -724,7 +845,6 @@ class AnimatedDividerCard extends StatelessWidget {
                 );
               },
             ),
-            const Expanded(child: Divider()),
           ],
         ),
       ),
@@ -734,45 +854,66 @@ class AnimatedDividerCard extends StatelessWidget {
 
 class GroupCardWidget extends StatelessWidget {
   final String? title;
-  const GroupCardWidget({super.key, this.title});
+  final String? imageUrl;
+  final int? chatId;
+  const GroupCardWidget({super.key, this.title, this.imageUrl, this.chatId});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: Colors.blue[100],
-            child: const Icon(Icons.group, color: Colors.blue),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title ?? '',
-                  style: FontPalette.hW700S14.copyWith(color: Colors.black87),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Active members: 5',
-                  style: FontPalette.hW500S12.copyWith(color: Colors.grey[600]),
-                ),
-              ],
+    return InkWell(
+      onTap: () {
+        _navigateToSingleChat(context);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+
+        child: Row(
+          children: [
+            ChatAvatar(name: title ?? '', size: 30, imageUrl: imageUrl),
+
+            12.horizontalSpace,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        title ?? '',
+                        style: FontPalette.hW700S14.copyWith(
+                          color: Colors.black87,
+                        ),
+                      ),
+                      5.horizontalSpace,
+                      Text(
+                        'send request to case review',
+                        style: FontPalette.hW500S14.copyWith(
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                  4.verticalSpace,
+                  Text(
+                    '3 Replied 4 Pending',
+                    style: FontPalette.hW500S12.copyWith(
+                      color: Color(0XFF166FF6),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Icon(Icons.chevron_right, color: Colors.grey[400]),
-        ],
+            SvgPicture.asset('assets/icons/clock.svg'),
+            3.horizontalSpace,
+            const Text('45 min'),
+          ],
+        ),
       ),
     );
+  }
+
+  void _navigateToSingleChat(BuildContext context) {
+    context.push(routeSingleChat, extra: {"title": title, 'chat_id': chatId});
   }
 }

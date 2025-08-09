@@ -1272,6 +1272,8 @@ mixin _$Sender {
   int? get id => throw _privateConstructorUsedError;
   @JsonKey(name: "name")
   String? get name => throw _privateConstructorUsedError;
+  @JsonKey(name: "otherDetails")
+  String? get imageUrl => throw _privateConstructorUsedError;
   @JsonKey(name: "sentMessages")
   List<dynamic>? get sentMessages => throw _privateConstructorUsedError;
 
@@ -1292,6 +1294,7 @@ abstract class $SenderCopyWith<$Res> {
   $Res call({
     @JsonKey(name: "id") int? id,
     @JsonKey(name: "name") String? name,
+    @JsonKey(name: "otherDetails") String? imageUrl,
     @JsonKey(name: "sentMessages") List<dynamic>? sentMessages,
   });
 }
@@ -1313,6 +1316,7 @@ class _$SenderCopyWithImpl<$Res, $Val extends Sender>
   $Res call({
     Object? id = freezed,
     Object? name = freezed,
+    Object? imageUrl = freezed,
     Object? sentMessages = freezed,
   }) {
     return _then(
@@ -1324,6 +1328,10 @@ class _$SenderCopyWithImpl<$Res, $Val extends Sender>
             name: freezed == name
                 ? _value.name
                 : name // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            imageUrl: freezed == imageUrl
+                ? _value.imageUrl
+                : imageUrl // ignore: cast_nullable_to_non_nullable
                       as String?,
             sentMessages: freezed == sentMessages
                 ? _value.sentMessages
@@ -1346,6 +1354,7 @@ abstract class _$$SenderImplCopyWith<$Res> implements $SenderCopyWith<$Res> {
   $Res call({
     @JsonKey(name: "id") int? id,
     @JsonKey(name: "name") String? name,
+    @JsonKey(name: "otherDetails") String? imageUrl,
     @JsonKey(name: "sentMessages") List<dynamic>? sentMessages,
   });
 }
@@ -1366,6 +1375,7 @@ class __$$SenderImplCopyWithImpl<$Res>
   $Res call({
     Object? id = freezed,
     Object? name = freezed,
+    Object? imageUrl = freezed,
     Object? sentMessages = freezed,
   }) {
     return _then(
@@ -1377,6 +1387,10 @@ class __$$SenderImplCopyWithImpl<$Res>
         name: freezed == name
             ? _value.name
             : name // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        imageUrl: freezed == imageUrl
+            ? _value.imageUrl
+            : imageUrl // ignore: cast_nullable_to_non_nullable
                   as String?,
         sentMessages: freezed == sentMessages
             ? _value._sentMessages
@@ -1393,6 +1407,7 @@ class _$SenderImpl implements _Sender {
   const _$SenderImpl({
     @JsonKey(name: "id") this.id,
     @JsonKey(name: "name") this.name,
+    @JsonKey(name: "otherDetails") this.imageUrl,
     @JsonKey(name: "sentMessages") final List<dynamic>? sentMessages,
   }) : _sentMessages = sentMessages;
 
@@ -1405,6 +1420,9 @@ class _$SenderImpl implements _Sender {
   @override
   @JsonKey(name: "name")
   final String? name;
+  @override
+  @JsonKey(name: "otherDetails")
+  final String? imageUrl;
   final List<dynamic>? _sentMessages;
   @override
   @JsonKey(name: "sentMessages")
@@ -1418,7 +1436,7 @@ class _$SenderImpl implements _Sender {
 
   @override
   String toString() {
-    return 'Sender(id: $id, name: $name, sentMessages: $sentMessages)';
+    return 'Sender(id: $id, name: $name, imageUrl: $imageUrl, sentMessages: $sentMessages)';
   }
 
   @override
@@ -1428,6 +1446,8 @@ class _$SenderImpl implements _Sender {
             other is _$SenderImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
+            (identical(other.imageUrl, imageUrl) ||
+                other.imageUrl == imageUrl) &&
             const DeepCollectionEquality().equals(
               other._sentMessages,
               _sentMessages,
@@ -1440,6 +1460,7 @@ class _$SenderImpl implements _Sender {
     runtimeType,
     id,
     name,
+    imageUrl,
     const DeepCollectionEquality().hash(_sentMessages),
   );
 
@@ -1461,6 +1482,7 @@ abstract class _Sender implements Sender {
   const factory _Sender({
     @JsonKey(name: "id") final int? id,
     @JsonKey(name: "name") final String? name,
+    @JsonKey(name: "otherDetails") final String? imageUrl,
     @JsonKey(name: "sentMessages") final List<dynamic>? sentMessages,
   }) = _$SenderImpl;
 
@@ -1472,6 +1494,9 @@ abstract class _Sender implements Sender {
   @override
   @JsonKey(name: "name")
   String? get name;
+  @override
+  @JsonKey(name: "otherDetails")
+  String? get imageUrl;
   @override
   @JsonKey(name: "sentMessages")
   List<dynamic>? get sentMessages;

@@ -66,6 +66,7 @@ class Sender with _$Sender {
   const factory Sender({
     @JsonKey(name: "id") int? id,
     @JsonKey(name: "name") String? name,
+    @JsonKey(name: "otherDetails") String? imageUrl,
     @JsonKey(name: "sentMessages") List<dynamic>? sentMessages,
   }) = _Sender;
 
