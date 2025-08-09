@@ -6,57 +6,123 @@ void showFilePickerBottomSheet(BuildContext context) {
   showModalBottomSheet(
     context: context,
     backgroundColor: Colors.transparent,
-    builder: (context) => Container(
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (context) => const _FilePickerBottomSheet(),
+  );
+}
+
+class _FilePickerBottomSheet extends StatelessWidget {
+  const _FilePickerBottomSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final chatCubit = context.read<ChatCubit>();
+
+    return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            margin: const EdgeInsets.only(top: 12),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
+          // Drag handle
+          _buildDragHandle(),
 
+          // Title
           const Padding(
-            padding: EdgeInsets.all(20),
+            padding: EdgeInsets.fromLTRB(20, 8, 20, 16),
             child: Text(
               'Select File Type',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
             ),
           ),
 
-          ListTile(
-            leading: const Icon(Icons.photo_library, color: Colors.purple),
-            title: const Text('Gallery'),
-            onTap: () =>
-                context.read<ChatCubit>().selectImageFromGallery(context),
-          ),
-          ListTile(
-            leading: const Icon(Icons.camera_alt, color: Colors.blue),
-            title: const Text('Camera'),
-            onTap: () =>
-                context.read<ChatCubit>().selectImageFromGallery(context),
-          ),
+          // Options
+          ..._buildFileOptions(context, chatCubit),
 
-          ListTile(
-            leading: const Icon(Icons.folder, color: Colors.grey),
-            title: const Text('Any File'),
-            onTap: () => context.read<ChatCubit>().selectFiles(),
-          ),
-
-          const SizedBox(height: 20),
+          // Bottom padding for safe area
+          SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
         ],
       ),
-    ),
-  );
+    );
+  }
+
+  Widget _buildDragHandle() {
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      width: 40,
+      height: 4,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade300,
+        borderRadius: BorderRadius.circular(2),
+      ),
+    );
+  }
+
+  List<Widget> _buildFileOptions(BuildContext context, ChatCubit chatCubit) {
+    final options = [
+      _FileOption(
+        icon: Icons.photo_library,
+        color: Colors.purple,
+        title: 'Gallery',
+        onTap: () => _handleOptionTap(
+          context,
+          () => chatCubit.selectImageFromGallery(context),
+        ),
+      ),
+      _FileOption(
+        icon: Icons.camera_alt,
+        color: Colors.blue,
+        title: 'Camera',
+        onTap: () => _handleOptionTap(
+          context,
+          () => chatCubit.selectImageFromCamera(), // Fixed method name
+        ),
+      ),
+      _FileOption(
+        icon: Icons.folder,
+        color: Colors.orange,
+        title: 'Files',
+        onTap: () => _handleOptionTap(context, () => chatCubit.selectFiles()),
+      ),
+    ];
+
+    return options.map((option) => _buildListTile(option)).toList();
+  }
+
+  Widget _buildListTile(_FileOption option) {
+    return ListTile(
+      leading: Icon(option.icon, color: option.color, size: 28),
+      title: Text(
+        option.title,
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+      ),
+      onTap: option.onTap,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+    );
+  }
+
+  void _handleOptionTap(BuildContext context, VoidCallback action) {
+    Navigator.of(context).pop();
+    action();
+  }
+}
+
+class _FileOption {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final VoidCallback onTap;
+
+  const _FileOption({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.onTap,
+  });
 }
