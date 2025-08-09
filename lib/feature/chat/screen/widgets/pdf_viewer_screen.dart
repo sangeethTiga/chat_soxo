@@ -672,7 +672,7 @@ class _UnknownFilePreview extends StatelessWidget {
   }
 }
 
-/// Optimized audio player with better state management
+/// Optimized audio player with better state management and memoization
 class OptimizedAudioPlayer extends StatefulWidget {
   final String fileUrl;
   final String mediaId;
@@ -689,7 +689,8 @@ class OptimizedAudioPlayer extends StatefulWidget {
   State<OptimizedAudioPlayer> createState() => _OptimizedAudioPlayerState();
 }
 
-class _OptimizedAudioPlayerState extends State<OptimizedAudioPlayer> {
+class _OptimizedAudioPlayerState extends State<OptimizedAudioPlayer>
+    with AutomaticKeepAliveClientMixin {
   late AudioPlayer _audioPlayer;
 
   // State variables
@@ -699,11 +700,26 @@ class _OptimizedAudioPlayerState extends State<OptimizedAudioPlayer> {
   Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
   String? _filePath;
+  String? _currentFileUrl;
+
+  // Keep the widget alive to prevent unnecessary rebuilds
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
     _initializeAudioPlayer();
+  }
+
+  @override
+  void didUpdateWidget(OptimizedAudioPlayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Only reinitialize if the file URL actually changed
+    if (oldWidget.fileUrl != widget.fileUrl) {
+      _currentFileUrl = null;
+      _prepareAudio();
+    }
   }
 
   void _initializeAudioPlayer() {
@@ -736,6 +752,9 @@ class _OptimizedAudioPlayerState extends State<OptimizedAudioPlayer> {
   }
 
   Future<void> _prepareAudio() async {
+    // Avoid re-preparing the same file
+    if (_currentFileUrl == widget.fileUrl && _filePath != null) return;
+
     if (!mounted) return;
 
     setState(() {
@@ -756,6 +775,8 @@ class _OptimizedAudioPlayerState extends State<OptimizedAudioPlayer> {
       if (_filePath == null || !await File(_filePath!).exists()) {
         throw Exception('Audio file not found');
       }
+
+      _currentFileUrl = widget.fileUrl;
     } catch (e) {
       log('Audio preparation error: $e');
       if (mounted) setState(() => _hasError = true);
@@ -787,6 +808,8 @@ class _OptimizedAudioPlayerState extends State<OptimizedAudioPlayer> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+
     if (_isLoading) return _buildLoadingState();
     if (_hasError) return _buildErrorState();
     return _buildPlayerState();
