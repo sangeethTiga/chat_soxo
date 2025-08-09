@@ -1,8 +1,14 @@
 import 'dart:developer';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 
 class Helper {
+    static void afterInit(Function function) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      function();
+    });
+  }
   String? errorMapping(Response? response) {
     if (response?.data == null) return 'Unknown error occurred';
 

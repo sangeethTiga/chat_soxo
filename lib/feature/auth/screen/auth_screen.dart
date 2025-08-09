@@ -1,8 +1,11 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soxo_chat/feature/auth/cubit/auth_cubit.dart';
+import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/shared/app/enums/api_fetch_status.dart';
 import 'package:soxo_chat/shared/routes/routes.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
@@ -28,9 +31,11 @@ class SignInScreen extends StatelessWidget {
               AuthUtils.instance.writeAccessTokens(
                 state.authResponse!.result?.jwtToken ?? '',
               );
+              context.read<ChatCubit>().getChatList();
+
               AuthUtils.instance.readAccessToken.then((value) {
-                print('token $value');
-                context.push(routeRoot);
+                log('token $value');
+                context.push(routeChat);
               });
               AuthUtils.instance.writeUserData(state.authResponse!);
             }

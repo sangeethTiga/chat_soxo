@@ -5,3 +5,5 @@ const String routeChatDetail = '/chatdetail';
 const String routeNotification = '/notifcation';
 const String routeSingleChat = '/singleChat';
 const String routeSignIn = '/signIn';
+const String routeSplash = '/splash';
+const String routeChat = '/chatlist';

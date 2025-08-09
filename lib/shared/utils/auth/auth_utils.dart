@@ -48,7 +48,7 @@ class AuthUtils {
   }
 
   Future<bool> get isSignedIn async {
-    final String? token = await _readPreference('token');
+    final String? token = await _readPreference('jwtToken');
     return token != null;
   }
 

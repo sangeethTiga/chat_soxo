@@ -7,17 +7,19 @@ import 'package:soxo_chat/feature/chat/screen/single_chat_screen.dart';
 import 'package:soxo_chat/feature/group/screen/group_screen.dart';
 import 'package:soxo_chat/feature/notifcation/screen/notification_screen.dart';
 import 'package:soxo_chat/feature/person_lists/screen/person_lists_screen.dart';
+import 'package:soxo_chat/feature/splash/splash_screen.dart';
 import 'package:soxo_chat/shared/routes/custom_transition.dart';
 import 'package:soxo_chat/shared/routes/routes.dart';
 
 class RouteGenerator {
   static GoRouter generateRoute() {
     return GoRouter(
-      initialLocation: routeSignIn,
+      initialLocation: routeSplash,
       routes: [
+        GoRoute(path: routeSplash, builder: (context, state) => SplashScreen()),
         GoRoute(path: routeSignIn, builder: (context, state) => SignInScreen()),
 
-        GoRoute(path: routeRoot, builder: (context, state) => ChatScreen()),
+        GoRoute(path: routeChat, builder: (context, state) => ChatScreen()),
         GoRoute(
           path: routeGroup,
           builder: (context, state) {

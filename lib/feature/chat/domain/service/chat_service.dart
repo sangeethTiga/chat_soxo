@@ -136,7 +136,7 @@ class ChatService implements ChatRepositories {
           "typeValue": req.typeValue ?? 0,
           "messageType": req.messageType ?? "text",
           "content": req.content ?? "",
-          "source": req.source ?? "Website",
+          "source": req.source ?? "Mobile",
           "visitNo": "DCRT030725R1BAH1", // Use required format
           "templateCode": "ABNTMP", // Use required template
           "chatMedias": chatMedias, // Always include array (empty if no files)
@@ -147,7 +147,6 @@ class ChatService implements ChatRepositories {
         log('Complete chatEntryJson: $jsonString');
       }
 
-      // Add actual files to FormData
       if (files != null && files.isNotEmpty) {
         for (var file in files) {
           formData.files.add(
@@ -252,10 +251,9 @@ class ChatService implements ChatRepositories {
 
       if (response.data != null) {
         final bytes = response.data as List<int>;
-        final fileName = media ?? '';
+        final fileName = media;
         final extension = fileName.toLowerCase().split('.').last;
 
-        // Determine MIME type and handling based on file extension
         String mimeType;
         String fileType;
 
@@ -305,7 +303,6 @@ class ChatService implements ChatRepositories {
         }
 
         if (fileType == 'image') {
-          // For images, return base64 data URL
           final base64String = base64Encode(bytes);
           return {
             'type': 'image',
@@ -313,11 +310,9 @@ class ChatService implements ChatRepositories {
             'bytes': bytes,
           };
         } else if (fileType == 'audio') {
-          // For audio files, save to temporary file and return path
           final tempFile = await _saveToTempFile(bytes, extension);
           return {'type': 'audio', 'data': tempFile.path, 'bytes': bytes};
         } else {
-          // For documents (PDF, etc.), save to temp file for viewing
           final tempFile = await _saveToTempFile(bytes, extension);
           return {
             'type': 'document',
@@ -328,7 +323,7 @@ class ChatService implements ChatRepositories {
         }
       }
     } catch (e) {
-      print('API call failed: $e');
+      log('API call failed: $e');
       rethrow;
     }
 
