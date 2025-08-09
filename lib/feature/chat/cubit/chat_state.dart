@@ -103,4 +103,23 @@ class ChatState extends Equatable {
   ];
 }
 
-class InitilaChatState extends ChatState {}
+class InitialChatState extends ChatState {
+  InitialChatState()
+    : super(
+        isChatEntry: ApiFetchStatus.idle,
+        isChat: ApiFetchStatus.idle,
+        chatEntry: null,
+        chatList: null,
+        allChats: null,
+        selectedTab: 'all',
+        selectedFiles: null,
+        isRecording: false,
+        recordingDuration: Duration.zero,
+        recordingPath: null,
+        hasRecordingPermission: false,
+        errorMessage: null,
+        fileUrls: {},
+        fileTypes: {},
+        isArrow: false,
+      );
+}

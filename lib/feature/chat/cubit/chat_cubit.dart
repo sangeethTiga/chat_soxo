@@ -32,14 +32,20 @@ class ChatCubit extends Cubit<ChatState> {
   final Map<String, DateTime> _fileCacheTimestamps = {};
   final Set<String> _failedLoads = {};
 
+  // Chat-specific caching
+  final Map<int, ChatEntryResponse> _chatCache = {};
+  final Map<int, DateTime> _chatCacheTimestamps = {};
+  int? _currentChatId;
+
   Timer? _batchUpdateTimer;
   bool _hasPendingUpdates = false;
   bool _isDisposed = false;
 
   static const Duration _cacheExpiration = Duration(hours: 2);
+  static const Duration _chatCacheExpiration = Duration(minutes: 10);
   static const Duration _batchDelay = Duration(milliseconds: 16);
 
-  ChatCubit(this._chatRepositories) : super(InitilaChatState()) {
+  ChatCubit(this._chatRepositories) : super(InitialChatState()) {
     _initializePermissions();
   }
 
@@ -76,8 +82,137 @@ class ChatCubit extends Cubit<ChatState> {
     _emitInstant(state.copyWith(isArrow: false));
   }
 
+  void resetChatState() {
+    if (_isDisposed) return;
+
+    log('🔄 Resetting chat state');
+    _emitInstant(
+      state.copyWith(
+        isChatEntry: ApiFetchStatus.idle,
+        chatEntry: null,
+        errorMessage: null,
+        isArrow: false,
+      ),
+    );
+  }
+
   void clearError() {
     _emitInstant(state.copyWith(errorMessage: null));
+  }
+
+  //==================== Enhanced Chat Entry with Smart Caching
+  Future<void> getChatEntry({int? chatId, int? userId}) async {
+    final currentChatId = chatId ?? 0;
+    log('📱 Getting chat entry for chatId: $currentChatId');
+
+    // Check if we already have valid cached data for this chat
+    final cachedData = _chatCache[currentChatId];
+    final cacheTimestamp = _chatCacheTimestamps[currentChatId];
+    final isCacheValid =
+        cachedData != null &&
+        cacheTimestamp != null &&
+        DateTime.now().difference(cacheTimestamp) < _chatCacheExpiration;
+
+    // If switching to a different chat, clear current state first
+    if (_currentChatId != null && _currentChatId != currentChatId) {
+      log('🔄 Switching chats: $_currentChatId -> $currentChatId');
+      _emitInstant(
+        state.copyWith(isChatEntry: ApiFetchStatus.loading, chatEntry: null),
+      );
+    }
+
+    _currentChatId = currentChatId;
+
+    // EARLY RETURN: Use cached data if valid
+    if (isCacheValid) {
+      log('💾 Using cached data for chat $currentChatId - SKIPPING API CALL');
+      _emitInstant(
+        state.copyWith(
+          chatEntry: cachedData,
+          isChatEntry: ApiFetchStatus.success,
+        ),
+      );
+
+      // Load media in background for cached data
+      if (cachedData.entries?.isNotEmpty == true) {
+        _loadMediaInBackground(cachedData.entries!);
+      }
+      return; // ✅ STOP HERE - No API call needed
+    }
+
+    // Show loading only if we don't have cached data
+    _emitInstant(state.copyWith(isChatEntry: ApiFetchStatus.loading));
+
+    try {
+      log('🌐 Making API call for chat $currentChatId (no valid cache)');
+      final res = await _chatRepositories.chatEntry(currentChatId, userId ?? 0);
+
+      if (_isDisposed) return;
+
+      if (res.data != null) {
+        // Store in cache
+        _chatCache[currentChatId] = res.data!;
+        _chatCacheTimestamps[currentChatId] = DateTime.now();
+
+        log(
+          '✅ Successfully loaded and cached chat entry for chat $currentChatId',
+        );
+        _emitInstant(
+          state.copyWith(
+            chatEntry: res.data,
+            isChatEntry: ApiFetchStatus.success,
+          ),
+        );
+
+        // Load media files in background
+        if (res.data?.entries != null && res.data!.entries!.isNotEmpty) {
+          _loadMediaInBackground(res.data!.entries!);
+        }
+      } else {
+        log('⚠️ No data received for chat $currentChatId');
+        _emitInstant(
+          state.copyWith(isChatEntry: ApiFetchStatus.success, chatEntry: null),
+        );
+      }
+    } catch (e) {
+      log('❌ Error getting chat entry for chat $currentChatId: $e');
+      if (!_isDisposed) {
+        _emitInstant(
+          state.copyWith(
+            isChatEntry: ApiFetchStatus.failed,
+            errorMessage: e.toString(),
+          ),
+        );
+      }
+    }
+  }
+
+  // Method to refresh chat data (force refresh)
+  Future<void> refreshChatEntry({int? chatId, int? userId}) async {
+    final currentChatId = chatId ?? 0;
+    log('🔄 Force refreshing chat entry for chatId: $currentChatId');
+
+    // Clear cache for this chat
+    _chatCache.remove(currentChatId);
+    _chatCacheTimestamps.remove(currentChatId);
+
+    // Show loading
+    _emitInstant(state.copyWith(isChatEntry: ApiFetchStatus.loading));
+
+    // Fetch fresh data
+    await getChatEntry(chatId: chatId, userId: userId);
+  }
+
+  // Method to update chat cache when new message is added
+  void _updateChatCache(int chatId, Entry newEntry) {
+    final cachedData = _chatCache[chatId];
+    if (cachedData != null) {
+      final updatedEntries = List<Entry>.from(cachedData.entries ?? [])
+        ..add(newEntry);
+
+      _chatCache[chatId] = cachedData.copyWith(entries: updatedEntries);
+      _chatCacheTimestamps[chatId] = DateTime.now();
+    }
   }
 
   //==================== Permission Management - INSTANT UPDATES
@@ -315,46 +450,6 @@ class ChatCubit extends Cubit<ChatState> {
     }
   }
 
-  Future<void> getChatEntry({int? chatId, int? userId}) async {
-    final currentChatId = chatId ?? 0;
-
-    _emitInstant(state.copyWith(isChatEntry: ApiFetchStatus.loading));
-
-    try {
-      final res = await _chatRepositories.chatEntry(currentChatId, userId ?? 0);
-      if (_isDisposed) return;
-
-      if (res.data != null) {
-        // INSTANT UI UPDATE - Show chat content immediately
-        _emitInstant(
-          state.copyWith(
-            chatEntry: res.data,
-            isChatEntry: ApiFetchStatus.success,
-          ),
-        );
-
-        // Load media files in background without blocking UI
-        if (res.data?.entries != null && res.data!.entries!.isNotEmpty) {
-          _loadMediaInBackground(res.data!.entries!);
-        }
-      } else {
-        _emitInstant(
-          state.copyWith(isChatEntry: ApiFetchStatus.success, chatEntry: null),
-        );
-      }
-    } catch (e) {
-      if (!_isDisposed) {
-        _emitInstant(
-          state.copyWith(
-            isChatEntry: ApiFetchStatus.failed,
-            errorMessage: e.toString(),
-          ),
-        );
-      }
-      log('Error getting chat entry: $e');
-    }
-  }
-
   // Background Media Loading - NO UI BLOCKING
   void _loadMediaInBackground(List<Entry> entries) {
     if (_isDisposed) return;
@@ -454,6 +549,7 @@ class ChatCubit extends Cubit<ChatState> {
           messageText.isEmpty && files?.isEmpty != false) {
         return;
       }
+
       final filesToSend = files ?? state.selectedFiles ?? [];
       final tempId = DateTime.now().millisecondsSinceEpoch;
       final tempMessage = Entry(
@@ -466,9 +562,11 @@ class ChatCubit extends Cubit<ChatState> {
         createdAt: DateTime.now().toIso8601String(),
         chatId: request.chatId,
       );
+
       final currentEntries = state.chatEntry?.entries ?? <Entry>[];
       final updatedEntries = List<Entry>.from(currentEntries)..add(tempMessage);
 
+      // Optimistic UI update
       _emitInstant(
         state.copyWith(
           chatEntry:
@@ -477,6 +575,7 @@ class ChatCubit extends Cubit<ChatState> {
           selectedFiles: [],
         ),
       );
+
       final res = await _chatRepositories.addChatEntry(
         req: request,
         files: filesToSend,
@@ -501,17 +600,23 @@ class ChatCubit extends Cubit<ChatState> {
         final finalEntries = updatedEntries.map((entry) {
           return entry.id == tempId ? serverEntry : entry;
         }).toList();
+
         _emitInstant(
           state.copyWith(
             chatEntry: state.chatEntry?.copyWith(entries: finalEntries),
-            // isChatEntry: ApiFetchStatus.success,
           ),
         );
+
+        // Update cache with new message
+        if (request.chatId != null) {
+          _updateChatCache(request.chatId!, serverEntry);
+        }
 
         if (serverEntry.chatMedias?.isNotEmpty == true) {
           _loadMediaInBackground([serverEntry]);
         }
       } else {
+        // Remove failed message
         final failedEntries = updatedEntries
             .where((entry) => entry.id != tempId)
             .toList();
@@ -519,7 +624,6 @@ class ChatCubit extends Cubit<ChatState> {
         _emitInstant(
           state.copyWith(
             chatEntry: state.chatEntry?.copyWith(entries: failedEntries),
-            // isChatEntry: ApiFetchStatus.failed,
             errorMessage: 'Failed to send message',
           ),
         );
@@ -527,12 +631,7 @@ class ChatCubit extends Cubit<ChatState> {
     } catch (e) {
       log('Error creating chat entry: $e');
       if (!_isDisposed) {
-        _emitInstant(
-          state.copyWith(
-            // isChatEntry: ApiFetchStatus.failed,
-            errorMessage: 'Error: ${e.toString()}',
-          ),
-        );
+        _emitInstant(state.copyWith(errorMessage: 'Error: ${e.toString()}'));
       }
     }
   }
@@ -718,6 +817,19 @@ class ChatCubit extends Cubit<ChatState> {
     _emitInstant(state.copyWith(isArrow: false));
   }
 
+  // Cache clearing methods
+  void clearChatCache() {
+    _chatCache.clear();
+    _chatCacheTimestamps.clear();
+    log('🗑️ Cleared chat cache');
+  }
+
+  void clearChatCacheForId(int chatId) {
+    _chatCache.remove(chatId);
+    _chatCacheTimestamps.remove(chatId);
+    log('🗑️ Cleared cache for chat $chatId');
+  }
+
   @override
   Future<void> close() {
     log('Closing ChatCubit...');
@@ -727,9 +839,21 @@ class ChatCubit extends Cubit<ChatState> {
     _batchUpdateTimer?.cancel();
     _audioRecorder.dispose();
 
+    // Clean up caches
+    _fileUrls.clear();
+    _fileTypes.clear();
+    _loadingFiles.clear();
+    _fileCacheTimestamps.clear();
+    _failedLoads.clear();
+    _chatCache.clear();
+    _chatCacheTimestamps.clear();
+
     return super.close();
   }
 }
+
+// Initial state class
+
 
 // Helper function for fire-and-forget futures
 void unawaited(Future<void> future) {

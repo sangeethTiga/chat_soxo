@@ -45,6 +45,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   }
 
   void _initializeAnimations() {
+    context.read<ChatCubit>().resetChatState();
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
