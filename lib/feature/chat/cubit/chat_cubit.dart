@@ -104,7 +104,9 @@ class ChatCubit extends Cubit<ChatState> {
   Future<void> getChatEntry({int? chatId, int? userId}) async {
     final currentChatId = chatId ?? 0;
     log('📱 Getting chat entry for chatId: $currentChatId');
-
+    _emitInstant(
+      state.copyWith(isChatEntry: ApiFetchStatus.loading, chatEntry: null),
+    );
     //=-=-=-=-=-=-=-=-= Check if we already have valid cached data for this chat
     final cachedData = _chatCache[currentChatId];
     final cacheTimestamp = _chatCacheTimestamps[currentChatId];

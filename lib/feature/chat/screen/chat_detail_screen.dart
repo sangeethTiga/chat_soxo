@@ -411,7 +411,11 @@ class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
       // selector: (state) =>
       //     (status: state.isChatEntry, entries: state.chatEntry?.entries),
       builder: (context, data) {
+        log('🏗️ Building with status: ${data.isChatEntry}');
+
         if (data.isChatEntry == ApiFetchStatus.loading) {
+          log('📱 Showing shimmer');
+
           return _buildShimmerList();
         }
 
