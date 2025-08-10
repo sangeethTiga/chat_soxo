@@ -110,7 +110,6 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
       case 'file':
       case 'image':
       case 'document':
-        // For these types, we'll show the message text (if any) and media will be shown separately
         return widget.message.isNotEmpty
             ? _buildTextContent()
             : const SizedBox.shrink();
@@ -135,11 +134,9 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Media grid for multiple attachments
         if (widget.chatMedias!.length > 1)
           _buildMediaGrid()
         else
-          // Single media item
           _buildSingleMedia(widget.chatMedias!.first),
       ],
     );
@@ -159,7 +156,6 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Display media items efficiently using ListView.separated for better performance
         ...List.generate(
           mediaCount > maxDisplayCount ? maxDisplayCount : mediaCount,
           (index) {
@@ -185,7 +181,6 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
           },
         ),
 
-        // Show count indicator if there are more than maxDisplayCount items
         if (mediaCount > maxDisplayCount) ...[
           SizedBox(height: 8.h),
           _buildMediaCountIndicator(mediaCount),
@@ -224,7 +219,6 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
   }
 }
 
-/// Optimized media preview that prevents memory leaks
 class OptimizedMediaPreview extends StatelessWidget {
   final ChatMedias? media;
   final bool isInChatBubble;
@@ -242,8 +236,6 @@ class OptimizedMediaPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (media == null) return const SizedBox.shrink();
-
-    // Use a key to prevent unnecessary rebuilds
     return MediaPreviewWidget(
       key: ValueKey('media_${media!.id}'),
       media: media,
@@ -254,7 +246,6 @@ class OptimizedMediaPreview extends StatelessWidget {
   }
 }
 
-/// Enhanced media container with better error handling
 class MediaContainer extends StatelessWidget {
   final ChatMedias media;
   final double? width;

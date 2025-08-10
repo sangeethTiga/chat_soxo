@@ -5,9 +5,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:soxo_chat/shared/constants/colors.dart';
 import 'package:soxo_chat/shared/widgets/media/media_cache.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -46,13 +48,10 @@ class _PdfViewScreenState extends State<PdfViewScreen> {
 
   Future<void> _initializePdf() async {
     try {
-      // FIXED: Better file type detection
       if (_isNetworkUrl(widget.filePath)) {
-        // Download network PDF to local storage
         log('Downloading network PDF: ${widget.filePath}');
         _localFilePath = await _downloadPdf(widget.filePath);
       } else {
-        // Use local file path directly
         log('Using local PDF: ${widget.filePath}');
         _localFilePath = widget.filePath;
       }
@@ -113,7 +112,7 @@ class _PdfViewScreenState extends State<PdfViewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: kWhite,
       appBar: _buildAppBar(),
       body: _buildBody(),
     );
@@ -121,7 +120,12 @@ class _PdfViewScreenState extends State<PdfViewScreen> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: Colors.black,
+      leading: IconButton(
+        onPressed: () {
+          context.pop();
+        },
+        icon: Icon(Icons.arrow_back_ios),
+      ),
       foregroundColor: Colors.white,
       title: Text(
         widget.fileName ?? 'PDF Document',

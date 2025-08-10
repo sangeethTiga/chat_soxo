@@ -10,14 +10,10 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_entry/chat_entry_response.dart';
+import 'package:soxo_chat/feature/chat/screen/widgets/pdf_viewer.dart';
 import 'package:soxo_chat/shared/widgets/media/media_cache.dart';
 import 'package:soxo_chat/shared/widgets/shimmer/shimmer_card.dart';
 
-/// Shimmer Animation Widget
-
-/// Enhanced cache with better state management
-
-/// Instant loading media preview widget
 class MediaPreviewWidget extends StatelessWidget {
   final ChatMedias? media;
   final bool isInChatBubble;
@@ -38,7 +34,6 @@ class MediaPreviewWidget extends StatelessWidget {
 
     final mediaId = media!.id.toString();
 
-    // Use a more efficient approach - get cubit instance once
     return Builder(
       builder: (context) {
         final cubit = context.watch<ChatCubit>();
@@ -47,7 +42,7 @@ class MediaPreviewWidget extends StatelessWidget {
         final isLoading = cubit.isFileLoading(mediaId);
 
         return _InstantMediaBuilder(
-          key: ValueKey('media_$mediaId'), // Prevent unnecessary rebuilds
+          key: ValueKey('media_$mediaId'),
           media: media!,
           fileUrl: fileUrl,
           fileType: fileType,
@@ -61,7 +56,6 @@ class MediaPreviewWidget extends StatelessWidget {
   }
 }
 
-/// Optimized media builder with better error handling
 class _InstantMediaBuilder extends StatelessWidget {
   final ChatMedias media;
   final String? fileUrl;
@@ -86,7 +80,6 @@ class _InstantMediaBuilder extends StatelessWidget {
   Widget build(BuildContext context) {
     final mediaId = media.id.toString();
 
-    // Debug logging to track the issue
     debugPrint(
       'Media $mediaId: fileUrl=$fileUrl, isLoading=$isLoading, type=$fileType',
     );
@@ -493,8 +486,6 @@ class _InstantDocumentPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: maxWidth ?? (isInChatBubble ? 150.w : 200.w),
-      height: maxHeight ?? (isInChatBubble ? 60.h : 80.h),
       decoration: BoxDecoration(
         color: Colors.red[50],
         borderRadius: BorderRadius.circular(8.r),
@@ -552,7 +543,13 @@ class _InstantDocumentPreview extends StatelessWidget {
 
       if (filePath != null && await File(filePath).exists()) {
         log('Opening PDF: $filePath');
-        // Navigator.push(context, MaterialPageRoute(builder: (_) => PdfViewScreen(filePath: filePath!)));
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                PdfViewScreen(filePath: filePath!, fileName: 'PDF VIEWER'),
+          ),
+        );
       } else {
         _showSnackBar(context, 'PDF file not found');
       }
