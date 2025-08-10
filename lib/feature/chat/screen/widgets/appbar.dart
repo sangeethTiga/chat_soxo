@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/user_data.dart';
+import 'package:soxo_chat/shared/app/list/helper.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
 import 'package:soxo_chat/shared/routes/routes.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
@@ -271,10 +272,30 @@ PreferredSizeWidget buildSeamlessAppBar(
                       ],
                     ),
                   ),
+                18.horizontalSpace,
               ],
             ),
           ),
         ),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (v) {
+              Helper().logout(context);
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'Logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout),
+                    SizedBox(width: 8),
+                    Text('Logout'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     ),
   );

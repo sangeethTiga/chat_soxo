@@ -746,7 +746,7 @@ class ChatCubit extends Cubit<ChatState> {
     if (_isDisposed) return;
 
     ///=-=-=-=-=-=-=-=-=  INSTANT UI UPDATE
-    emit(state.copyWith(selectedFiles: []));
+    emit(state.copyWith(selectedFiles: [], isChatEntry: ApiFetchStatus.idle));
     log('Cleared all selected files');
   }
 
@@ -825,7 +825,7 @@ class ChatCubit extends Cubit<ChatState> {
     if (_isDisposed) return;
 
     ///=-=-=-=-=-=-=-=-=  INSTANT UI UPDATE
-    emit(state.copyWith(isArrow: false));
+    emit(state.copyWith(isArrow: false, isChatEntry: ApiFetchStatus.idle));
   }
 
   ///=-=-=-=-=-=-=-=-=  Cache clearing methods

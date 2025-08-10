@@ -36,11 +36,11 @@ class RouteGenerator {
           pageBuilder: (context, state) {
             final data = state.extra as Map<String, dynamic>;
 
-            return CustomTransitions.slideFade(
+            return CustomTransitions.noTransition(
               context,
               state,
               ChatDetailScreen(data: data),
-              begin: const Offset(1.0, 0.0),
+              // begin: const Offset(1.0, 0.0),
             );
           },
         ),

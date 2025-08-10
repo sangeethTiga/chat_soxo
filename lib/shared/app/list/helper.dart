@@ -3,8 +3,11 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:soxo_chat/shared/routes/routes.dart';
+import 'package:soxo_chat/shared/utils/auth/auth_utils.dart';
 
 class Helper {
   static void afterInit(Function function) {
@@ -53,12 +56,12 @@ class Helper {
     try {
       await _deleteCacheDir();
       await _deleteAppDir();
-      // await AuthUtils.instance.deleteAll();
+      await AuthUtils.instance.deleteAll();
       // context.read<AuthBloc>().add(LogoutEventClear());
 
       if (!context.mounted) return;
 
-      // Navigator.pushNamedAndRemoveUntil(context, routeSignIn, (route) => false);
+      context.go(routeSignIn);
     } catch (e) {
       log('Error during logout: $e');
     }
