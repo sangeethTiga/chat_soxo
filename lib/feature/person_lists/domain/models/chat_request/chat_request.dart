@@ -1,5 +1,4 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:soxo_chat/feature/person_lists/domain/models/user_response.dart';
 
 part 'chat_request.freezed.dart';
 part 'chat_request.g.dart';

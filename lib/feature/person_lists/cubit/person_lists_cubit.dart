@@ -98,4 +98,15 @@ class PersonListsCubit extends Cubit<PersonListsState> {
       return null;
     }
   }
+
+  Future<void> initStateOfClear() async {
+    emit(
+      state.copyWith(
+        selectedUsers: [],
+        isSelectionMode: false,
+        isCreate: ApiFetchStatus.idle,
+        isUser: ApiFetchStatus.idle,
+      ),
+    );
+  }
 }

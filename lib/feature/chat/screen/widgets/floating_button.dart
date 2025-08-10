@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:soxo_chat/feature/person_lists/cubit/person_lists_cubit.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
 import 'package:soxo_chat/shared/routes/routes.dart';
 
@@ -58,6 +60,7 @@ class FlatingWidget extends StatelessWidget {
           backgroundColor: kPrimaryColor,
           heroTag: null,
           onPressed: () {
+            context.read<PersonListsCubit>().initStateOfClear();
             keys?.currentState?.close();
             context.push(
               routeGroup,

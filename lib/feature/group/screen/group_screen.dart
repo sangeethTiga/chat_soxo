@@ -11,7 +11,9 @@ import 'package:soxo_chat/feature/person_lists/domain/models/chat_request/chat_r
 import 'package:soxo_chat/shared/app/enums/api_fetch_status.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
+import 'package:soxo_chat/shared/utils/auth/auth_utils.dart';
 import 'package:soxo_chat/shared/widgets/padding/main_padding.dart';
+import 'package:soxo_chat/shared/widgets/shimmer/shimmer_card.dart';
 import 'package:soxo_chat/shared/widgets/text_fields/text_field_widget.dart';
 
 class GroupScreen extends StatelessWidget {
@@ -105,23 +107,55 @@ class GroupScreen extends StatelessWidget {
                                 child: Padding(
                                   padding: EdgeInsets.only(top: 2.h),
                                   child: InkWell(
-                                    onTap: () {
-                                      context
-                                          .read<PersonListsCubit>()
-                                          .createChat(
-                                            ChatRequest(
-                                              mode: 'MIS',
-                                              type: data?['type'],
-                                              code: data?['type'],
-                                              title: textEditingController.text,
-                                              description: 'Test',
-                                              status: 'Running',
-                                              createdBy: 1,
-                                              branchPtr: 'TR',
-                                              // userChats: state.selectedUsers
-                                              // userChats: state.selectedUsers,
-                                            ),
-                                          );
+                                    onTap: () async {
+                                      final user = await AuthUtils.instance
+                                          .readUserData();
+                                      final selectedUserChats =
+                                          state.selectedUsers
+                                              ?.map(
+                                                (u) => UserChat(
+                                                  userId: u.id,
+                                                  type: "MEMBER",
+                                                  role: "participant",
+                                                ),
+                                              )
+                                              .toList() ??
+                                          [];
+
+                                      selectedUserChats.add(
+                                        UserChat(
+                                          userId:
+                                              int.tryParse(
+                                                user?.result?.userId
+                                                        ?.toString() ??
+                                                    '0',
+                                              ) ??
+                                              0,
+                                          type: 'Owner',
+                                          role: 'member',
+                                        ),
+                                      );
+                                      if (textEditingController
+                                          .text
+                                          .isNotEmpty) {
+                                        context
+                                            .read<PersonListsCubit>()
+                                            .createChat(
+                                              ChatRequest(
+                                                mode: 'MIS',
+                                                type: data?['type'],
+                                                code: generateRandomString(4),
+                                                title:
+                                                    textEditingController.text,
+                                                description: '',
+                                                status: 'Running',
+                                                createdBy: 1,
+                                                branchPtr: 'TR',
+                                                firmPtr: 'F1',
+                                                userChats: selectedUserChats,
+                                              ),
+                                            );
+                                      }
                                     },
                                     child: Container(
                                       height: 47.h,
@@ -132,7 +166,18 @@ class GroupScreen extends StatelessWidget {
                                           13.r,
                                         ),
                                       ),
-                                      child: Icon(Icons.check, color: kWhite),
+                                      child:
+                                          state.isCreate ==
+                                              ApiFetchStatus.loading
+                                          ? Padding(
+                                              padding: const EdgeInsets.all(
+                                                13.0,
+                                              ),
+                                              child: CircularProgressIndicator(
+                                                color: kWhite,
+                                              ),
+                                            )
+                                          : Icon(Icons.check, color: kWhite),
                                     ),
                                   ),
                                 ),
