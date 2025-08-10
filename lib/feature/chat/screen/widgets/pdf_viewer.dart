@@ -1,4 +1,3 @@
-// pdf_viewer_screen.dart - FIXED VERSION
 import 'dart:developer';
 import 'dart:io';
 
@@ -8,12 +7,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
 import 'package:soxo_chat/shared/widgets/media/media_cache.dart';
-import 'package:url_launcher/url_launcher.dart';
-
-// Import your media cache
 
 class PdfViewScreen extends StatefulWidget {
   final String filePath;
@@ -70,7 +66,6 @@ class _PdfViewScreenState extends State<PdfViewScreen> {
     }
   }
 
-  // FIXED: Proper network URL detection
   bool _isNetworkUrl(String path) {
     return path.startsWith('http://') || path.startsWith('https://');
   }
@@ -133,7 +128,6 @@ class _PdfViewScreenState extends State<PdfViewScreen> {
       ),
       actions: [
         if (!_isLoading && !_hasError) ...[
-          // Page counter
           Container(
             padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
             margin: EdgeInsets.only(right: 8.w),
@@ -150,39 +144,37 @@ class _PdfViewScreenState extends State<PdfViewScreen> {
               ),
             ),
           ),
-          // Share button
           IconButton(onPressed: _sharePdf, icon: const Icon(Icons.share)),
-          // Download button
           IconButton(
             onPressed: _downloadToDevice,
             icon: const Icon(Icons.download),
           ),
           // More options
-          PopupMenuButton<String>(
-            onSelected: _handleMenuAction,
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'open_external',
-                child: Row(
-                  children: [
-                    Icon(Icons.open_in_new),
-                    SizedBox(width: 8),
-                    Text('Open in External App'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'zoom_fit',
-                child: Row(
-                  children: [
-                    Icon(Icons.fit_screen),
-                    SizedBox(width: 8),
-                    Text('Fit to Screen'),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          // PopupMenuButton<String>(
+          //   onSelected: _handleMenuAction,
+          //   itemBuilder: (context) => [
+          //     const PopupMenuItem(
+          //       value: 'open_external',
+          //       child: Row(
+          //         children: [
+          //           Icon(Icons.open_in_new),
+          //           SizedBox(width: 8),
+          //           Text('Open in External App'),
+          //         ],
+          //       ),
+          //     ),
+          //     const PopupMenuItem(
+          //       value: 'zoom_fit',
+          //       child: Row(
+          //         children: [
+          //           Icon(Icons.fit_screen),
+          //           SizedBox(width: 8),
+          //           Text('Fit to Screen'),
+          //         ],
+          //       ),
+          //     ),
+          //   ],
+          // ),
         ],
       ],
     );
@@ -232,7 +224,6 @@ class _PdfViewScreenState extends State<PdfViewScreen> {
             log('PDF page error on page $page: $error');
           },
         ),
-        // Navigation controls
         _buildNavigationControls(),
       ],
     );
@@ -413,58 +404,56 @@ class _PdfViewScreenState extends State<PdfViewScreen> {
 
   Future<void> _sharePdf() async {
     if (_localFilePath != null) {
-      // You can use share_plus package for sharing
-      // Share.shareFiles([_localFilePath!], text: 'PDF Document');
-      _showSnackBar('Share functionality - implement with share_plus package');
+      try {
+        await Share.shareXFiles([XFile(_localFilePath!)], text: 'PDF Document');
+      } catch (e) {
+        _showSnackBar('Failed to share PDF: $e');
+      }
+    } else {
+      _showSnackBar('No PDF file available to share.');
     }
   }
 
   Future<void> _downloadToDevice() async {
     try {
-      // Request storage permission
-      final permission = await Permission.storage.request();
-      if (permission.isGranted) {
-        final downloadsDir = Directory('/storage/emulated/0/Download');
-        if (await downloadsDir.exists()) {
-          final fileName =
-              widget.fileName ??
-              'document_${DateTime.now().millisecondsSinceEpoch}.pdf';
-          final newFile = File('${downloadsDir.path}/$fileName');
-          await File(_localFilePath!).copy(newFile.path);
-          _showSnackBar('PDF saved to Downloads/$fileName');
-        } else {
-          _showSnackBar('Downloads folder not accessible');
-        }
+      final downloadsDir = Directory('/storage/emulated/0/Download');
+      if (await downloadsDir.exists()) {
+        final fileName =
+            widget.fileName ??
+            'document_${DateTime.now().millisecondsSinceEpoch}.pdf';
+        final newFile = File('${downloadsDir.path}/$fileName');
+        await File(_localFilePath!).copy(newFile.path);
+        _showSnackBar('PDF saved to Downloads/$fileName');
       } else {
-        _showSnackBar('Storage permission required to download');
+        _showSnackBar('Downloads folder not accessible');
       }
     } catch (e) {
       _showSnackBar('Failed to download PDF: $e');
     }
   }
 
-  Future<void> _handleMenuAction(String action) async {
-    switch (action) {
-      case 'open_external':
-        await _openInExternalApp();
-        break;
-      case 'zoom_fit':
-        // Implement zoom to fit functionality
-        _showSnackBar('Zoom to fit - implement as needed');
-        break;
-    }
-  }
+  // Future<void> _handleMenuAction(String action) async {
+  //   switch (action) {
+  //     case 'open_external':
+  //       await _openInExternalApp();
+  //       break;
+  //     case 'zoom_fit':
+  //       // Implement zoom to fit functionality
+  //       _showSnackBar('Zoom to fit - implement as needed');
+  //       break;
+  //   }
+  // }
 
-  Future<void> _openInExternalApp() async {
-    if (_localFilePath != null) {
-      final uri = Uri.file(_localFilePath!);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri);
-      } else {
-        _showSnackBar('No app available to open PDF');
-      }
-    }
-  }
+  // Future<void> _openInExternalApp() async {
+  //   if (_localFilePath != null) {
+  //     final uri = Uri.file(_localFilePath!);
+  //     if (await canLaunchUrl(uri)) {
+  //       await launchUrl(uri);
+  //     } else {
+  //       _showSnackBar('No app available to open PDF');
+  //     }
+  //   }
+  // }
 
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -562,13 +551,9 @@ class InstantDocumentPreview extends StatelessWidget {
       log('Document tap - Original URL: $fileUrl');
       log('Cached file path: $filePath');
 
-      // FIXED: Better file source determination
-      log('Using cached file: $filePath');
-      // fileName = FileUtils.extractFileNameFromPath(filePath);
-      isNetworkFile = false; // Cached files are always local
+      isNetworkFile = false;
 
       log('Opening PDF viewer with: $filePath (isNetwork: $isNetworkFile)');
-      // Navigate to PDF viewer
       Navigator.push(
         context,
         MaterialPageRoute(
