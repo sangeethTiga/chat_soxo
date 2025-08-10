@@ -31,9 +31,9 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
     return Bubble(
       margin: BubbleEdges.only(top: 3),
       alignment: widget.isSent ? Alignment.topRight : Alignment.topLeft,
-      nipWidth: 13,
+      nipWidth: 18,
       nipHeight: 10,
-      radius: Radius.circular(10.r),
+      radius: Radius.circular(12.r),
       nip: widget.isSent ? BubbleNip.rightTop : BubbleNip.leftTop,
       color: widget.isSent ? Color(0xFFE6F2EC) : Colors.grey[200],
       child: SizedBox(
@@ -44,7 +44,7 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
             _buildMessageContent(),
 
             if (widget.chatMedias != null && widget.chatMedias!.isNotEmpty) ...[
-              SizedBox(height: 3.h),
+              5.verticalSpace,
               _buildMediaAttachments(),
             ],
 

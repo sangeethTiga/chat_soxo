@@ -54,6 +54,7 @@ class TextFeildWidget extends StatelessWidget {
     this.isRequired = false,
     this.hight,
     this.prefix,
+    this.miniLength
   });
   final String? labelText;
   final String? topLabelText;
@@ -95,6 +96,7 @@ class TextFeildWidget extends StatelessWidget {
   final bool isRequired;
   final double? hight;
   final Widget? prefix;
+  final int? miniLength;
 
   @override
   Widget build(BuildContext context) {
@@ -127,6 +129,7 @@ class TextFeildWidget extends StatelessWidget {
         SizedBox(
           height: hight,
           child: TextFormField(
+            minLines: miniLength,
             controller: controller,
             style:
                 textStyle ??

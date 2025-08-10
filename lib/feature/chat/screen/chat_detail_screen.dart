@@ -657,8 +657,8 @@ class _UnifiedMessageInputState extends State<UnifiedMessageInput>
         borderSide: const BorderSide(color: Color(0xffCACACA), width: 1),
       ),
       suffixIcon: _buildVoiceButton(),
-
-      maxLines: 1,
+      miniLength: 1,
+      maxLines: 5,
     );
   }
 
