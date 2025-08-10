@@ -1,3 +1,4 @@
+import 'package:bubble/bubble.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_entry/chat_entry_response.dart';
@@ -27,37 +28,72 @@ class ChatBubbleMessage extends StatefulWidget {
 class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: widget.isSent ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        constraints: BoxConstraints(maxWidth: 280.w),
-        margin: EdgeInsets.symmetric(vertical: 4.h),
-        padding: EdgeInsets.all(12.w),
-        decoration: BoxDecoration(
-          color: widget.isSent ? Color(0xFFE6F2EC) : Colors.grey[200],
-          borderRadius: BorderRadius.circular(16.r),
-        ),
+    return Bubble(
+      margin: BubbleEdges.only(top: 3),
+      alignment: widget.isSent ? Alignment.topRight : Alignment.topLeft,
+      nipWidth: 13,
+      nipHeight: 10,
+      radius: Radius.circular(10.r),
+      nip: widget.isSent ? BubbleNip.rightTop : BubbleNip.leftTop,
+      color: widget.isSent ? Color(0xFFE6F2EC) : Colors.grey[200],
+      child: SizedBox(
+        width: 188.w,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildMessageContent(),
 
-            // Media attachments section
             if (widget.chatMedias != null && widget.chatMedias!.isNotEmpty) ...[
-              SizedBox(height: 8.h),
+              SizedBox(height: 3.h),
               _buildMediaAttachments(),
             ],
 
             SizedBox(height: 4.h),
-            Text(
-              widget.timestamp,
-              style: TextStyle(fontSize: 10.sp, color: Colors.grey[600]),
+            Align(
+              alignment: widget.isSent
+                  ? Alignment.centerRight
+                  : Alignment.bottomLeft,
+              child: Text(
+                widget.timestamp,
+                style: TextStyle(fontSize: 10.sp, color: Colors.grey[600]),
+              ),
             ),
           ],
         ),
       ),
     );
   }
+  //   return Align(
+  //     alignment: widget.isSent ? Alignment.centerRight : Alignment.centerLeft,
+  //     child: Container(
+  //       constraints: BoxConstraints(maxWidth: 280.w),
+  //       margin: EdgeInsets.symmetric(vertical: 4.h),
+  //       padding: EdgeInsets.all(12.w),
+  //       decoration: BoxDecoration(
+  //         color: widget.isSent ? Color(0xFFE6F2EC) : Colors.grey[200],
+  //         borderRadius: BorderRadius.circular(16.r),
+  //       ),
+  //       child: Column(
+  //         crossAxisAlignment: CrossAxisAlignment.start,
+  //         children: [
+  //           _buildMessageContent(),
+
+  //           // Media attachments section
+  //           if (widget.chatMedias != null && widget.chatMedias!.isNotEmpty) ...[
+  //             SizedBox(height: 8.h),
+  //             _buildMediaAttachments(),
+  //           ],
+
+  //           SizedBox(height: 4.h),
+  //           Text(
+  //             widget.timestamp,
+  //             style: TextStyle(fontSize: 10.sp, color: Colors.grey[600]),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _buildMessageContent() {
     switch (widget.type?.toLowerCase()) {
