@@ -31,6 +31,8 @@ mixin _$UserResponse {
   String? get role => throw _privateConstructorUsedError;
   @JsonKey(name: "type")
   String? get type => throw _privateConstructorUsedError;
+  @JsonKey(name: "userId")
+  int? get userId => throw _privateConstructorUsedError;
 
   /// Serializes this UserResponse to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -55,6 +57,7 @@ abstract class $UserResponseCopyWith<$Res> {
     @JsonKey(name: "otherDetails") String? otherDetails,
     @JsonKey(name: "role") String? role,
     @JsonKey(name: "type") String? type,
+    @JsonKey(name: "userId") int? userId,
   });
 }
 
@@ -78,6 +81,7 @@ class _$UserResponseCopyWithImpl<$Res, $Val extends UserResponse>
     Object? otherDetails = freezed,
     Object? role = freezed,
     Object? type = freezed,
+    Object? userId = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -101,6 +105,10 @@ class _$UserResponseCopyWithImpl<$Res, $Val extends UserResponse>
                 ? _value.type
                 : type // ignore: cast_nullable_to_non_nullable
                       as String?,
+            userId: freezed == userId
+                ? _value.userId
+                : userId // ignore: cast_nullable_to_non_nullable
+                      as int?,
           )
           as $Val,
     );
@@ -122,6 +130,7 @@ abstract class _$$UserResponseImplCopyWith<$Res>
     @JsonKey(name: "otherDetails") String? otherDetails,
     @JsonKey(name: "role") String? role,
     @JsonKey(name: "type") String? type,
+    @JsonKey(name: "userId") int? userId,
   });
 }
 
@@ -144,6 +153,7 @@ class __$$UserResponseImplCopyWithImpl<$Res>
     Object? otherDetails = freezed,
     Object? role = freezed,
     Object? type = freezed,
+    Object? userId = freezed,
   }) {
     return _then(
       _$UserResponseImpl(
@@ -167,6 +177,10 @@ class __$$UserResponseImplCopyWithImpl<$Res>
             ? _value.type
             : type // ignore: cast_nullable_to_non_nullable
                   as String?,
+        userId: freezed == userId
+            ? _value.userId
+            : userId // ignore: cast_nullable_to_non_nullable
+                  as int?,
       ),
     );
   }
@@ -181,6 +195,7 @@ class _$UserResponseImpl implements _UserResponse {
     @JsonKey(name: "otherDetails") this.otherDetails,
     @JsonKey(name: "role") this.role,
     @JsonKey(name: "type") this.type,
+    @JsonKey(name: "userId") this.userId,
   });
 
   factory _$UserResponseImpl.fromJson(Map<String, dynamic> json) =>
@@ -201,10 +216,13 @@ class _$UserResponseImpl implements _UserResponse {
   @override
   @JsonKey(name: "type")
   final String? type;
+  @override
+  @JsonKey(name: "userId")
+  final int? userId;
 
   @override
   String toString() {
-    return 'UserResponse(id: $id, name: $name, otherDetails: $otherDetails, role: $role, type: $type)';
+    return 'UserResponse(id: $id, name: $name, otherDetails: $otherDetails, role: $role, type: $type, userId: $userId)';
   }
 
   @override
@@ -217,13 +235,14 @@ class _$UserResponseImpl implements _UserResponse {
             (identical(other.otherDetails, otherDetails) ||
                 other.otherDetails == otherDetails) &&
             (identical(other.role, role) || other.role == role) &&
-            (identical(other.type, type) || other.type == type));
+            (identical(other.type, type) || other.type == type) &&
+            (identical(other.userId, userId) || other.userId == userId));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode =>
-      Object.hash(runtimeType, id, name, otherDetails, role, type);
+      Object.hash(runtimeType, id, name, otherDetails, role, type, userId);
 
   /// Create a copy of UserResponse
   /// with the given fields replaced by the non-null parameter values.
@@ -246,6 +265,7 @@ abstract class _UserResponse implements UserResponse {
     @JsonKey(name: "otherDetails") final String? otherDetails,
     @JsonKey(name: "role") final String? role,
     @JsonKey(name: "type") final String? type,
+    @JsonKey(name: "userId") final int? userId,
   }) = _$UserResponseImpl;
 
   factory _UserResponse.fromJson(Map<String, dynamic> json) =
@@ -266,6 +286,9 @@ abstract class _UserResponse implements UserResponse {
   @override
   @JsonKey(name: "type")
   String? get type;
+  @override
+  @JsonKey(name: "userId")
+  int? get userId;
 
   /// Create a copy of UserResponse
   /// with the given fields replaced by the non-null parameter values.

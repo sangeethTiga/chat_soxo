@@ -24,6 +24,7 @@ class UserResponse with _$UserResponse {
     @JsonKey(name: "otherDetails") String? otherDetails,
     @JsonKey(name: "role") String? role,
     @JsonKey(name: "type") String? type,
+    @JsonKey(name: "userId") int? userId,
   }) = _UserResponse;
 
   factory UserResponse.fromJson(Map<String, dynamic> json) =>

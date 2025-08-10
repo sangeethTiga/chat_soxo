@@ -13,6 +13,7 @@ _$UserResponseImpl _$$UserResponseImplFromJson(Map<String, dynamic> json) =>
       otherDetails: json['otherDetails'] as String?,
       role: json['role'] as String?,
       type: json['type'] as String?,
+      userId: (json['userId'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$$UserResponseImplToJson(_$UserResponseImpl instance) =>
@@ -22,4 +23,5 @@ Map<String, dynamic> _$$UserResponseImplToJson(_$UserResponseImpl instance) =>
       'otherDetails': instance.otherDetails,
       'role': instance.role,
       'type': instance.type,
+      'userId': instance.userId,
     };

@@ -241,16 +241,27 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                       itemBuilder: (context, index) {
                         final data = filteredChats[index];
 
-                        final delay = index * 100;
-                        final progress =
-                            (_listAnimationController.value * 1000 - delay) /
-                            400;
-                        final itemOpacity = progress.clamp(0.0, 1.0);
-                        final itemTranslate = (1 - itemOpacity) * 30;
+                        // final delay = index * 100;
+                        // final progress =
+                        //     (_listAnimationController.value * 1000 - delay) /
+                        //     400;
+                        // final itemOpacity = progress.clamp(0.0, 1.0);
+                        // final itemTranslate = (1 - itemOpacity) * 30;
+
+                        final delay = (index * 0.1).clamp(
+                          0.0,
+                          1.0,
+                        ); // Normalize delay
+                        final itemProgress =
+                            (_listAnimationController.value - delay).clamp(
+                              0.0,
+                              1.0,
+                            );
+                        final itemTranslate = (1 - itemProgress) * 30;
                         return Transform.translate(
                           offset: Offset(0, itemTranslate),
                           child: Opacity(
-                            opacity: itemOpacity,
+                            opacity: _listAnimationController.value,
                             child: GestureDetector(
                               onTap: () =>
                                   onChatItemTappedWithGo(index, state, context),
@@ -304,40 +315,3 @@ void onChatItemTappedWithGo(
     },
   );
 }
-
-// void _onChatItemTapped(int index, ChatState state, BuildContext context) {
-//   HapticFeedback.selectionClick();
-//   context.read<ChatCubit>().getChatEntry(
-//     chatId: state.chatList?[index].chatId,
-//     userId: 2,
-//   );
-//   context.read<ChatCubit>().initStateClear();
-//   Navigator.of(context).push(
-//     PageRouteBuilder(
-//       pageBuilder: (context, animation, secondaryAnimation) {
-//         return ChatDetailScreen(
-//           data: {
-//             "title": state.chatList?[index].title,
-//             // "description": state.chatList?[index].description,
-//           },
-//         );
-//       },
-//       transitionsBuilder: (context, animation, secondaryAnimation, child) {
-//         const begin = Offset(1.0, 0.0);
-//         const end = Offset.zero;
-//         const curve = Curves.fastOutSlowIn;
-
-//         var tween = Tween(
-//           begin: begin,
-//           end: end,
-//         ).chain(CurveTween(curve: curve));
-
-//         return SlideTransition(
-//           position: animation.drive(tween),
-//           child: FadeTransition(opacity: animation, child: child),
-//         );
-//       },
-//       transitionDuration: const Duration(milliseconds: 400),
-//     ),
-//   );
-// }

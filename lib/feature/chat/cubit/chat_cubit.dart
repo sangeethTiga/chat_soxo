@@ -49,11 +49,11 @@ class ChatCubit extends Cubit<ChatState> {
     _initializePermissions();
   }
 
-  void _emitInstant(ChatState newState) {
-    if (!_isDisposed) {
-      emit(newState);
-    }
-  }
+  // void emit(ChatState newState) {
+  //   if (!_isDisposed) {
+  //     emit(newState);
+  //   }
+  // }
 
   void _scheduleMediaUpdate() {
     if (_isDisposed) return;
@@ -63,7 +63,7 @@ class ChatCubit extends Cubit<ChatState> {
 
     _batchUpdateTimer = Timer(_batchDelay, () {
       if (_hasPendingUpdates && !_isDisposed) {
-        _emitInstant(
+        emit(
           state.copyWith(
             fileUrls: Map<String, String>.from(_fileUrls),
             fileTypes: Map<String, String>.from(_fileTypes),
@@ -75,18 +75,18 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   Future<void> arrowSelected() async {
-    _emitInstant(state.copyWith(isArrow: !state.isArrow));
+    emit(state.copyWith(isArrow: !state.isArrow));
   }
 
   void resetState() {
-    _emitInstant(state.copyWith(isArrow: false));
+    emit(state.copyWith(isArrow: false));
   }
 
   void resetChatState() {
     if (_isDisposed) return;
 
     log('🔄 Resetting chat state');
-    _emitInstant(
+    emit(
       state.copyWith(
         isChatEntry: ApiFetchStatus.idle,
         chatEntry: null,
@@ -97,16 +97,14 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   void clearError() {
-    _emitInstant(state.copyWith(errorMessage: null));
+    emit(state.copyWith(errorMessage: null));
   }
 
   //==================== Enhanced Chat Entry with Smart Caching
   Future<void> getChatEntry({int? chatId, int? userId}) async {
     final currentChatId = chatId ?? 0;
     log('📱 Getting chat entry for chatId: $currentChatId');
-    _emitInstant(
-      state.copyWith(isChatEntry: ApiFetchStatus.loading, chatEntry: null),
-    );
+    emit(state.copyWith(isChatEntry: ApiFetchStatus.loading, chatEntry: null));
     //=-=-=-=-=-=-=-=-= Check if we already have valid cached data for this chat
     final cachedData = _chatCache[currentChatId];
     final cacheTimestamp = _chatCacheTimestamps[currentChatId];
@@ -118,7 +116,7 @@ class ChatCubit extends Cubit<ChatState> {
     ///=-=-=-=-=-=-=-=-=  If switching to a different chat, clear current state first
     if (_currentChatId != null && _currentChatId != currentChatId) {
       log('🔄 Switching chats: $_currentChatId -> $currentChatId');
-      _emitInstant(
+      emit(
         state.copyWith(isChatEntry: ApiFetchStatus.loading, chatEntry: null),
       );
     }
@@ -128,7 +126,7 @@ class ChatCubit extends Cubit<ChatState> {
     ///=-=-=-=-=-=-=-=-=  EARLY RETURN: Use cached data if valid
     if (isCacheValid) {
       log('💾 Using cached data for chat $currentChatId - SKIPPING API CALL');
-      _emitInstant(
+      emit(
         state.copyWith(
           chatEntry: cachedData,
           isChatEntry: ApiFetchStatus.success,
@@ -145,7 +143,7 @@ class ChatCubit extends Cubit<ChatState> {
     }
 
     ///=-=-=-=-=-=-=-=-=  Show loading only if we don't have cached data
-    _emitInstant(state.copyWith(isChatEntry: ApiFetchStatus.loading));
+    emit(state.copyWith(isChatEntry: ApiFetchStatus.loading));
 
     try {
       log('🌐 Making API call for chat $currentChatId (no valid cache)');
@@ -161,7 +159,7 @@ class ChatCubit extends Cubit<ChatState> {
         log(
           'Successfully loaded and cached chat entry for chat $currentChatId',
         );
-        _emitInstant(
+        emit(
           state.copyWith(
             chatEntry: res.data,
             isChatEntry: ApiFetchStatus.success,
@@ -174,14 +172,14 @@ class ChatCubit extends Cubit<ChatState> {
         }
       } else {
         log('⚠️ No data received for chat $currentChatId');
-        _emitInstant(
+        emit(
           state.copyWith(isChatEntry: ApiFetchStatus.success, chatEntry: null),
         );
       }
     } catch (e) {
       log('Error getting chat entry for chat $currentChatId: $e');
       if (!_isDisposed) {
-        _emitInstant(
+        emit(
           state.copyWith(
             isChatEntry: ApiFetchStatus.failed,
             errorMessage: e.toString(),
@@ -201,7 +199,7 @@ class ChatCubit extends Cubit<ChatState> {
     _chatCacheTimestamps.remove(currentChatId);
 
     ///=-=-=-=-=-=-=-=-=  Show loading
-    _emitInstant(state.copyWith(isChatEntry: ApiFetchStatus.loading));
+    emit(state.copyWith(isChatEntry: ApiFetchStatus.loading));
 
     ///=-=-=-=-=-=-=-=-=  Fetch fresh data
     await getChatEntry(chatId: chatId, userId: userId);
@@ -224,7 +222,7 @@ class ChatCubit extends Cubit<ChatState> {
     try {
       final status = await Permission.microphone.request();
       if (!_isDisposed) {
-        _emitInstant(
+        emit(
           state.copyWith(
             hasRecordingPermission: status == PermissionStatus.granted,
           ),
@@ -235,7 +233,7 @@ class ChatCubit extends Cubit<ChatState> {
       );
     } catch (e) {
       if (!_isDisposed) {
-        _emitInstant(
+        emit(
           state.copyWith(
             errorMessage: 'Failed to check microphone permission: $e',
           ),
@@ -253,7 +251,7 @@ class ChatCubit extends Cubit<ChatState> {
       if (!state.hasRecordingPermission) {
         await _initializePermissions();
         if (!state.hasRecordingPermission) {
-          _emitInstant(
+          emit(
             state.copyWith(
               errorMessage:
                   'Microphone permission is required for voice recording',
@@ -277,7 +275,7 @@ class ChatCubit extends Cubit<ChatState> {
           path: recordingPath,
         );
 
-        _emitInstant(
+        emit(
           state.copyWith(
             isRecording: true,
             recordingPath: recordingPath,
@@ -289,15 +287,11 @@ class ChatCubit extends Cubit<ChatState> {
         _startRecordingTimer();
         log('Recording started successfully at: $recordingPath');
       } else {
-        _emitInstant(
-          state.copyWith(errorMessage: 'Microphone permission denied'),
-        );
+        emit(state.copyWith(errorMessage: 'Microphone permission denied'));
       }
     } catch (e) {
       log('Error starting recording: $e');
-      _emitInstant(
-        state.copyWith(errorMessage: 'Failed to start recording: $e'),
-      );
+      emit(state.copyWith(errorMessage: 'Failed to start recording: $e'));
     }
   }
 
@@ -306,7 +300,7 @@ class ChatCubit extends Cubit<ChatState> {
     _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (state.isRecording && !_isDisposed) {
         final newDuration = Duration(seconds: timer.tick);
-        _emitInstant(state.copyWith(recordingDuration: newDuration));
+        emit(state.copyWith(recordingDuration: newDuration));
       } else {
         timer.cancel();
       }
@@ -340,7 +334,7 @@ class ChatCubit extends Cubit<ChatState> {
               files: [file],
             );
 
-            _emitInstant(
+            emit(
               state.copyWith(
                 isRecording: false,
                 recordingDuration: Duration.zero,
@@ -364,7 +358,7 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   void _handleRecordingError(String error) {
-    _emitInstant(
+    emit(
       state.copyWith(
         isRecording: false,
         recordingDuration: Duration.zero,
@@ -389,7 +383,7 @@ class ChatCubit extends Cubit<ChatState> {
         }
       }
 
-      _emitInstant(
+      emit(
         state.copyWith(
           isRecording: false,
           recordingDuration: Duration.zero,
@@ -422,31 +416,42 @@ class ChatCubit extends Cubit<ChatState> {
 
   //================== Chat API Methods - INSTANT UPDATES
   Future<void> getChatList() async {
-    ///=-=-=-=-=-=-=-=-=  INSTANT UI UPDATE - Show loading immediately
-    _emitInstant(state.copyWith(isChat: ApiFetchStatus.loading));
+    log('🔄 getChatList started');
+    emit(state.copyWith(isChat: ApiFetchStatus.loading));
 
     try {
       final res = await _chatRepositories.chatList();
-      if (!_isDisposed) {
-        if (res.data != null) {
-          ///=-=-=-=-=-=-=-=-=  INSTANT UI UPDATE - Show results immediately
-          _emitInstant(
-            state.copyWith(
-              chatList: res.data,
-              isChat: ApiFetchStatus.success,
-              allChats: res.data,
-              selectedTab: 'all',
-            ),
-          );
-        } else {
-          _emitInstant(
-            state.copyWith(isChat: ApiFetchStatus.failed, chatList: []),
-          );
+
+      log('📡 API Response: ${res.data?.length ?? 0} chats received');
+
+      if (!_isDisposed && res.data != null) {
+        // ✅ Don't override selectedTab - preserve current selection
+        final currentTab = state.selectedTab ?? 'all';
+
+        log('📊 Setting ${res.data!.length} chats to allChats');
+        log('🎯 Current tab: $currentTab');
+
+        emit(
+          state.copyWith(
+            chatList: res.data, // Initially show all 45
+            isChat: ApiFetchStatus.success,
+            allChats: res.data, // Store all 45
+            selectedTab: currentTab, // ✅ Keep current tab
+          ),
+        );
+
+        log('✅ State emitted with ${res.data!.length} chats');
+
+        // ✅ Only filter if tab is not 'all'
+        if (currentTab != 'all') {
+          log('🔍 Applying filter for non-all tab: $currentTab');
+          _filterChatList(currentTab);
         }
       }
     } catch (e) {
+      log('❌ Error in getChatList: $e');
       if (!_isDisposed) {
-        _emitInstant(
+        emit(
           state.copyWith(
             isChat: ApiFetchStatus.failed,
             errorMessage: e.toString(),
@@ -573,7 +578,7 @@ class ChatCubit extends Cubit<ChatState> {
       final updatedEntries = List<Entry>.from(currentEntries)..add(tempMessage);
 
       ///=-=-=-=-=-=-=-=-=  Optimistic UI update
-      _emitInstant(
+      emit(
         state.copyWith(
           chatEntry:
               state.chatEntry?.copyWith(entries: updatedEntries) ??
@@ -607,7 +612,7 @@ class ChatCubit extends Cubit<ChatState> {
           return entry.id == tempId ? serverEntry : entry;
         }).toList();
 
-        _emitInstant(
+        emit(
           state.copyWith(
             chatEntry: state.chatEntry?.copyWith(entries: finalEntries),
           ),
@@ -627,7 +632,7 @@ class ChatCubit extends Cubit<ChatState> {
             .where((entry) => entry.id != tempId)
             .toList();
 
-        _emitInstant(
+        emit(
           state.copyWith(
             chatEntry: state.chatEntry?.copyWith(entries: failedEntries),
             errorMessage: 'Failed to send message',
@@ -637,7 +642,7 @@ class ChatCubit extends Cubit<ChatState> {
     } catch (e) {
       log('Error creating chat entry: $e');
       if (!_isDisposed) {
-        _emitInstant(state.copyWith(errorMessage: 'Error: ${e.toString()}'));
+        emit(state.copyWith(errorMessage: 'Error: ${e.toString()}'));
       }
     }
   }
@@ -659,12 +664,12 @@ class ChatCubit extends Cubit<ChatState> {
         final updatedFiles = [...currentFiles, ...files];
 
         ///=-=-=-=-=-=-=-=-=  INSTANT UI UPDATE
-        _emitInstant(state.copyWith(selectedFiles: updatedFiles));
+        emit(state.copyWith(selectedFiles: updatedFiles));
         log('Selected ${files.length} files');
       }
     } catch (e) {
       if (!_isDisposed) {
-        _emitInstant(state.copyWith(errorMessage: 'Error selecting files: $e'));
+        emit(state.copyWith(errorMessage: 'Error selecting files: $e'));
       }
       log('Error selecting files: $e');
     }
@@ -687,7 +692,7 @@ class ChatCubit extends Cubit<ChatState> {
       }
     } catch (e) {
       if (!_isDisposed) {
-        _emitInstant(state.copyWith(errorMessage: 'Error selecting image: $e'));
+        emit(state.copyWith(errorMessage: 'Error selecting image: $e'));
       }
     }
   }
@@ -709,7 +714,7 @@ class ChatCubit extends Cubit<ChatState> {
       }
     } catch (e) {
       if (!_isDisposed) {
-        _emitInstant(state.copyWith(errorMessage: 'Error capturing image: $e'));
+        emit(state.copyWith(errorMessage: 'Error capturing image: $e'));
       }
     }
   }
@@ -721,7 +726,7 @@ class ChatCubit extends Cubit<ChatState> {
     final updatedFiles = [...currentFiles, file];
 
     ///=-=-=-=-=-=-=-=-=  INSTANT UI UPDATE
-    _emitInstant(state.copyWith(selectedFiles: updatedFiles));
+    emit(state.copyWith(selectedFiles: updatedFiles));
   }
 
   void removeSelectedFile(int index) {
@@ -732,7 +737,7 @@ class ChatCubit extends Cubit<ChatState> {
       updatedFiles.removeAt(index);
 
       ///=-=-=-=-=-=-=-=-=  INSTANT UI UPDATE
-      _emitInstant(state.copyWith(selectedFiles: updatedFiles));
+      emit(state.copyWith(selectedFiles: updatedFiles));
       log('Removed file at index $index');
     }
   }
@@ -741,7 +746,7 @@ class ChatCubit extends Cubit<ChatState> {
     if (_isDisposed) return;
 
     ///=-=-=-=-=-=-=-=-=  INSTANT UI UPDATE
-    _emitInstant(state.copyWith(selectedFiles: []));
+    emit(state.copyWith(selectedFiles: []));
     log('Cleared all selected files');
   }
 
@@ -771,7 +776,7 @@ class ChatCubit extends Cubit<ChatState> {
     if (_isDisposed) return;
 
     ///=-=-=-=-=-=-=-=-=  INSTANT UI UPDATE
-    _emitInstant(state.copyWith(selectedTab: value));
+    emit(state.copyWith(selectedTab: value));
 
     ///=-=-=-=-=-=-=-=-=  Filter immediately without delay
     _filterChatList(value);
@@ -805,9 +810,7 @@ class ChatCubit extends Cubit<ChatState> {
     }
 
     ///=-=-=-=-=-=-=-=-=  INSTANT UI UPDATE
-    _emitInstant(
-      state.copyWith(chatList: filteredChats, selectedTab: selectedTab),
-    );
+    emit(state.copyWith(chatList: filteredChats, selectedTab: selectedTab));
   }
 
   ///=-=-=-=-=-=-=-=-=  Utility Methods
@@ -822,7 +825,7 @@ class ChatCubit extends Cubit<ChatState> {
     if (_isDisposed) return;
 
     ///=-=-=-=-=-=-=-=-=  INSTANT UI UPDATE
-    _emitInstant(state.copyWith(isArrow: false));
+    emit(state.copyWith(isArrow: false));
   }
 
   ///=-=-=-=-=-=-=-=-=  Cache clearing methods
