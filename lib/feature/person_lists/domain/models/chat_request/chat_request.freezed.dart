@@ -40,7 +40,7 @@ mixin _$ChatRequest {
   @JsonKey(name: "firmPtr")
   String? get firmPtr => throw _privateConstructorUsedError;
   @JsonKey(name: "userChats")
-  List<UserResponse>? get userChats => throw _privateConstructorUsedError;
+  List<UserChat>? get userChats => throw _privateConstructorUsedError;
 
   /// Serializes this ChatRequest to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -69,7 +69,7 @@ abstract class $ChatRequestCopyWith<$Res> {
     @JsonKey(name: "createdBy") int? createdBy,
     @JsonKey(name: "branchPtr") String? branchPtr,
     @JsonKey(name: "firmPtr") String? firmPtr,
-    @JsonKey(name: "userChats") List<UserResponse>? userChats,
+    @JsonKey(name: "userChats") List<UserChat>? userChats,
   });
 }
 
@@ -140,7 +140,7 @@ class _$ChatRequestCopyWithImpl<$Res, $Val extends ChatRequest>
             userChats: freezed == userChats
                 ? _value.userChats
                 : userChats // ignore: cast_nullable_to_non_nullable
-                      as List<UserResponse>?,
+                      as List<UserChat>?,
           )
           as $Val,
     );
@@ -166,7 +166,7 @@ abstract class _$$ChatRequestImplCopyWith<$Res>
     @JsonKey(name: "createdBy") int? createdBy,
     @JsonKey(name: "branchPtr") String? branchPtr,
     @JsonKey(name: "firmPtr") String? firmPtr,
-    @JsonKey(name: "userChats") List<UserResponse>? userChats,
+    @JsonKey(name: "userChats") List<UserChat>? userChats,
   });
 }
 
@@ -236,7 +236,7 @@ class __$$ChatRequestImplCopyWithImpl<$Res>
         userChats: freezed == userChats
             ? _value._userChats
             : userChats // ignore: cast_nullable_to_non_nullable
-                  as List<UserResponse>?,
+                  as List<UserChat>?,
       ),
     );
   }
@@ -255,7 +255,7 @@ class _$ChatRequestImpl implements _ChatRequest {
     @JsonKey(name: "createdBy") this.createdBy,
     @JsonKey(name: "branchPtr") this.branchPtr,
     @JsonKey(name: "firmPtr") this.firmPtr,
-    @JsonKey(name: "userChats") final List<UserResponse>? userChats,
+    @JsonKey(name: "userChats") final List<UserChat>? userChats,
   }) : _userChats = userChats;
 
   factory _$ChatRequestImpl.fromJson(Map<String, dynamic> json) =>
@@ -288,10 +288,10 @@ class _$ChatRequestImpl implements _ChatRequest {
   @override
   @JsonKey(name: "firmPtr")
   final String? firmPtr;
-  final List<UserResponse>? _userChats;
+  final List<UserChat>? _userChats;
   @override
   @JsonKey(name: "userChats")
-  List<UserResponse>? get userChats {
+  List<UserChat>? get userChats {
     final value = _userChats;
     if (value == null) return null;
     if (_userChats is EqualUnmodifiableListView) return _userChats;
@@ -368,7 +368,7 @@ abstract class _ChatRequest implements ChatRequest {
     @JsonKey(name: "createdBy") final int? createdBy,
     @JsonKey(name: "branchPtr") final String? branchPtr,
     @JsonKey(name: "firmPtr") final String? firmPtr,
-    @JsonKey(name: "userChats") final List<UserResponse>? userChats,
+    @JsonKey(name: "userChats") final List<UserChat>? userChats,
   }) = _$ChatRequestImpl;
 
   factory _ChatRequest.fromJson(Map<String, dynamic> json) =
@@ -403,7 +403,7 @@ abstract class _ChatRequest implements ChatRequest {
   String? get firmPtr;
   @override
   @JsonKey(name: "userChats")
-  List<UserResponse>? get userChats;
+  List<UserChat>? get userChats;
 
   /// Create a copy of ChatRequest
   /// with the given fields replaced by the non-null parameter values.

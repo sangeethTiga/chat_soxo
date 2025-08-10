@@ -6,6 +6,7 @@ class PersonListsState extends Equatable {
   final List<UserResponse>? selectedUsers;
   final bool isSelectionMode;
   final ApiFetchStatus? isCreate;
+  final ChatListResponse? chatListResponse;
 
   const PersonListsState({
     this.personList,
@@ -13,6 +14,7 @@ class PersonListsState extends Equatable {
     this.selectedUsers,
     this.isSelectionMode = false,
     this.isCreate = ApiFetchStatus.idle,
+    this.chatListResponse,
   });
 
   PersonListsState copyWith({
@@ -21,6 +23,7 @@ class PersonListsState extends Equatable {
     List<UserResponse>? selectedUsers,
     bool? isSelectionMode,
     ApiFetchStatus? isCreate,
+    ChatListResponse? chatListResponse,
   }) {
     return PersonListsState(
       personList: personList ?? this.personList,
@@ -28,6 +31,7 @@ class PersonListsState extends Equatable {
       selectedUsers: selectedUsers ?? this.selectedUsers,
       isSelectionMode: isSelectionMode ?? this.isSelectionMode,
       isCreate: isCreate ?? this.isCreate,
+      chatListResponse: chatListResponse ?? this.chatListResponse,
     );
   }
 
@@ -42,6 +46,7 @@ class PersonListsState extends Equatable {
     selectedUsers,
     isSelectionMode,
     isCreate,
+    chatListResponse,
   ];
 }
 

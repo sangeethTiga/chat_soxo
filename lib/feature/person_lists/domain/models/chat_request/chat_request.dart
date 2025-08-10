@@ -16,7 +16,8 @@ class ChatRequest with _$ChatRequest {
     @JsonKey(name: "createdBy") int? createdBy,
     @JsonKey(name: "branchPtr") String? branchPtr,
     @JsonKey(name: "firmPtr") String? firmPtr,
-    @JsonKey(name: "userChats") List<UserResponse>? userChats,
+
+    @JsonKey(name: "userChats") List<UserChat>? userChats,
   }) = _ChatRequest;
 
   factory ChatRequest.fromJson(Map<String, dynamic> json) =>

@@ -25,20 +25,14 @@ class PersonService implements PersonListRepositories {
   }
 
   @override
-  Future<ResponseResult<List<ChatListResponse>>> createChat(
-    ChatRequest req,
-  ) async {
+  Future<ResponseResult<ChatListResponse>> createChat(ChatRequest req) async {
     final res = await NetworkProvider().post(
       ApiEndpoints.createChat,
       data: req.toJson(),
     );
     switch (res.statusCode) {
       case 200:
-        return ResponseResult(
-          data: List<ChatListResponse>.from(
-            res.data?.map((e) => ChatListResponse.fromJson(e)),
-          ).toList(),
-        );
+        return ResponseResult(data: ChatListResponse.fromJson(res.data));
       default:
         throw ResponseResult(data: res.statusMessage);
     }

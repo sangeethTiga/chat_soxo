@@ -8,10 +8,14 @@ import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/appbar.dart';
 import 'package:soxo_chat/feature/group/screen/widgets/build_item_widget.dart';
 import 'package:soxo_chat/feature/person_lists/cubit/person_lists_cubit.dart';
+import 'package:soxo_chat/feature/person_lists/domain/models/chat_request/chat_request.dart';
+import 'package:soxo_chat/shared/app/enums/api_fetch_status.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
 import 'package:soxo_chat/shared/routes/routes.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
+import 'package:soxo_chat/shared/utils/auth/auth_utils.dart';
 import 'package:soxo_chat/shared/widgets/padding/main_padding.dart';
+import 'package:soxo_chat/shared/widgets/shimmer/shimmer_card.dart';
 import 'package:soxo_chat/shared/widgets/text_fields/text_field_widget.dart';
 
 class PersonListsScreen extends StatelessWidget {
@@ -29,7 +33,12 @@ class PersonListsScreen extends StatelessWidget {
             colors: [Color(0xFFF2F2F2), Color(0xFFB7E8CA)],
           ),
         ),
-        child: BlocBuilder<PersonListsCubit, PersonListsState>(
+        child: BlocConsumer<PersonListsCubit, PersonListsState>(
+          listener: (context, state) {
+            if (state.isCreate == ApiFetchStatus.success) {
+              context.read<ChatCubit>().getChatList();
+            }
+          },
           builder: (context, state) {
             return Column(
               children: [
@@ -77,50 +86,122 @@ class PersonListsScreen extends StatelessWidget {
                               itemBuilder: (context, i) {
                                 final data = state.personList?[i];
 
-                                return GestureDetector(
-                                  onTap: () {
+                                return buildChatContacts(
+                                  data?.name ?? '',
+                                  () async {
                                     HapticFeedback.selectionClick();
-
-                                    context.read<ChatCubit>().getChatEntry(
-                                      chatId: data?.id,
-                                      userId: 2,
-                                    );
-
+                                    final user = await AuthUtils.instance
+                                        .readUserData();
                                     context.read<ChatCubit>().initStateClear();
 
-                                    context.push(
-                                      routeChatDetail,
-                                      extra: {
-                                        "title": data?.name,
-                                        "chatId": data?.id,
-                                      },
-                                    );
-                                  },
-                                  child: buildChatContacts(
-                                    data?.name ?? '',
-                                    () {
-                                      HapticFeedback.selectionClick();
+                                    // context
+                                    //     .read<PersonListsCubit>()
+                                    //     .createChat(
+                                    //       ChatRequest(
+                                    //         mode: 'MIS',
+                                    //         type: 'personal',
+                                    //         code: generateRandomString(4),
+                                    //         title: data?.name ?? '',
+                                    //         description: '',
+                                    //         status: 'Running',
+                                    //         createdBy: 1,
+                                    //         branchPtr: 'TR',
+                                    //         firmPtr: "F1",
+                                    //         userChats: [
+                                    //           UserChat(
+                                    //             userId: data?.id,
+                                    //             role: 'member',
+                                    //             type: 'Normal',
+                                    //           ),
+                                    //           UserChat(
+                                    //             userId: int.tryParse(
+                                    //               user?.result?.userId
+                                    //                       .toString() ??
+                                    //                   '',
+                                    //             ),
 
-                                      context.read<ChatCubit>().getChatEntry(
-                                        chatId: data?.id,
-                                        userId: 2,
-                                      );
+                                    //             role: 'member',
+                                    //             type: 'Normal',
+                                    //           ),
+                                    //         ],
+                                    //       ),
+                                    //     )
+                                    //     .then((v) {
+                                    //       context
+                                    //           .read<ChatCubit>()
+                                    //           .getChatEntry(
+                                    //             chatId: v?.chatId,
+                                    //             userId: int.tryParse(
+                                    //               user?.result?.userId
+                                    //                       .toString() ??
+                                    //                   '',
+                                    //             ),
+                                    //           );
 
-                                      context
+                                    //       context.push(
+                                    //         routeChatDetail,
+                                    //         extra: {
+                                    //           "title": data?.name,
+                                    //           "chatId": data?.id,
+                                    //         },
+                                    //       );
+                                    //     });
+
+                                    final chatResponse = await context
+                                        .read<PersonListsCubit>()
+                                        .createChat(
+                                          ChatRequest(
+                                            mode: 'MIS',
+                                            type: 'personal',
+                                            code: generateRandomString(4),
+                                            title: data?.name ?? '',
+                                            description: '',
+                                            status: 'Running',
+                                            createdBy: 1,
+                                            branchPtr: 'TR',
+                                            firmPtr: "F1",
+                                            userChats: [
+                                              UserChat(
+                                                userId: data?.id,
+                                                role: 'member',
+                                                type: 'Normal',
+                                              ),
+                                              UserChat(
+                                                userId: int.tryParse(
+                                                  user?.result?.userId
+                                                          .toString() ??
+                                                      '',
+                                                ),
+                                                role: 'member',
+                                                type: 'Normal',
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                    context.read<ChatCubit>().getChatList();
+
+                                    if (chatResponse?.chatId != null) {
+                                      await context
                                           .read<ChatCubit>()
-                                          .initStateClear();
+                                          .getChatEntry(
+                                            chatId: chatResponse!.chatId,
+                                            userId: int.tryParse(
+                                              user?.result?.userId.toString() ??
+                                                  '',
+                                            ),
+                                          );
 
                                       context.push(
                                         routeChatDetail,
                                         extra: {
                                           "title": data?.name,
-                                          "chatId": data?.id,
+                                          "chat_id": chatResponse.chatId,
                                         },
                                       );
-                                    },
+                                    }
+                                  },
 
-                                    isShow: true,
-                                  ),
+                                  isShow: true,
                                 );
                               },
                             ),

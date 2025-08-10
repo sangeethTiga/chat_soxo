@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
+import 'package:soxo_chat/feature/chat/domain/models/chat_res/chat_list_response.dart';
 import 'package:soxo_chat/feature/person_lists/domain/models/chat_request/chat_request.dart';
 import 'package:soxo_chat/feature/person_lists/domain/models/user_response.dart';
 import 'package:soxo_chat/feature/person_lists/domain/repositories/person_repositories.dart';
@@ -71,14 +72,30 @@ class PersonListsCubit extends Cubit<PersonListsState> {
     );
   }
 
-  Future<void> createChat(ChatRequest req) async {
-    emit(state.copyWith(isCreate: ApiFetchStatus.loading));
+  Future<ChatListResponse?> createChat(ChatRequest req) async {
+    try {
+      emit(state.copyWith(isCreate: ApiFetchStatus.loading));
 
-    final res = await _personListRepositories.createChat(req);
-    if (res.data != null) {
-      log('SUCCESS');
-      emit(state.copyWith(isCreate: ApiFetchStatus.success));
+      final res = await _personListRepositories.createChat(req);
+
+      if (res.data != null && res.data!.chatId != null) {
+        log('SUCCESS - Chat created with ID: ${res.data!.chatId}');
+        emit(
+          state.copyWith(
+            isCreate: ApiFetchStatus.success,
+            chatListResponse: res.data,
+          ),
+        );
+        return res.data;
+      } else {
+        log('FAILED - No data or chatId in response');
+        emit(state.copyWith(isCreate: ApiFetchStatus.failed));
+        return null;
+      }
+    } catch (e) {
+      log('ERROR creating chat: $e');
+      emit(state.copyWith(isCreate: ApiFetchStatus.failed));
+      return null;
     }
-    emit(state.copyWith(isCreate: ApiFetchStatus.failed));
   }
 }

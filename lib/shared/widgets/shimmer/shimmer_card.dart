@@ -1,3 +1,5 @@
+import 'dart:math' show Random;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -124,6 +126,7 @@ class ImageShimmer extends StatelessWidget {
   final double? maxHeight;
 
   const ImageShimmer({
+    super.key,
     required this.isInChatBubble,
     this.maxWidth,
     this.maxHeight,
@@ -170,6 +173,7 @@ class AudioShimmer extends StatelessWidget {
   final double? maxHeight;
 
   const AudioShimmer({
+    super.key,
     required this.isInChatBubble,
     this.maxWidth,
     this.maxHeight,
@@ -239,6 +243,7 @@ class DocumentShimmer extends StatelessWidget {
   final double? maxHeight;
 
   const DocumentShimmer({
+    super.key,
     required this.isInChatBubble,
     this.maxWidth,
     this.maxHeight,
@@ -349,4 +354,14 @@ class _GenericShimmer extends StatelessWidget {
       ),
     );
   }
+}
+
+String generateRandomString(int length) {
+  const chars =
+      'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  final random = Random.secure();
+  return List.generate(
+    length,
+    (index) => chars[random.nextInt(chars.length)],
+  ).join();
 }

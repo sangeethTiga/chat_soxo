@@ -260,7 +260,6 @@ class _ImageViewerDialogState extends State<_ImageViewerDialog>
                               ),
                             ),
 
-                            // Close button
                             Container(
                               decoration: BoxDecoration(
                                 color: Colors.black54,

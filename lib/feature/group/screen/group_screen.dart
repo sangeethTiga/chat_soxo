@@ -118,7 +118,7 @@ class GroupScreen extends StatelessWidget {
                                               status: 'Running',
                                               createdBy: 1,
                                               branchPtr: 'TR',
-                                              userChats: state.selectedUsers,
+                                              // userChats: state.selectedUsers,
                                             ),
                                           );
                                     },

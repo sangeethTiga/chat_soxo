@@ -18,7 +18,7 @@ _$ChatRequestImpl _$$ChatRequestImplFromJson(Map<String, dynamic> json) =>
       branchPtr: json['branchPtr'] as String?,
       firmPtr: json['firmPtr'] as String?,
       userChats: (json['userChats'] as List<dynamic>?)
-          ?.map((e) => UserResponse.fromJson(e as Map<String, dynamic>))
+          ?.map((e) => UserChat.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
 
