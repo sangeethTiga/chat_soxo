@@ -342,6 +342,7 @@ class ChatHeader extends StatelessWidget {
     );
   }
 }
+// Replace your OptimizedChatMessagesList class with this fixed version
 
 class OptimizedChatMessagesList extends StatefulWidget {
   const OptimizedChatMessagesList({super.key});
@@ -353,11 +354,17 @@ class OptimizedChatMessagesList extends StatefulWidget {
 
 class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
   late ScrollController _scrollController;
+  List<Entry>? _previousEntries;
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
+
+    // Scroll to bottom when the widget first loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToBottom();
+    });
   }
 
   @override
@@ -366,16 +373,36 @@ class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
     super.dispose();
   }
 
-  void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
+  void _scrollToBottom({bool animate = true}) {
+    if (_scrollController.hasClients) {
+      if (animate) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
+      } else {
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
       }
-    });
+    }
+  }
+
+  void _checkAndScrollToBottom(List<Entry> currentEntries) {
+    // Check if new messages were added
+    if (_previousEntries != null &&
+        currentEntries.length > _previousEntries!.length) {
+      // New message added, scroll to bottom
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom();
+      });
+    } else if (_previousEntries == null) {
+      // First time loading, scroll to bottom
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom(animate: false); // No animation for initial load
+      });
+    }
+
+    _previousEntries = List.from(currentEntries);
   }
 
   @override
@@ -396,6 +423,9 @@ class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
           return const AnimatedEmptyChatWidget();
         }
 
+        // Check if we need to scroll to bottom
+        _checkAndScrollToBottom(data.entries!);
+
         return _buildMessagesList(data.entries!);
       },
     );
@@ -412,20 +442,24 @@ class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
 
   Widget _buildMessagesList(List<Entry> entries) {
     final pinnedList = entries.where((e) => (e.messageType != 'html')).toList();
+
     return FutureBuilder(
       future: AuthUtils.instance.readUserData(),
       builder: (context, asyncSnapshot) {
+        // Scroll to bottom when the FutureBuilder completes
+        if (asyncSnapshot.connectionState == ConnectionState.done) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _scrollToBottom(animate: false);
+          });
+        }
+
         return ListView.builder(
           cacheExtent: 2000,
-
           controller: _scrollController,
           padding: EdgeInsets.symmetric(horizontal: 16.w),
           itemCount: pinnedList.length,
           itemBuilder: (context, index) {
             final messageData = pinnedList[index];
-            if (index == pinnedList.length - 1) {
-              _scrollToBottom();
-            }
             final int userId =
                 int.tryParse(
                   asyncSnapshot.data?.result?.userId.toString() ?? '0',
