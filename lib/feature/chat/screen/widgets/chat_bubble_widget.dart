@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_entry/chat_entry_response.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/htm_Card.dart';
-import 'package:soxo_chat/feature/chat/screen/widgets/pdf_viewer_screen.dart';
+import 'package:soxo_chat/feature/chat/screen/widgets/chat_card.dart';
 
 class ChatBubbleMessage extends StatefulWidget {
   final String? type;

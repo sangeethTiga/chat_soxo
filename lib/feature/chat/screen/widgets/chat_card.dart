@@ -11,8 +11,78 @@ import 'package:path_provider/path_provider.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_entry/chat_entry_response.dart';
 
+/// Shimmer Animation Widget
+class ShimmerWidget extends StatefulWidget {
+  final Widget child;
+  final Duration duration;
+  final Color baseColor;
+  final Color highlightColor;
+
+  const ShimmerWidget({
+    super.key,
+    required this.child,
+    this.duration = const Duration(milliseconds: 1500),
+    this.baseColor = const Color(0xFFE0E0E0),
+    this.highlightColor = const Color(0xFFF5F5F5),
+  });
+
+  @override
+  State<ShimmerWidget> createState() => _ShimmerWidgetState();
+}
+
+class _ShimmerWidgetState extends State<ShimmerWidget>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(duration: widget.duration, vsync: this);
+    _animation = Tween<double>(begin: -1.0, end: 2.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOutSine),
+    );
+    _controller.repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return ShaderMask(
+          blendMode: BlendMode.srcATop,
+          shaderCallback: (bounds) {
+            return LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              stops: [
+                (_animation.value - 1).clamp(0.0, 1.0),
+                _animation.value.clamp(0.0, 1.0),
+                (_animation.value + 1).clamp(0.0, 1.0),
+              ],
+              colors: [
+                widget.baseColor,
+                widget.highlightColor,
+                widget.baseColor,
+              ],
+            ).createShader(bounds);
+          },
+          child: widget.child,
+        );
+      },
+    );
+  }
+}
+
 /// Enhanced cache with better state management
-class _MediaCache {
+class MediaCache {
   static final Map<String, Uint8List> _imageCache = {};
   static final Map<String, String> _filePathCache = {};
   static final Set<String> _loadingItems = {};
@@ -136,7 +206,7 @@ class _InstantMediaBuilder extends StatelessWidget {
     );
 
     // Check cache first for instant loading
-    if (fileUrl != null && !_MediaCache.isLoading(mediaId)) {
+    if (fileUrl != null && !MediaCache.isLoading(mediaId)) {
       return _MediaTypeDispatcher(
         fileUrl: fileUrl!,
         fileType: fileType ?? _inferTypeFromMedia(media),
@@ -148,7 +218,7 @@ class _InstantMediaBuilder extends StatelessWidget {
     }
 
     // If we have media data but no fileUrl, try to process it directly
-    if (fileUrl == null && !isLoading && !_MediaCache.isLoading(mediaId)) {
+    if (fileUrl == null && !isLoading && !MediaCache.isLoading(mediaId)) {
       // Check if media has direct data we can use
       if (media.mediaUrl != null && media.mediaUrl!.isNotEmpty) {
         debugPrint('Using media.url directly: ${media.mediaUrl}');
@@ -171,15 +241,16 @@ class _InstantMediaBuilder extends StatelessWidget {
       });
 
       // Set loading state to prevent multiple requests
-      _MediaCache.setLoading(mediaId);
+      MediaCache.setLoading(mediaId);
     }
 
-    // Show loading state
-    if (isLoading || _MediaCache.isLoading(mediaId)) {
-      return _CompactLoadingWidget(
+    // Show loading state with shimmer
+    if (isLoading || MediaCache.isLoading(mediaId)) {
+      return _ShimmerLoadingWidget(
         isInChatBubble: isInChatBubble,
         maxWidth: maxWidth,
         maxHeight: maxHeight,
+        mediaType: _inferTypeFromMedia(media),
       );
     }
 
@@ -188,10 +259,11 @@ class _InstantMediaBuilder extends StatelessWidget {
       future: _waitAndCheckAgain(context, mediaId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return _CompactLoadingWidget(
+          return _ShimmerLoadingWidget(
             isInChatBubble: isInChatBubble,
             maxWidth: maxWidth,
             maxHeight: maxHeight,
+            mediaType: _inferTypeFromMedia(media),
           );
         }
 
@@ -231,7 +303,7 @@ class _InstantMediaBuilder extends StatelessWidget {
       final cubit = context.read<ChatCubit>();
       final url = cubit.getFileUrl(mediaId);
       if (url != null) {
-        _MediaCache.clearLoading(mediaId);
+        MediaCache.clearLoading(mediaId);
         return url;
       }
 
@@ -241,7 +313,7 @@ class _InstantMediaBuilder extends StatelessWidget {
       }
     }
 
-    _MediaCache.clearLoading(mediaId);
+    MediaCache.clearLoading(mediaId);
     return null;
   }
 
@@ -389,7 +461,7 @@ class _InstantImagePreview extends StatelessWidget {
   }
 }
 
-/// Cached image display with instant loading
+/// Cached image display with instant loading and shimmer
 class _CachedImageDisplay extends StatelessWidget {
   final String fileUrl;
   final String mediaId;
@@ -404,7 +476,7 @@ class _CachedImageDisplay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Check cache first for instant display
-    final cachedImage = _MediaCache.getImage(mediaId);
+    final cachedImage = MediaCache.getImage(mediaId);
     if (cachedImage != null) {
       return Image.memory(
         cachedImage,
@@ -431,7 +503,10 @@ class _CachedImageDisplay extends StatelessWidget {
               isInChatBubble: isInChatBubble,
             );
           }
-          return _CompactLoadingWidget(isInChatBubble: isInChatBubble);
+          return _ShimmerLoadingWidget(
+            isInChatBubble: isInChatBubble,
+            mediaType: 'image',
+          );
         },
       );
     }
@@ -444,7 +519,10 @@ class _CachedImageDisplay extends StatelessWidget {
         cacheWidth: isInChatBubble ? 400 : null,
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
-          return _CompactLoadingWidget(isInChatBubble: isInChatBubble);
+          return _ShimmerLoadingWidget(
+            isInChatBubble: isInChatBubble,
+            mediaType: 'image',
+          );
         },
         errorBuilder: (context, error, stackTrace) {
           return _CompactErrorWidget(
@@ -472,7 +550,10 @@ class _CachedImageDisplay extends StatelessWidget {
             isInChatBubble: isInChatBubble,
           );
         }
-        return _CompactLoadingWidget(isInChatBubble: isInChatBubble);
+        return _ShimmerLoadingWidget(
+          isInChatBubble: isInChatBubble,
+          mediaType: 'image',
+        );
       },
     );
   }
@@ -483,7 +564,7 @@ class _CachedImageDisplay extends StatelessWidget {
           ? dataUrl.split(',').last
           : dataUrl;
       final bytes = base64Decode(base64Data);
-      _MediaCache.setImage(mediaId, bytes);
+      MediaCache.setImage(mediaId, bytes);
       return bytes;
     } catch (e) {
       log('Base64 decode error: $e');
@@ -496,7 +577,7 @@ class _CachedImageDisplay extends StatelessWidget {
       final file = File(filePath);
       if (await file.exists()) {
         final bytes = await file.readAsBytes();
-        _MediaCache.setImage(mediaId, bytes);
+        MediaCache.setImage(mediaId, bytes);
         return bytes;
       }
       return null;
@@ -539,7 +620,7 @@ class _InstantAudioPreview extends StatelessWidget {
   }
 }
 
-/// Instant audio player with file caching
+/// Instant audio player with file caching and shimmer loading
 class _InstantAudioPlayer extends StatefulWidget {
   final String fileUrl;
   final String mediaId;
@@ -571,7 +652,7 @@ class _InstantAudioPlayerState extends State<_InstantAudioPlayer> {
 
   Future<void> _prepareAudioInstantly() async {
     // Check cache first
-    final cachedPath = _MediaCache.getFilePath(widget.mediaId);
+    final cachedPath = MediaCache.getFilePath(widget.mediaId);
     if (cachedPath != null && await File(cachedPath).exists()) {
       _filePath = cachedPath;
       _initializePlayer();
@@ -585,11 +666,11 @@ class _InstantAudioPlayerState extends State<_InstantAudioPlayer> {
           'audio_${widget.mediaId}.m4a',
         );
         if (_filePath != null) {
-          _MediaCache.setFilePath(widget.mediaId, _filePath!);
+          MediaCache.setFilePath(widget.mediaId, _filePath!);
         }
       } else {
         _filePath = widget.fileUrl;
-        _MediaCache.setFilePath(widget.mediaId, _filePath!);
+        MediaCache.setFilePath(widget.mediaId, _filePath!);
       }
 
       if (_filePath != null && await File(_filePath!).exists()) {
@@ -642,7 +723,10 @@ class _InstantAudioPlayerState extends State<_InstantAudioPlayer> {
   @override
   Widget build(BuildContext context) {
     if (!_isReady) {
-      return _CompactLoadingWidget(isInChatBubble: widget.isCompact);
+      return _ShimmerLoadingWidget(
+        isInChatBubble: widget.isCompact,
+        mediaType: 'audio',
+      );
     }
 
     return Container(
@@ -773,7 +857,7 @@ class _InstantDocumentPreview extends StatelessWidget {
 
   Future<void> _handleDocumentTap(BuildContext context) async {
     try {
-      String? filePath = _MediaCache.getFilePath(mediaId);
+      String? filePath = MediaCache.getFilePath(mediaId);
 
       if (filePath == null) {
         if (fileUrl.startsWith('data:')) {
@@ -782,7 +866,7 @@ class _InstantDocumentPreview extends StatelessWidget {
             'document_$mediaId.pdf',
           );
           if (filePath != null) {
-            _MediaCache.setFilePath(mediaId, filePath);
+            MediaCache.setFilePath(mediaId, filePath);
           }
         } else {
           filePath = fileUrl;
@@ -808,13 +892,60 @@ class _InstantDocumentPreview extends StatelessWidget {
   }
 }
 
-/// Compact loading widget
-class _CompactLoadingWidget extends StatelessWidget {
+/// Shimmer loading widget with media type specific layouts
+class _ShimmerLoadingWidget extends StatelessWidget {
+  final bool isInChatBubble;
+  final double? maxWidth;
+  final double? maxHeight;
+  final String mediaType;
+
+  const _ShimmerLoadingWidget({
+    required this.isInChatBubble,
+    this.maxWidth,
+    this.maxHeight,
+    this.mediaType = 'unknown',
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    switch (mediaType.toLowerCase()) {
+      case 'image':
+        return _ImageShimmer(
+          isInChatBubble: isInChatBubble,
+          maxWidth: maxWidth,
+          maxHeight: maxHeight,
+        );
+      case 'audio':
+      case 'voice':
+        return _AudioShimmer(
+          isInChatBubble: isInChatBubble,
+          maxWidth: maxWidth,
+          maxHeight: maxHeight,
+        );
+      case 'document':
+      case 'pdf':
+        return _DocumentShimmer(
+          isInChatBubble: isInChatBubble,
+          maxWidth: maxWidth,
+          maxHeight: maxHeight,
+        );
+      default:
+        return _GenericShimmer(
+          isInChatBubble: isInChatBubble,
+          maxWidth: maxWidth,
+          maxHeight: maxHeight,
+        );
+    }
+  }
+}
+
+/// Image-specific shimmer
+class _ImageShimmer extends StatelessWidget {
   final bool isInChatBubble;
   final double? maxWidth;
   final double? maxHeight;
 
-  const _CompactLoadingWidget({
+  const _ImageShimmer({
     required this.isInChatBubble,
     this.maxWidth,
     this.maxHeight,
@@ -822,18 +953,220 @@ class _CompactLoadingWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: maxWidth ?? (isInChatBubble ? 80.w : 120.w),
-      height: maxHeight ?? (isInChatBubble ? 60.h : 80.h),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(8.r),
+    return ShimmerWidget(
+      child: Container(
+        width: maxWidth ?? (isInChatBubble ? 200.w : double.infinity),
+        height: maxHeight ?? (isInChatBubble ? 150.h : 200.h),
+        decoration: BoxDecoration(
+          color: Colors.grey[300],
+          borderRadius: BorderRadius.circular(8.r),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.image,
+              size: isInChatBubble ? 32.sp : 48.sp,
+              color: Colors.grey[400],
+            ),
+            SizedBox(height: 8.h),
+            Container(
+              width: 60.w,
+              height: 8.h,
+              decoration: BoxDecoration(
+                color: Colors.grey[400],
+                borderRadius: BorderRadius.circular(4.r),
+              ),
+            ),
+          ],
+        ),
       ),
-      child: Center(
-        child: SizedBox(
-          width: 20.w,
-          height: 20.h,
-          child: const CircularProgressIndicator(strokeWidth: 2),
+    );
+  }
+}
+
+/// Audio-specific shimmer
+class _AudioShimmer extends StatelessWidget {
+  final bool isInChatBubble;
+  final double? maxWidth;
+  final double? maxHeight;
+
+  const _AudioShimmer({
+    required this.isInChatBubble,
+    this.maxWidth,
+    this.maxHeight,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ShimmerWidget(
+      child: Container(
+        width: maxWidth ?? (isInChatBubble ? 250.w : 300.w),
+        height: maxHeight ?? (isInChatBubble ? 60.h : 80.h),
+        decoration: BoxDecoration(
+          color: Colors.blue[100],
+          borderRadius: BorderRadius.circular(8.r),
+          border: Border.all(color: Colors.blue[200]!),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(8.w),
+          child: Row(
+            children: [
+              Container(
+                width: isInChatBubble ? 32.w : 40.w,
+                height: isInChatBubble ? 32.h : 40.h,
+                decoration: BoxDecoration(
+                  color: Colors.blue[300],
+                  shape: BoxShape.circle,
+                ),
+              ),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 80.w,
+                      height: 12.h,
+                      decoration: BoxDecoration(
+                        color: Colors.blue[300],
+                        borderRadius: BorderRadius.circular(6.r),
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Container(
+                      width: 40.w,
+                      height: 8.h,
+                      decoration: BoxDecoration(
+                        color: Colors.blue[200],
+                        borderRadius: BorderRadius.circular(4.r),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Document-specific shimmer
+class _DocumentShimmer extends StatelessWidget {
+  final bool isInChatBubble;
+  final double? maxWidth;
+  final double? maxHeight;
+
+  const _DocumentShimmer({
+    required this.isInChatBubble,
+    this.maxWidth,
+    this.maxHeight,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ShimmerWidget(
+      child: Container(
+        width: maxWidth ?? (isInChatBubble ? 150.w : 200.w),
+        height: maxHeight ?? (isInChatBubble ? 60.h : 80.h),
+        decoration: BoxDecoration(
+          color: Colors.red[100],
+          borderRadius: BorderRadius.circular(8.r),
+          border: Border.all(color: Colors.red[200]!),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(8.w),
+          child: Row(
+            children: [
+              Container(
+                width: isInChatBubble ? 24.w : 32.w,
+                height: isInChatBubble ? 24.h : 32.h,
+                decoration: BoxDecoration(
+                  color: Colors.red[300],
+                  borderRadius: BorderRadius.circular(4.r),
+                ),
+              ),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      height: 12.h,
+                      decoration: BoxDecoration(
+                        color: Colors.red[300],
+                        borderRadius: BorderRadius.circular(6.r),
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Container(
+                      width: 60.w,
+                      height: 8.h,
+                      decoration: BoxDecoration(
+                        color: Colors.red[200],
+                        borderRadius: BorderRadius.circular(4.r),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Generic shimmer for unknown media types
+class _GenericShimmer extends StatelessWidget {
+  final bool isInChatBubble;
+  final double? maxWidth;
+  final double? maxHeight;
+
+  const _GenericShimmer({
+    required this.isInChatBubble,
+    this.maxWidth,
+    this.maxHeight,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ShimmerWidget(
+      child: Container(
+        width: maxWidth ?? (isInChatBubble ? 120.w : 150.w),
+        height: maxHeight ?? (isInChatBubble ? 60.h : 80.h),
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(8.r),
+          border: Border.all(color: Colors.grey[300]!),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 24.w,
+              height: 24.h,
+              decoration: BoxDecoration(
+                color: Colors.grey[400],
+                borderRadius: BorderRadius.circular(4.r),
+              ),
+            ),
+            SizedBox(height: 4.h),
+            Container(
+              width: 40.w,
+              height: 8.h,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(4.r),
+              ),
+            ),
+          ],
         ),
       ),
     );
