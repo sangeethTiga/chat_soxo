@@ -94,7 +94,7 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
         margin: EdgeInsets.symmetric(vertical: 4.h),
         padding: EdgeInsets.all(12.w),
         decoration: BoxDecoration(
-          color: widget.isSent ? Colors.blue[100] : Colors.grey[200],
+          color: widget.isSent ? Color(0xFFE6F2EC) : Colors.grey[200],
           borderRadius: BorderRadius.circular(16.r),
         ),
         child: Column(

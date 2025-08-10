@@ -15,6 +15,7 @@ import 'package:soxo_chat/feature/chat/screen/widgets/record_dialog.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/user_data.dart';
 import 'package:soxo_chat/shared/animation/empty_chat.dart';
 import 'package:soxo_chat/shared/app/enums/api_fetch_status.dart';
+import 'package:soxo_chat/shared/app/list/helper.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
 import 'package:soxo_chat/shared/routes/routes.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
@@ -435,7 +436,7 @@ class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
               child: ChatBubbleMessage(
                 type: messageData.messageType,
                 message: messageData.content ?? '',
-                timestamp: '12-2-2025 ,15:24',
+                timestamp: getFormattedDate(messageData.createdAt ?? ''),
                 isSent: messageData.senderId == userId ? true : false,
                 chatMedias: messageData.chatMedias,
               ),
