@@ -256,24 +256,15 @@ class GroupContent extends StatelessWidget {
             return AnimatedBuilder(
               animation: contentAnimation,
               builder: (context, child) {
-                // Calculate safe interval values that don't exceed 1.0
                 final totalItems = pinnedList.length;
                 final normalizedIndex =
                     index / (totalItems > 1 ? totalItems - 1 : 1);
 
-                // For slide animation: start at 0, end before 1.0
-                final slideStart = normalizedIndex * 0.3; // Max start: 0.3
-                final slideEnd = (slideStart + 0.4).clamp(
-                  0.0,
-                  1.0,
-                ); // Ensure we don't exceed 1.0
+                final slideStart = normalizedIndex * 0.3;
+                final slideEnd = (slideStart + 0.4).clamp(0.0, 1.0);
 
-                // For fade animation: start earlier, end earlier
-                final fadeStart = normalizedIndex * 0.2; // Max start: 0.2
-                final fadeEnd = (fadeStart + 0.3).clamp(
-                  0.0,
-                  1.0,
-                ); // Ensure we don't exceed 1.0
+                final fadeStart = normalizedIndex * 0.2;
+                final fadeEnd = (fadeStart + 0.3).clamp(0.0, 1.0);
 
                 final slideAnimation =
                     Tween<Offset>(
@@ -320,71 +311,6 @@ class GroupContent extends StatelessWidget {
       },
     );
   }
-  // Widget _buildGroupList() {
-  //   return BlocSelector<ChatCubit, ChatState, List<Entry>>(
-  //     selector: (state) {
-  //       return state.chatEntry?.entries ?? [];
-  //     },
-  //     builder: (context, state) {
-  //       final pinnedList = state
-  //           .where((e) => (e.pinned ?? '').trim().toUpperCase() == 'Y')
-  //           .toList();
-  //       return ListView.builder(
-  //         cacheExtent: 2000,
-  //         padding: EdgeInsets.zero,
-  //         shrinkWrap: true,
-  //         physics: const NeverScrollableScrollPhysics(),
-  //         itemCount: pinnedList.length,
-  //         itemBuilder: (context, index) {
-  //           final data = pinnedList[index];
-
-  //           return AnimatedBuilder(
-  //             animation: contentAnimation,
-  //             builder: (context, child) {
-  //               final slideAnimation =
-  //                   Tween<Offset>(
-  //                     begin: const Offset(0, 0.5),
-  //                     end: Offset.zero,
-  //                   ).animate(
-  //                     CurvedAnimation(
-  //                       parent: contentAnimation,
-  //                       curve: Interval(
-  //                         index * 0.2,
-  //                         0.6 + (index * 0.2),
-  //                         curve: Curves.easeOutCubic,
-  //                       ),
-  //                     ),
-  //                   );
-
-  //               final fadeAnimation = Tween<double>(begin: 0.0, end: 1.0)
-  //                   .animate(
-  //                     CurvedAnimation(
-  //                       parent: contentAnimation,
-  //                       curve: Interval(
-  //                         index * 0.1,
-  //                         0.5 + (index * 0.1),
-  //                         curve: Curves.easeIn,
-  //                       ),
-  //                     ),
-  //                   );
-
-  //               return SlideTransition(
-  //                 position: slideAnimation,
-  //                 child: FadeTransition(
-  //                   opacity: fadeAnimation,
-  //                   child: GroupCardWidget(
-  //                     title: data.sender?.name,
-  //                     imageUrl: data.sender?.imageUrl,
-  //                   ),
-  //                 ),
-  //               );
-  //             },
-  //           );
-  //         },
-  //       );
-  //     },
-  //   );
-  // }
 }
 
 class ChatHeader extends StatelessWidget {
@@ -414,68 +340,6 @@ class ChatHeader extends StatelessWidget {
       ],
     );
   }
-  //_buildMainHeader(context)
-  // Widget _buildMainHeader(BuildContext context) {
-  //   return InkWell(
-  //     onTap: () => _navigateToSingleChat(context),
-  //     child: MainPadding(
-  //       top: 16.h,
-  //       bottom: 0,
-  //       child: Row(
-  //         children: [
-  //           SvgPicture.asset('assets/icons/mynaui_pin-solid.svg'),
-  //           SizedBox(width: 5.w),
-  //           Image.asset('assets/images/Rectangle 1.png'),
-  //           SizedBox(width: 5.w),
-  //           // Expanded(child: _buildHeaderText()),
-  //           SvgPicture.asset('assets/icons/clock.svg'),
-  //           SizedBox(width: 5.w),
-  //           const Text('45 min'),
-  //         ],
-  //       ),
-  //     ),
-  //   );
-  // }
-
-  // Widget _buildHeaderText() {
-  //   return RichText(
-  //     text: TextSpan(
-  //       text: 'Anoop TS  ',
-  //       style: FontPalette.hW700S14.copyWith(color: const Color(0XFF515978)),
-  //       children: [
-  //         TextSpan(
-  //           text: 'send request to case',
-  //           style: FontPalette.hW500S14.copyWith(
-  //             color: const Color(0XFF515978),
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //     overflow: TextOverflow.ellipsis,
-  //     maxLines: 2,
-  //   );
-  // }
-
-  // Widget _buildStatusInfo() {
-  //   return Padding(
-  //     padding: EdgeInsets.only(left: 34.w),
-  //     child: Row(
-  //       children: [
-  //         Text(
-  //           '3 Replayed , 4 Pending',
-  //           style: FontPalette.hW500S12.copyWith(
-  //             color: const Color(0XFF166FF6),
-  //           ),
-  //         ),
-  //         SizedBox(width: 5.w),
-  //         Padding(
-  //           padding: const EdgeInsets.only(top: 8),
-  //           child: SvgPicture.asset('assets/icons/Eye.svg'),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
 }
 
 class OptimizedChatMessagesList extends StatefulWidget {
@@ -546,6 +410,7 @@ class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
   }
 
   Widget _buildMessagesList(List<Entry> entries) {
+    final pinnedList = entries.where((e) => (e.messageType != 'html')).toList();
     return FutureBuilder(
       future: AuthUtils.instance.readUserData(),
       builder: (context, asyncSnapshot) {
@@ -554,12 +419,10 @@ class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
 
           controller: _scrollController,
           padding: EdgeInsets.symmetric(horizontal: 16.w),
-          itemCount: entries.length,
+          itemCount: pinnedList.length,
           itemBuilder: (context, index) {
-            final messageData = entries[index];
-
-            // Auto-scroll to bottom when new message is added
-            if (index == entries.length - 1) {
+            final messageData = pinnedList[index];
+            if (index == pinnedList.length - 1) {
               _scrollToBottom();
             }
             final int userId =
@@ -691,7 +554,6 @@ class _UnifiedMessageInputState extends State<UnifiedMessageInput>
     final selectedFiles = context.read<ChatCubit>().state.selectedFiles ?? [];
     if (messageText.isEmpty && selectedFiles.isEmpty) return;
 
-    // Clear input for better UX
     _messageController.clear();
 
     await context.read<ChatCubit>().createChat(
@@ -727,7 +589,8 @@ class _UnifiedMessageInputState extends State<UnifiedMessageInput>
       child: Row(
         children: [
           SizedBox(width: 10.w),
-          if (!widget.isGroup) _buildFilePickerButton(),
+          if (!widget.isGroup)
+            _buildFilePickerButton(context.watch<ChatCubit>().state),
           SizedBox(width: 10.w),
           Expanded(child: _buildTextInput()),
           SizedBox(width: 6.w),
@@ -737,10 +600,16 @@ class _UnifiedMessageInputState extends State<UnifiedMessageInput>
     );
   }
 
-  Widget _buildFilePickerButton() {
+  Widget _buildFilePickerButton(ChatState state) {
     return InkWell(
       onTap: () => showFilePickerBottomSheet(context),
-      child: SvgPicture.asset('assets/icons/Vector.svg'),
+      child: (state.selectedFiles?.isNotEmpty ?? false)
+          ? Badge.count(
+              backgroundColor: kPrimaryColor,
+              count: state.selectedFiles?.length ?? 0,
+              child: SvgPicture.asset('assets/icons/Vector.svg'),
+            )
+          : SvgPicture.asset('assets/icons/Vector.svg'),
     );
   }
 
@@ -753,10 +622,7 @@ class _UnifiedMessageInputState extends State<UnifiedMessageInput>
         borderSide: const BorderSide(color: Color(0xffCACACA), width: 1),
       ),
       suffixIcon: _buildVoiceButton(),
-      // Prevent keyboard from affecting scroll behavior
-      // textInputAction: TextInputAction.send,
-      // onSubmitted: (_) => _sendMessage(),
-      // Ensure text field doesn't cause layout shifts
+
       maxLines: 1,
     );
   }
@@ -805,7 +671,6 @@ class _UnifiedMessageInputState extends State<UnifiedMessageInput>
   }
 }
 
-// Separate widget for the input section used in ChatContent
 class MessageInputSection extends StatelessWidget {
   final Map<String, dynamic>? chatData;
 
@@ -836,12 +701,24 @@ class AnimatedDividerCard extends StatelessWidget {
         child: Row(
           children: [
             const Expanded(child: Divider()),
+            2.horizontalSpace,
             AnimatedBuilder(
               animation: arrowAnimation,
               builder: (context, child) {
                 return Transform.rotate(
-                  angle: arrowAnimation.value * 3.14159,
-                  child: const Icon(Icons.keyboard_arrow_down),
+                  angle: arrowAnimation.value * 6.28,
+                  child: Container(
+                    height: 25.h,
+                    width: 25.w,
+                    decoration: BoxDecoration(
+                      color: Color(0XFFEEF3F1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(6.0),
+                      child: SvgPicture.asset('assets/icons/icon.svg'),
+                    ),
+                  ),
                 );
               },
             ),

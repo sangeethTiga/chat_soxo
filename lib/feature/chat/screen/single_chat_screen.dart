@@ -6,13 +6,15 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/domain/models/add_chat/add_chatentry_request.dart';
+import 'package:soxo_chat/feature/chat/domain/models/chat_entry/chat_entry_response.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/appbar.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/chat_bubble_widget.dart';
+import 'package:soxo_chat/feature/chat/screen/widgets/file_picker_widget.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/record_dialog.dart';
 import 'package:soxo_chat/shared/animation/empty_chat.dart';
 import 'package:soxo_chat/shared/app/enums/api_fetch_status.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
-import 'package:soxo_chat/shared/themes/font_palette.dart';
+import 'package:soxo_chat/shared/utils/auth/auth_utils.dart';
 import 'package:soxo_chat/shared/widgets/alert/alert_dialog_custom.dart';
 import 'package:soxo_chat/shared/widgets/padding/main_padding.dart';
 import 'package:soxo_chat/shared/widgets/shimmer/shimmer_category.dart';
@@ -28,65 +30,297 @@ class SingleChatScreen extends StatefulWidget {
 }
 
 class _SingleChatScreenState extends State<SingleChatScreen>
-    with TickerProviderStateMixin {
-  late AnimationController _arrowAnimationController;
-  late AnimationController _contentAnimationController;
-  late AnimationController _recordingAnimationController;
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
   late Animation<double> _arrowRotationAnimation;
-
-  late TextEditingController _messageController;
-
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
-  late Animation<double> _pulseAnimation;
+  late Animation<double> _contentFadeAnimation;
 
   @override
   void initState() {
     super.initState();
-    _messageController = TextEditingController();
     _initializeAnimations();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _contentAnimationController.forward();
-    });
   }
 
   void _initializeAnimations() {
-    _arrowAnimationController = AnimationController(
+    context.read<ChatCubit>().resetChatState();
+    _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
 
-    _contentAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 400),
-      vsync: this,
+    _arrowRotationAnimation = Tween<double>(begin: 0.0, end: 0.5).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
+
+    _contentFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _handleViewToggle() {
+    final chatCubit = context.read<ChatCubit>();
+    chatCubit.arrowSelected();
+
+    if (_animationController.isCompleted) {
+      _animationController.reverse();
+    } else {
+      _animationController.forward();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: buildAppBarWithProfile(context, {}, title: widget.data?['title']),
+      body: BlocListener<ChatCubit, ChatState>(
+        listenWhen: (previous, current) =>
+            previous.errorMessage != current.errorMessage,
+        listener: _handleErrorMessage,
+        child: _buildBody(),
+      ),
+    );
+  }
+
+  void _handleErrorMessage(BuildContext context, ChatState state) {
+    if (state.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(state.errorMessage!),
+          backgroundColor: Colors.red,
+          action: SnackBarAction(
+            label: 'Dismiss',
+            textColor: Colors.white,
+            onPressed: () => context.read<ChatCubit>().clearError(),
+          ),
+        ),
+      );
+    }
+  }
+
+  Widget _buildBody() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFF2F2F2), Color(0xFFB7E8CA)],
+        ),
+      ),
+      child: Column(
+        children: [
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(24.r),
+                  topRight: Radius.circular(24.r),
+                ),
+              ),
+              child: BlocSelector<ChatCubit, ChatState, bool>(
+                selector: (state) => state.isArrow,
+                builder: (context, isArrow) {
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    transitionBuilder: (child, animation) =>
+                        FadeTransition(opacity: animation, child: child),
+                    child: ChatContent(
+                      key: const ValueKey('chat'),
+                      data: widget.data,
+                      onToggleTap: _handleViewToggle,
+                      arrowAnimation: _arrowRotationAnimation,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ChatContent extends StatelessWidget {
+  final Map<String, dynamic>? data;
+  final VoidCallback onToggleTap;
+  final Animation<double> arrowAnimation;
+
+  const ChatContent({
+    super.key,
+    this.data,
+    required this.onToggleTap,
+    required this.arrowAnimation,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocSelector<ChatCubit, ChatState, List<Entry>>(
+      selector: (state) {
+        return state.chatEntry?.entries ?? [];
+      },
+      builder: (context, state) {
+        return Column(
+          children: [
+            const Expanded(child: OptimizedChatMessagesList()),
+            MessageInputSection(chatData: data),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class OptimizedChatMessagesList extends StatefulWidget {
+  const OptimizedChatMessagesList({super.key});
+
+  @override
+  State<OptimizedChatMessagesList> createState() =>
+      _OptimizedChatMessagesListState();
+}
+
+class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
+  late ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocSelector<
+      ChatCubit,
+      ChatState,
+      ({ApiFetchStatus? status, List<Entry>? entries})
+    >(
+      selector: (state) =>
+          (status: state.isChatEntry, entries: state.chatEntry?.entries),
+
+      builder: (context, data) {
+        if (data.status == ApiFetchStatus.loading) {
+          return _buildShimmerList();
+        }
+
+        if (data.entries?.isEmpty ?? true) {
+          return const AnimatedEmptyChatWidget();
+        }
+
+        return _buildMessagesList(data.entries!);
+      },
+    );
+  }
+
+  Widget _buildShimmerList() {
+    return ListView.builder(
+      padding: EdgeInsets.symmetric(horizontal: 16.w),
+      itemCount: 3,
+      itemBuilder: (context, index) =>
+          ChatMessageShimmer(isSent: index % 2 == 0),
+    );
+  }
+
+  Widget _buildMessagesList(List<Entry> entries) {
+    final pinnedList = entries
+        .where(
+          (e) =>
+              (e.pinned ?? '').trim().toUpperCase() == 'Y' ||
+              (e.messageType == 'html'),
+        )
+        .toList();
+    return FutureBuilder(
+      future: AuthUtils.instance.readUserData(),
+      builder: (context, asyncSnapshot) {
+        return ListView.builder(
+          cacheExtent: 2000,
+
+          controller: _scrollController,
+          padding: EdgeInsets.symmetric(horizontal: 16.w),
+          itemCount: pinnedList.length,
+          itemBuilder: (context, index) {
+            final messageData = pinnedList[index];
+            if (index == pinnedList.length - 1) {
+              _scrollToBottom();
+            }
+            final int userId =
+                int.tryParse(
+                  asyncSnapshot.data?.result?.userId.toString() ?? '0',
+                ) ??
+                0;
+            return Padding(
+              padding: EdgeInsets.only(top: 15.h),
+              child: ChatBubbleMessage(
+                type: messageData.messageType,
+                message: messageData.content ?? '',
+                timestamp: '12-2-2025 ,15:24',
+                isSent: messageData.senderId == userId ? true : false,
+                chatMedias: messageData.chatMedias,
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class UnifiedMessageInput extends StatefulWidget {
+  final Map<String, dynamic>? chatData;
+  final bool isGroup;
+
+  const UnifiedMessageInput({super.key, this.chatData, this.isGroup = false});
+
+  @override
+  State<UnifiedMessageInput> createState() => _UnifiedMessageInputState();
+}
+
+class _UnifiedMessageInputState extends State<UnifiedMessageInput>
+    with SingleTickerProviderStateMixin {
+  late TextEditingController _messageController;
+  late AnimationController _recordingAnimationController;
+  late Animation<double> _pulseAnimation;
+
+  bool _hasText = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeControllers();
+  }
+
+  void _initializeControllers() {
+    _messageController = TextEditingController();
+    _messageController.addListener(_onTextChanged);
 
     _recordingAnimationController = AnimationController(
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
-
-    _arrowRotationAnimation = Tween<double>(begin: 0.0, end: 0.5).animate(
-      CurvedAnimation(
-        parent: _arrowAnimationController,
-        curve: Curves.easeInOut,
-      ),
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _contentAnimationController,
-        curve: Curves.easeInOut,
-      ),
-    );
-
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _contentAnimationController,
-            curve: Curves.easeOutCubic,
-          ),
-        );
 
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.3).animate(
       CurvedAnimation(
@@ -98,28 +332,24 @@ class _SingleChatScreenState extends State<SingleChatScreen>
 
   @override
   void dispose() {
-    _arrowAnimationController.dispose();
-    _contentAnimationController.dispose();
     _recordingAnimationController.dispose();
+    _messageController.removeListener(_onTextChanged);
     _messageController.dispose();
     super.dispose();
   }
 
-  void _handleArrowTap() {
-    context.read<ChatCubit>().arrowSelected();
-    if (_arrowAnimationController.isCompleted) {
-      _arrowAnimationController.reverse();
-    } else {
-      _arrowAnimationController.forward();
+  void _onTextChanged() {
+    final hasText = _messageController.text.trim().isNotEmpty;
+    if (hasText != _hasText) {
+      setState(() => _hasText = hasText);
     }
-
-    _contentAnimationController.reset();
-    _contentAnimationController.forward();
   }
 
-  void _startRecording(BuildContext context) {
-    context.read<ChatCubit>().startRecording();
+  void _startRecording() {
+    final chatCubit = context.read<ChatCubit>();
+    chatCubit.startRecording();
     _recordingAnimationController.repeat(reverse: true);
+
     showRecordingDialog(
       context,
       _pulseAnimation,
@@ -128,18 +358,22 @@ class _SingleChatScreenState extends State<SingleChatScreen>
     );
   }
 
-  void _stopRecording() {
-    context.read<ChatCubit>().stopRecordingAndSend(
-      AddChatEntryRequest(
-        chatId: widget.data?['chat_id'],
-        senderId: 45,
-        type: 'N',
-        typeValue: 0,
-        messageType: 'voice',
-        content: 'Voice message',
-        source: 'Mobile',
-      ),
-    );
+  void _stopRecording() async {
+    final user = await AuthUtils.instance.readUserData();
+    if (!widget.isGroup) {
+      context.read<ChatCubit>().stopRecordingAndSend(
+        AddChatEntryRequest(
+          chatId: widget.chatData?['chat_id'],
+          senderId: int.tryParse(user?.result?.userId.toString() ?? '1'),
+          type: 'N',
+          typeValue: 0,
+          messageType: 'voice',
+          content: 'Voice message',
+          source: 'Mobile',
+        ),
+      );
+    }
+
     _recordingAnimationController.stop();
     Navigator.pop(context);
   }
@@ -150,316 +384,142 @@ class _SingleChatScreenState extends State<SingleChatScreen>
     Navigator.pop(context);
   }
 
+  Future<void> _sendMessage() async {
+    final messageText = _messageController.text.trim();
+    final user = await AuthUtils.instance.readUserData();
+
+    if (widget.isGroup) {
+      _handleGroupMessage(messageText);
+      return;
+    }
+
+    final selectedFiles = context.read<ChatCubit>().state.selectedFiles ?? [];
+    if (messageText.isEmpty && selectedFiles.isEmpty) return;
+
+    _messageController.clear();
+
+    await context.read<ChatCubit>().createChat(
+      AddChatEntryRequest(
+        chatId: widget.chatData?['chat_id'],
+        senderId: int.tryParse(user?.result?.userId.toString() ?? '1'),
+        type: 'N',
+        typeValue: 0,
+        messageType: 'text',
+        content: messageText.isNotEmpty ? messageText : 'File attachment',
+        source: 'Website',
+        attachedFiles: selectedFiles,
+      ),
+      files: selectedFiles,
+    );
+
+    log('Message sent: $messageText');
+  }
+
+  void _handleGroupMessage(String messageText) {
+    if (messageText.isEmpty) return;
+
+    _messageController.clear();
+    FocusScope.of(context).unfocus();
+    log('Group message sent: $messageText');
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: buildAppBarWithProfile(context, {}, title: widget.data?['title']),
-
-      body: BlocConsumer<ChatCubit, ChatState>(
-        listener: (context, state) {
-          if (state.errorMessage != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.errorMessage!),
-                backgroundColor: Colors.red,
-                action: SnackBarAction(
-                  label: 'Dismiss',
-                  textColor: Colors.white,
-                  onPressed: () {
-                    context.read<ChatCubit>().clearError();
-                  },
-                ),
-              ),
-            );
-          }
-        },
-        builder: (context, state) {
-          return Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFFF2F2F2), Color(0xFFB7E8CA)],
-              ),
-            ),
-            child: Column(
-              children: [
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(24.r),
-                        topRight: Radius.circular(24.r),
-                      ),
-                    ),
-                    child: AnimatedSwitcher(
-                      switchInCurve: Curves.easeInOut,
-                      switchOutCurve: Curves.easeInOut,
-                      duration: const Duration(milliseconds: 200),
-                      transitionBuilder:
-                          (Widget child, Animation<double> animation) {
-                            return FadeTransition(
-                              opacity: animation,
-                              child: child,
-                            );
-                          },
-                      child: _buildChatContent(key: const ValueKey('chat')),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
+    return MainPadding(
+      right: 16,
+      bottom: widget.isGroup ? 0.h : 28.h,
+      child: Row(
+        children: [
+          SizedBox(width: 10.w),
+          if (!widget.isGroup)
+            _buildFilePickerButton(context.watch<ChatCubit>().state),
+          SizedBox(width: 10.w),
+          Expanded(child: _buildTextInput()),
+          SizedBox(width: 6.w),
+          _buildSendButton(),
+        ],
       ),
     );
   }
 
-  Widget _buildChatContent({required Key key}) {
-    return BlocBuilder<ChatCubit, ChatState>(
-      builder: (context, state) {
-        return Column(
-          key: key,
-          children: [
-            Expanded(
-              child: BlocBuilder<ChatCubit, ChatState>(
-                builder: (context, state) {
-                  if (state.isChatEntry == ApiFetchStatus.loading) {
-                    return ListView.builder(
-                      padding: EdgeInsets.symmetric(horizontal: 0.w),
-                      itemCount: 3,
-                      itemBuilder: (context, index) {
-                        return ChatMessageShimmer(isSent: index % 2 == 0);
-                      },
-                    );
-                  }
-                  if (state.chatEntry?.entries?.isEmpty ?? true) {
-                    return const AnimatedEmptyChatWidget();
-                  }
-                  return ListView.builder(
-                    padding: EdgeInsets.symmetric(horizontal: 16.w),
-                    itemCount: state.chatEntry?.entries?.length,
-                    itemBuilder: (context, index) {
-                      final data = state.chatEntry?.entries?[index];
-                      log('index: $index');
-                      if (state.chatEntry?.entries?.isNotEmpty ?? false) {
-                        return Column(
-                          children: [
-                            SizedBox(height: 15.h),
-                            ChatBubbleMessage(
-                              message: data?.content ?? '',
-                              timestamp: '12-2-2025 ,15:24',
-                              isSent: true,
-                            ),
-                            // PatientCardWebView(),
-                            // FixedSizeHtmlWidget(
-                            //   htmlContent: data?.content ?? '',
-                            // ),
-                          ],
-                        );
-                      } else {
-                        final message = data;
+  Widget _buildFilePickerButton(ChatState state) {
+    return InkWell(
+      onTap: () => showFilePickerBottomSheet(context),
+      child: (state.selectedFiles?.isNotEmpty ?? false)
+          ? Badge.count(
+              backgroundColor: kPrimaryColor,
+              count: state.selectedFiles?.length ?? 0,
+              child: SvgPicture.asset('assets/icons/Vector.svg'),
+            )
+          : SvgPicture.asset('assets/icons/Vector.svg'),
+    );
+  }
 
-                        // return ChatBubbleMessage(
-                        //   message: message?.content ?? '',
-                        //   timestamp: message?.createdAt.toString() ?? '',
-                        //   isSent: true,
-                        //   senderName: 'Dr Habeeb',
-                        //   showAvatar: false,
-                        // );
-                      }
-                      return null;
-                    },
-                  );
-                },
-              ),
-            ),
+  Widget _buildTextInput() {
+    return TextFeildWidget(
+      hintText: 'Type a message',
+      controller: _messageController,
+      inputBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10.r),
+        borderSide: const BorderSide(color: Color(0xffCACACA), width: 1),
+      ),
+      suffixIcon: _buildVoiceButton(),
 
-            MainPadding(
-              right: 16,
-              bottom: 28.h,
-              child: Row(
-                children: [
-                  10.horizontalSpace,
+      maxLines: 1,
+    );
+  }
 
-                  SvgPicture.asset('assets/icons/Vector.svg'),
-                  10.horizontalSpace,
-                  Expanded(
-                    child: TextFeildWidget(
-                      hintText: 'Type a message',
-                      controller: _messageController,
-                      inputBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10.r),
-                        borderSide: BorderSide(
-                          color: Color(0xffCACACA),
-                          width: 1,
-                        ),
-                      ),
-                      suffixIcon: InkWell(
-                        onTap: () {
-                          if (state.hasRecordingPermission) {
-                            _startRecording(context);
-                          } else {
-                            showPermissionDialog(context);
-                          }
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: SvgPicture.asset(
-                            'assets/icons/Group 1000006770.svg',
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  6.horizontalSpace,
-                  Padding(
-                    padding: EdgeInsets.only(top: 5.h),
-                    child: Container(
-                      padding: EdgeInsets.only(left: 4.w),
-                      alignment: Alignment.center,
-                      height: 48.h,
-                      width: 48.w,
-                      decoration: BoxDecoration(
-                        color: Color(0x99F1F1F1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(Icons.send, color: kPrimaryColor),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+  Widget _buildVoiceButton() {
+    return BlocSelector<ChatCubit, ChatState, bool>(
+      selector: (state) => state.hasRecordingPermission,
+      builder: (context, hasPermission) {
+        return InkWell(
+          onTap: hasPermission
+              ? _startRecording
+              : () => showPermissionDialog(context),
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: SvgPicture.asset('assets/icons/Group 1000006770.svg'),
+          ),
         );
       },
     );
   }
-}
 
-class AnimatedDividerCard extends StatelessWidget {
-  final VoidCallback onArrowTap;
-  final Animation<double> arrowAnimation;
-
-  const AnimatedDividerCard({
-    super.key,
-    required this.onArrowTap,
-    required this.arrowAnimation,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<ChatCubit, ChatState>(
-      builder: (context, state) {
-        return Row(
-          children: [
-            const Expanded(
-              child: Divider(thickness: 1, color: Color(0XFFE3E3E3)),
-            ),
-            4.horizontalSpace,
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              child: Text(
-                '3',
-                style: FontPalette.hW600S14.copyWith(
-                  color: const Color(0XFF9C27B0),
+  Widget _buildSendButton() {
+    return AnimatedOpacity(
+      opacity: _hasText ? 1.0 : 0.0,
+      duration: const Duration(milliseconds: 200),
+      child: _hasText
+          ? Padding(
+              padding: EdgeInsets.only(top: 5.h),
+              child: GestureDetector(
+                onTap: _sendMessage,
+                child: Container(
+                  padding: EdgeInsets.only(left: 4.w),
+                  alignment: Alignment.center,
+                  height: 48.h,
+                  width: 48.w,
+                  decoration: const BoxDecoration(
+                    color: kPrimaryColor,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.send, color: Colors.white),
                 ),
               ),
-            ),
-            8.horizontalSpace,
-            GestureDetector(
-              onTap: onArrowTap,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                height: 35.h,
-                width: 35.w,
-                margin: EdgeInsets.only(right: 10.w),
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(0XFFEEF3F1),
-                ),
-                child: AnimatedBuilder(
-                  animation: arrowAnimation,
-                  builder: (context, child) {
-                    return Padding(
-                      padding: const EdgeInsets.all(10.0),
-                      child: (state.isArrow) == false
-                          ? SvgPicture.asset('assets/icons/icon.svg')
-                          : SvgPicture.asset('assets/icons/icon (1).svg'),
-                    );
-                  },
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+            )
+          : const SizedBox.shrink(),
     );
   }
 }
 
-class GroupCardWidget extends StatelessWidget {
-  const GroupCardWidget({super.key});
+class MessageInputSection extends StatelessWidget {
+  final Map<String, dynamic>? chatData;
+
+  const MessageInputSection({super.key, this.chatData});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        MainPadding(
-          bottom: 0,
-          top: 16.h,
-          child: Row(
-            children: [
-              SvgPicture.asset('assets/icons/mynaui_pin-solid.svg'),
-              5.horizontalSpace,
-              Image.asset('assets/images/Rectangle 1.png'),
-              5.horizontalSpace,
-              Expanded(
-                child: RichText(
-                  text: TextSpan(
-                    text: 'Anoop TS  ',
-                    style: FontPalette.hW700S14.copyWith(
-                      color: const Color(0XFF515978),
-                    ),
-                    children: [
-                      TextSpan(
-                        text: 'send request to case',
-                        style: FontPalette.hW500S14.copyWith(
-                          color: const Color(0XFF515978),
-                        ),
-                      ),
-                    ],
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
-                ),
-              ),
-              SvgPicture.asset('assets/icons/clock.svg'),
-              5.horizontalSpace,
-              const Text('45 min'),
-            ],
-          ),
-        ),
-        Padding(
-          padding: EdgeInsets.only(left: 34.w, top: 0.h, bottom: 0),
-          child: Row(
-            children: [
-              Text(
-                '3 Replayed , 4 Pending',
-                style: FontPalette.hW500S12.copyWith(
-                  color: const Color(0XFF166FF6),
-                ),
-              ),
-              5.horizontalSpace,
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: SvgPicture.asset('assets/icons/Eye.svg'),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
+    return UnifiedMessageInput(chatData: chatData);
   }
 }
