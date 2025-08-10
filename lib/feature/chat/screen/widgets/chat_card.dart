@@ -10,6 +10,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_entry/chat_entry_response.dart';
+import 'package:soxo_chat/feature/chat/screen/widgets/image_show.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/pdf_viewer.dart';
 import 'package:soxo_chat/shared/widgets/media/media_cache.dart';
 import 'package:soxo_chat/shared/widgets/shimmer/shimmer_card.dart';
@@ -96,9 +97,7 @@ class _InstantMediaBuilder extends StatelessWidget {
       );
     }
 
-    // If we have media data but no fileUrl, try to process it directly
     if (fileUrl == null && !isLoading && !MediaCache.isLoading(mediaId)) {
-      // Check if media has direct data we can use
       if (media.mediaUrl != null && media.mediaUrl!.isNotEmpty) {
         debugPrint('Using media.url directly: ${media.mediaUrl}');
         return _MediaTypeDispatcher(
@@ -111,7 +110,6 @@ class _InstantMediaBuilder extends StatelessWidget {
         );
       }
 
-      // Try to trigger loading
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) {
           debugPrint('Triggering loadMediaFile for $mediaId');
@@ -119,11 +117,9 @@ class _InstantMediaBuilder extends StatelessWidget {
         }
       });
 
-      // Set loading state to prevent multiple requests
       MediaCache.setLoading(mediaId);
     }
 
-    // Show loading state with shimmer
     if (isLoading || MediaCache.isLoading(mediaId)) {
       return ShimmerLoadingWidget(
         isInChatBubble: isInChatBubble,
@@ -133,7 +129,6 @@ class _InstantMediaBuilder extends StatelessWidget {
       );
     }
 
-    // Only show error after giving it a chance to load
     return FutureBuilder(
       future: _waitAndCheckAgain(context, mediaId),
       builder: (context, snapshot) {
@@ -158,7 +153,6 @@ class _InstantMediaBuilder extends StatelessWidget {
           );
         }
 
-        // Final fallback - show error
         debugPrint('Media $mediaId finally unavailable after all attempts');
         return _CompactErrorWidget(
           message: 'Media unavailable',
@@ -170,12 +164,10 @@ class _InstantMediaBuilder extends StatelessWidget {
     );
   }
 
-  /// Wait a moment and check again for the file URL
   Future<String?> _waitAndCheckAgain(
     BuildContext context,
     String mediaId,
   ) async {
-    // Wait a short time for async operations to complete
     await Future.delayed(const Duration(milliseconds: 500));
 
     if (context.mounted) {
@@ -186,7 +178,6 @@ class _InstantMediaBuilder extends StatelessWidget {
         return url;
       }
 
-      // Check if we can use media.url directly
       if (media.mediaUrl != null && media.mediaUrl!.isNotEmpty) {
         return media.mediaUrl;
       }
@@ -225,7 +216,6 @@ class _InstantMediaBuilder extends StatelessWidget {
       }
     }
 
-    // Check MIME type patterns in data URLs
     if (url.startsWith('data:')) {
       if (url.contains('image/')) return 'image';
       if (url.contains('audio/')) return 'audio';
@@ -233,12 +223,10 @@ class _InstantMediaBuilder extends StatelessWidget {
       if (url.contains('application/pdf')) return 'document';
     }
 
-    // Default fallback
     return 'unknown';
   }
 }
 
-/// Optimized media type dispatcher
 class _MediaTypeDispatcher extends StatelessWidget {
   final String fileUrl;
   final String fileType;
@@ -323,30 +311,35 @@ class _InstantImagePreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      constraints: BoxConstraints(
-        maxWidth: maxWidth ?? (isInChatBubble ? 200.w : double.infinity),
-        maxHeight: maxHeight ?? (isInChatBubble ? 200.h : double.infinity),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8.r),
-        child: _CachedImageDisplay(
-          fileUrl: fileUrl,
-          mediaId: mediaId,
-          isInChatBubble: isInChatBubble,
+    return GestureDetector(
+      onTap: () {
+        showMyDialog(context, fileUrl, mediaId);
+      },
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: maxWidth ?? (isInChatBubble ? 200.w : double.infinity),
+          maxHeight: maxHeight ?? (isInChatBubble ? 200.h : double.infinity),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8.r),
+          child: CachedImageDisplay(
+            fileUrl: fileUrl,
+            mediaId: mediaId,
+            isInChatBubble: isInChatBubble,
+          ),
         ),
       ),
     );
   }
 }
 
-/// Cached image display with instant loading and shimmer
-class _CachedImageDisplay extends StatelessWidget {
+class CachedImageDisplay extends StatelessWidget {
   final String fileUrl;
   final String mediaId;
   final bool isInChatBubble;
 
-  const _CachedImageDisplay({
+  const CachedImageDisplay({
+    super.key,
     required this.fileUrl,
     required this.mediaId,
     required this.isInChatBubble,
@@ -354,7 +347,6 @@ class _CachedImageDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Check cache first for instant display
     final cachedImage = MediaCache.getImage(mediaId);
     if (cachedImage != null) {
       return Image.memory(
@@ -364,7 +356,6 @@ class _CachedImageDisplay extends StatelessWidget {
       );
     }
 
-    // For data URLs, decode immediately
     if (fileUrl.startsWith('data:')) {
       return FutureBuilder<Uint8List?>(
         future: _decodeBase64Image(fileUrl, mediaId),
@@ -390,7 +381,6 @@ class _CachedImageDisplay extends StatelessWidget {
       );
     }
 
-    // For network URLs
     if (fileUrl.startsWith('http')) {
       return Image.network(
         fileUrl,
@@ -412,7 +402,6 @@ class _CachedImageDisplay extends StatelessWidget {
       );
     }
 
-    // For file paths
     return FutureBuilder<Uint8List?>(
       future: _loadFileImage(fileUrl, mediaId),
       builder: (context, snapshot) {
@@ -467,7 +456,6 @@ class _CachedImageDisplay extends StatelessWidget {
   }
 }
 
-/// Instant document preview
 class _InstantDocumentPreview extends StatelessWidget {
   final String fileUrl;
   final String mediaId;
@@ -566,9 +554,6 @@ class _InstantDocumentPreview extends StatelessWidget {
   }
 }
 
-/// Shimmer loading widget with media type specific layouts
-
-/// Compact error widget
 class _CompactErrorWidget extends StatelessWidget {
   final String message;
   final bool isInChatBubble;
@@ -608,7 +593,6 @@ class _CompactErrorWidget extends StatelessWidget {
   }
 }
 
-/// Generic file preview
 class _GenericFilePreview extends StatelessWidget {
   final bool isInChatBubble;
   final double? maxWidth;
