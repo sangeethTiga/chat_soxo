@@ -407,26 +407,22 @@ class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocSelector<
-      ChatCubit,
-      ChatState,
-      ({ApiFetchStatus? status, List<Entry>? entries})
-    >(
-      selector: (state) =>
-          (status: state.isChatEntry, entries: state.chatEntry?.entries),
+    return BlocBuilder<ChatCubit, ChatState>(
+      // selector: (state) =>
+      //     (status: state.isChatEntry, entries: state.chatEntry?.entries),
       builder: (context, data) {
-        if (data.status == ApiFetchStatus.loading) {
+        if (data.isChatEntry == ApiFetchStatus.loading) {
           return _buildShimmerList();
         }
 
-        if (data.entries?.isEmpty ?? true) {
+        if (data.chatEntry?.entries?.isEmpty ?? true) {
           return const AnimatedEmptyChatWidget();
         }
 
         // Check if we need to scroll to bottom
-        _checkAndScrollToBottom(data.entries!);
+        _checkAndScrollToBottom(data.chatEntry?.entries ?? []);
 
-        return _buildMessagesList(data.entries!);
+        return _buildMessagesList(data.chatEntry?.entries ?? []);
       },
     );
   }

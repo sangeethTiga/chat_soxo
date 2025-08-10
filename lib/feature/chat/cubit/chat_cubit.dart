@@ -827,13 +827,13 @@ class ChatCubit extends Cubit<ChatState> {
   void clearChatCache() {
     _chatCache.clear();
     _chatCacheTimestamps.clear();
-    log('Cleared chat cache');
+    log('🗑️ Cleared chat cache');
   }
 
   void clearChatCacheForId(int chatId) {
     _chatCache.remove(chatId);
     _chatCacheTimestamps.remove(chatId);
-    log('Cleared cache for chat $chatId');
+    log('🗑️ Cleared cache for chat $chatId');
   }
 
   @override
@@ -845,7 +845,7 @@ class ChatCubit extends Cubit<ChatState> {
     _batchUpdateTimer?.cancel();
     _audioRecorder.dispose();
 
-    ///=-=-=-=-=-=-=-=-=  Clean up caches
+    // Clean up caches
     _fileUrls.clear();
     _fileTypes.clear();
     _loadingFiles.clear();
@@ -858,7 +858,9 @@ class ChatCubit extends Cubit<ChatState> {
   }
 }
 
-///=-=-=-=-=-=-=-=-=  Helper function for fire-and-forget futures
+// Initial state class
+
+// Helper function for fire-and-forget futures
 void unawaited(Future<void> future) {
   future.catchError((error) {
     log('Unawaited future error: $error');

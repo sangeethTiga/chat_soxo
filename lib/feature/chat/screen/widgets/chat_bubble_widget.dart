@@ -1,11 +1,8 @@
-import 'dart:async';
-
-import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_entry/chat_entry_response.dart';
-import 'package:soxo_chat/feature/chat/screen/widgets/htm_Card.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/chat_card.dart';
+import 'package:soxo_chat/feature/chat/screen/widgets/htm_Card.dart';
 
 class ChatBubbleMessage extends StatefulWidget {
   final String? type;
@@ -28,63 +25,6 @@ class ChatBubbleMessage extends StatefulWidget {
 }
 
 class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
-  AudioPlayer? _audioPlayer;
-  bool _isPlaying = false;
-  Duration _duration = Duration.zero;
-  Duration _position = Duration.zero;
-
-  // Stream subscriptions for proper cleanup
-  StreamSubscription<Duration>? _durationSubscription;
-  StreamSubscription<Duration>? _positionSubscription;
-  StreamSubscription<PlayerState>? _playerStateSubscription;
-
-  @override
-  void initState() {
-    super.initState();
-    // Only initialize audio player if we actually need it
-    if (widget.type?.toLowerCase() == 'voice') {
-      _initializeAudioPlayer();
-    }
-  }
-
-  void _initializeAudioPlayer() {
-    _audioPlayer = AudioPlayer();
-
-    // Store subscriptions so we can cancel them properly
-    _durationSubscription = _audioPlayer!.onDurationChanged.listen((duration) {
-      if (mounted) {
-        setState(() => _duration = duration);
-      }
-    });
-
-    _positionSubscription = _audioPlayer!.onPositionChanged.listen((position) {
-      if (mounted) {
-        setState(() => _position = position);
-      }
-    });
-
-    _playerStateSubscription = _audioPlayer!.onPlayerStateChanged.listen((
-      state,
-    ) {
-      if (mounted) {
-        setState(() => _isPlaying = state == PlayerState.playing);
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    // Cancel all subscriptions before disposing
-    _durationSubscription?.cancel();
-    _positionSubscription?.cancel();
-    _playerStateSubscription?.cancel();
-
-    // Dispose audio player
-    _audioPlayer?.dispose();
-
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Align(
@@ -125,7 +65,11 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
         return FixedSizeHtmlWidget(htmlContent: widget.message);
 
       case 'voice':
-        return _buildVoiceMessage();
+        // REMOVED: Don't show separate voice UI here
+        // Voice will be handled by MediaPreviewWidget in _buildMediaAttachments()
+        return widget.message.isNotEmpty
+            ? _buildTextContent()
+            : const SizedBox.shrink();
 
       case 'file':
       case 'image':
@@ -145,87 +89,6 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
       widget.message,
       style: TextStyle(fontSize: 14.sp, color: Colors.black87),
     );
-  }
-
-  Widget _buildVoiceMessage() {
-    return Container(
-      padding: EdgeInsets.all(8.w),
-      decoration: BoxDecoration(
-        color: Colors.blue[50],
-        borderRadius: BorderRadius.circular(8.r),
-        border: Border.all(color: Colors.blue[200]!),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          GestureDetector(
-            onTap: _toggleVoicePlayback,
-            child: Container(
-              width: 32.w,
-              height: 32.h,
-              decoration: BoxDecoration(
-                color: Colors.blue[600],
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                _isPlaying ? Icons.pause : Icons.play_arrow,
-                color: Colors.white,
-                size: 16.sp,
-              ),
-            ),
-          ),
-          SizedBox(width: 8.w),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.mic, size: 12.sp, color: Colors.blue[600]),
-                  SizedBox(width: 4.w),
-                  Text(
-                    'Voice message',
-                    style: TextStyle(
-                      fontSize: 10.sp,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.blue[700],
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 2.h),
-              Text(
-                _formatDuration(_duration),
-                style: TextStyle(fontSize: 10.sp, color: Colors.grey[600]),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _toggleVoicePlayback() async {
-    if (_audioPlayer == null) return;
-
-    try {
-      if (_isPlaying) {
-        await _audioPlayer!.pause();
-      } else {
-        // Here you would play the actual voice file
-        // For now, this is just a placeholder
-        // await _audioPlayer!.play(DeviceFileSource(voiceFilePath));
-      }
-    } catch (e) {
-      // Handle playback error
-      debugPrint('Voice playback error: $e');
-    }
-  }
-
-  String _formatDuration(Duration duration) {
-    final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '$minutes:$seconds';
   }
 
   Widget _buildMediaAttachments() {
@@ -389,40 +252,4 @@ class MediaContainer extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Mixin to help with audio player lifecycle management
-mixin AudioPlayerMixin<T extends StatefulWidget> on State<T> {
-  AudioPlayer? audioPlayer;
-  StreamSubscription<Duration>? durationSubscription;
-  StreamSubscription<Duration>? positionSubscription;
-  StreamSubscription<PlayerState>? playerStateSubscription;
-
-  void initializeAudioPlayer() {
-    audioPlayer = AudioPlayer();
-
-    durationSubscription = audioPlayer!.onDurationChanged.listen((duration) {
-      if (mounted) onDurationChanged(duration);
-    });
-
-    positionSubscription = audioPlayer!.onPositionChanged.listen((position) {
-      if (mounted) onPositionChanged(position);
-    });
-
-    playerStateSubscription = audioPlayer!.onPlayerStateChanged.listen((state) {
-      if (mounted) onPlayerStateChanged(state);
-    });
-  }
-
-  void disposeAudioPlayer() {
-    durationSubscription?.cancel();
-    positionSubscription?.cancel();
-    playerStateSubscription?.cancel();
-    audioPlayer?.dispose();
-  }
-
-  // Abstract methods to be implemented by the mixing class
-  void onDurationChanged(Duration duration);
-  void onPositionChanged(Duration position);
-  void onPlayerStateChanged(PlayerState state);
 }

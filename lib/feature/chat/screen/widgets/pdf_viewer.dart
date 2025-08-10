@@ -8,7 +8,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:soxo_chat/feature/chat/screen/widgets/chat_card.dart';
+import 'package:soxo_chat/shared/widgets/media/media_cache.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // Import your media cache
