@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_entry/chat_entry_response.dart';
 import 'package:soxo_chat/feature/chat/domain/repositories/chat_repositories.dart';
+import 'package:soxo_chat/feature/chat/screen/widgets/audio_player.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/image_show.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/pdf_viewer.dart';
 import 'package:soxo_chat/shared/widgets/media/media_cache.dart';
@@ -81,16 +82,6 @@ class _InstantMediaBuilder extends StatelessWidget {
   Widget build(BuildContext context) {
     final mediaId = media.id.toString();
 
-    debugPrint(
-      'Media $mediaId: fileUrl=$fileUrl, isLoading=$isLoading, type=$fileType',
-    );
-    debugPrint('🔍 Media Analysis:');
-    debugPrint('  - mediaId: $mediaId');
-    debugPrint('  - fileUrl: $fileUrl');
-    debugPrint('  - media.mediaUrl: ${media.mediaUrl}');
-    debugPrint('  - media.mediaType: ${media.mediaType}');
-    debugPrint('  - isLoading: $isLoading');
-    // Check cache first for instant loading
     if (fileUrl != null && !MediaCache.isLoading(mediaId)) {
       return _MediaTypeDispatcher(
         media: media,
@@ -289,7 +280,6 @@ class _MediaTypeDispatcher extends StatelessWidget {
           isInChatBubble: isInChatBubble,
           maxWidth: maxWidth,
           maxHeight: maxHeight,
-          enableTap: false, // Handled by parent GestureDetector
         );
 
       case 'document':
@@ -488,97 +478,6 @@ class CachedImageDisplay extends StatelessWidget {
 }
 
 /// Audio preview widget
-class InstantAudioPreview extends StatelessWidget {
-  final String fileUrl;
-  final String mediaId;
-  final bool isInChatBubble;
-  final double? maxWidth;
-  final double? maxHeight;
-  final bool enableTap;
-
-  const InstantAudioPreview({
-    super.key,
-    required this.fileUrl,
-    required this.mediaId,
-    required this.isInChatBubble,
-    this.maxWidth,
-    this.maxHeight,
-    this.enableTap = true,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    Widget audioWidget = Container(
-      constraints: BoxConstraints(
-        maxWidth: maxWidth ?? (isInChatBubble ? 200.w : double.infinity),
-        maxHeight: maxHeight ?? (isInChatBubble ? 60.h : 80.h),
-      ),
-      decoration: BoxDecoration(
-        color: Colors.blue[50],
-        borderRadius: BorderRadius.circular(8.r),
-        border: Border.all(color: Colors.blue[200]!),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(8.w),
-        child: Row(
-          children: [
-            Icon(
-              Icons.audiotrack,
-              color: Colors.blue[700],
-              size: isInChatBubble ? 20.sp : 24.sp,
-            ),
-            SizedBox(width: 8.w),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Audio message',
-                    style: TextStyle(
-                      fontSize: isInChatBubble ? 12.sp : 14.sp,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.blue[700],
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (!isInChatBubble) ...[
-                    SizedBox(height: 2.h),
-                    Text(
-                      'Tap to play',
-                      style: TextStyle(
-                        fontSize: 10.sp,
-                        color: Colors.blue[600],
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            Icon(
-              Icons.play_arrow,
-              color: Colors.blue[700],
-              size: isInChatBubble ? 16.sp : 20.sp,
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (enableTap) {
-      return GestureDetector(
-        onTap: () {
-          // Individual audio tap handler if needed
-          log('🎵 Audio tapped: $mediaId');
-        },
-        child: audioWidget,
-      );
-    }
-
-    return audioWidget;
-  }
-}
 
 /// Document preview widget
 class _InstantDocumentPreview extends StatelessWidget {

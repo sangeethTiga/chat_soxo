@@ -87,9 +87,10 @@ class ChatCubit extends Cubit<ChatState> {
     if (_isDisposed) return;
 
     log('🔄 Resetting chat state');
+
     emit(
       state.copyWith(
-        isChatEntry: ApiFetchStatus.idle,
+        isChatEntry: ApiFetchStatus.idle, // ✅ Set to idle, not loading
         chatEntry: null,
         errorMessage: null,
         isArrow: false,
@@ -105,8 +106,21 @@ class ChatCubit extends Cubit<ChatState> {
   Future<void> getChatEntry({int? chatId, int? userId}) async {
     final currentChatId = chatId ?? 0;
     log('📱 Getting chat entry for chatId: $currentChatId');
-    emit(state.copyWith(isChatEntry: ApiFetchStatus.loading, chatEntry: null));
-    //=-=-=-=-=-=-=-=-= Check if we already have valid cached data for this chat
+
+    // ✅ ALWAYS show loading first, regardless of cache
+    emit(
+      state.copyWith(
+        isChatEntry: ApiFetchStatus.loading,
+        chatEntry: null, // Clear previous data
+        errorMessage: null,
+      ),
+    );
+
+    // ✅ Add a small delay to ensure shimmer is visible
+
+    if (_isDisposed) return;
+
+    // Check if we already have valid cached data for this chat
     final cachedData = _chatCache[currentChatId];
     final cacheTimestamp = _chatCacheTimestamps[currentChatId];
     final isCacheValid =
@@ -114,19 +128,22 @@ class ChatCubit extends Cubit<ChatState> {
         cacheTimestamp != null &&
         DateTime.now().difference(cacheTimestamp) < _chatCacheExpiration;
 
-    ///=-=-=-=-=-=-=-=-=  If switching to a different chat, clear current state first
+    // If switching to a different chat, clear current state first
     if (_currentChatId != null && _currentChatId != currentChatId) {
       log('🔄 Switching chats: $_currentChatId -> $currentChatId');
-      emit(
-        state.copyWith(isChatEntry: ApiFetchStatus.loading, chatEntry: null),
-      );
     }
 
     _currentChatId = currentChatId;
 
-    ///=-=-=-=-=-=-=-=-=  EARLY RETURN: Use cached data if valid
+    // Use cached data if valid (but we already showed loading)
     if (isCacheValid) {
-      log('💾 Using cached data for chat $currentChatId - SKIPPING API CALL');
+      log('💾 Using cached data for chat $currentChatId');
+
+      // ✅ Add delay even for cached data to show shimmer briefly
+      await Future.delayed(const Duration(milliseconds: 400));
+
+      if (_isDisposed) return;
+
       emit(
         state.copyWith(
           chatEntry: cachedData,
@@ -134,17 +151,12 @@ class ChatCubit extends Cubit<ChatState> {
         ),
       );
 
-      ///=-=-=-=-=-=-=-=-=  Load media in background for cached data
+      // Load media in background for cached data
       if (cachedData.entries?.isNotEmpty == true) {
         _loadMediaInBackground(cachedData.entries!);
       }
       return;
-
-      ///=-=-=-=-=-=-=-=-= STOP HERE - No API call needed
     }
-
-    ///=-=-=-=-=-=-=-=-=  Show loading only if we don't have cached data
-    emit(state.copyWith(isChatEntry: ApiFetchStatus.loading));
 
     try {
       log('🌐 Making API call for chat $currentChatId (no valid cache)');
@@ -153,7 +165,7 @@ class ChatCubit extends Cubit<ChatState> {
       if (_isDisposed) return;
 
       if (res.data != null) {
-        ///=-=-=-=-=-=-=-=-=  Store in cache
+        // Store in cache
         _chatCache[currentChatId] = res.data!;
         _chatCacheTimestamps[currentChatId] = DateTime.now();
 
@@ -167,7 +179,7 @@ class ChatCubit extends Cubit<ChatState> {
           ),
         );
 
-        ///=-=-=-=-=-=-=-=-=  Load media files in background
+        // Load media files in background
         if (res.data?.entries != null && res.data!.entries!.isNotEmpty) {
           _loadMediaInBackground(res.data!.entries!);
         }
@@ -522,10 +534,16 @@ class ChatCubit extends Cubit<ChatState> {
     try {
       final fileData = await _chatRepositories.getFileFromApi(media.mediaUrl!);
       if (_isDisposed) return;
-      _fileUrls[mediaId] = fileData['data'] ?? '';
-      _fileTypes[mediaId] = fileData['type'] ?? 'unknown';
-      _fileCacheTimestamps[mediaId] = DateTime.now();
-      _failedLoads.remove(mediaId);
+      if (fileData['data'] != null && fileData['data'].toString().isNotEmpty) {
+        _fileUrls[mediaId] = fileData['data'] ?? '';
+        _fileTypes[mediaId] = fileData['type'] ?? 'unknown';
+        _fileCacheTimestamps[mediaId] = DateTime.now();
+        _failedLoads.remove(mediaId);
+
+        log('Successfully loaded media: $mediaId, type: ${fileData['type']}');
+      } else {
+        throw Exception('Empty or invalid file data received');
+      }
 
       log('Loaded media: $mediaId, type: ${fileData['type']}');
     } catch (e) {
@@ -742,21 +760,23 @@ class ChatCubit extends Cubit<ChatState> {
       log('Removed file at index $index');
     }
   }
-Future<void> clearOldFileCache() async {
-  log('🧹 Clearing old file cache...');
-  
-  // Clear cubit's file cache
-  _fileUrls.clear();
-  _fileTypes.clear();
-  _loadingFiles.clear();
-  _fileCacheTimestamps.clear();
-  _failedLoads.clear();
-  
-  // Clear MediaCache
-  MediaCache.clearAll(); // You'll need to add this method to MediaCache
-  
-  log('✅ Old cache cleared');
-}
+
+  Future<void> clearOldFileCache() async {
+    log('🧹 Clearing old file cache...');
+
+    // Clear cubit's file cache
+    _fileUrls.clear();
+    _fileTypes.clear();
+    _loadingFiles.clear();
+    _fileCacheTimestamps.clear();
+    _failedLoads.clear();
+
+    // Clear MediaCache
+    MediaCache.clearAll(); // You'll need to add this method to MediaCache
+
+    log('✅ Old cache cleared');
+  }
+
   void clearSelectedFiles() {
     if (_isDisposed) return;
 

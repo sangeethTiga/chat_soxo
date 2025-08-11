@@ -13,7 +13,9 @@ class AudioCache {
   static final Map<String, Duration> _durationCache = {};
   static final Set<String> _processingFiles = {};
   static final Map<String, String> _errorCache = {};
-  static final Map<String, double> _speedCache = {}; // Cache playback speeds
+  static final Map<String, double> _speedCache = {};
+  static final Map<String, bool> _readyStateCache =
+      {}; // NEW: Track ready state
 
   static String? getAudioPath(String mediaId) => _audioPathCache[mediaId];
   static void setAudioPath(String mediaId, String path) =>
@@ -42,12 +44,18 @@ class AudioCache {
       _errorCache[mediaId] = error;
   static void clearError(String mediaId) => _errorCache.remove(mediaId);
 
+  // NEW: Ready state management
+  static bool isReady(String mediaId) => _readyStateCache[mediaId] ?? false;
+  static void setReady(String mediaId, bool ready) =>
+      _readyStateCache[mediaId] = ready;
+
   static void disposePlayer(String mediaId) {
     _playerCache[mediaId]?.dispose();
     _playerCache.remove(mediaId);
     _processingFiles.remove(mediaId);
     _errorCache.remove(mediaId);
     _speedCache.remove(mediaId);
+    _readyStateCache.remove(mediaId); // NEW
   }
 
   static void clearAll() {
@@ -60,6 +68,7 @@ class AudioCache {
     _processingFiles.clear();
     _errorCache.clear();
     _speedCache.clear();
+    _readyStateCache.clear(); // NEW
   }
 }
 
@@ -130,7 +139,6 @@ class _WhatsAppAudioPlayerState extends State<_WhatsAppAudioPlayer>
   double _playbackSpeed = 1.0;
   bool _isDragging = false;
 
-  // Animation controllers for WhatsApp-style effects
   late AnimationController _playButtonController;
   late AnimationController _waveAnimationController;
   late AnimationController _speedButtonController;
@@ -140,6 +148,9 @@ class _WhatsAppAudioPlayerState extends State<_WhatsAppAudioPlayer>
   @override
   void initState() {
     super.initState();
+    AudioCache.clearError(widget.mediaId);
+    AudioCache.setReady(widget.mediaId, false);
+    AudioCache.disposePlayer(widget.mediaId);
     _initializeAnimations();
     _initializeAudioOnce();
   }
@@ -169,14 +180,36 @@ class _WhatsAppAudioPlayerState extends State<_WhatsAppAudioPlayer>
     );
   }
 
-  /// Initialize audio only once per media ID
+  /// FIXED: Improved initialization with better state management
   Future<void> _initializeAudioOnce() async {
     debugPrint(
       'Audio ${widget.mediaId}: Starting initialization with URL: ${widget.fileUrl}',
     );
 
+    // Clear any existing error for this media
+    AudioCache.clearError(widget.mediaId);
+
     // Restore cached speed
     _playbackSpeed = AudioCache.getSpeed(widget.mediaId);
+
+    // Check if already ready
+    if (AudioCache.isReady(widget.mediaId)) {
+      final cachedPath = AudioCache.getAudioPath(widget.mediaId);
+      final cachedPlayer = AudioCache.getPlayer(widget.mediaId);
+
+      if (cachedPath != null && cachedPlayer != null) {
+        debugPrint('Audio ${widget.mediaId}: Using cached ready state');
+        _filePath = cachedPath;
+        _audioPlayer = cachedPlayer;
+        _duration = AudioCache.getDuration(widget.mediaId) ?? Duration.zero;
+        _setupPlayerListeners();
+        setState(() {
+          _isReady = true;
+          _isLoading = false;
+        });
+        return;
+      }
+    }
 
     // Check for cached error
     final cachedError = AudioCache.getError(widget.mediaId);
@@ -188,27 +221,10 @@ class _WhatsAppAudioPlayerState extends State<_WhatsAppAudioPlayer>
       return;
     }
 
-    // Check if already cached and ready
-    final cachedPath = AudioCache.getAudioPath(widget.mediaId);
-    final cachedPlayer = AudioCache.getPlayer(widget.mediaId);
-
-    if (cachedPath != null && cachedPlayer != null) {
-      debugPrint('Audio ${widget.mediaId}: Using cached data');
-      _filePath = cachedPath;
-      _audioPlayer = cachedPlayer;
-      _duration = AudioCache.getDuration(widget.mediaId) ?? Duration.zero;
-      _setupPlayerListeners();
-      setState(() {
-        _isReady = true;
-        _isLoading = false;
-      });
-      return;
-    }
-
     // Prevent multiple simultaneous processing
     if (AudioCache.isProcessing(widget.mediaId)) {
       debugPrint('Audio ${widget.mediaId}: Already processing, waiting...');
-      _waitForProcessing();
+      await _waitForProcessing();
       return;
     }
 
@@ -216,54 +232,65 @@ class _WhatsAppAudioPlayerState extends State<_WhatsAppAudioPlayer>
     await _processAudioFile();
   }
 
-  /// Wait for another widget to finish processing this audio
+  /// FIXED: Better waiting mechanism with timeout
   Future<void> _waitForProcessing() async {
     int attempts = 0;
-    while (AudioCache.isProcessing(widget.mediaId) && attempts < 30) {
-      await Future.delayed(const Duration(milliseconds: 200));
+    const maxAttempts = 50; // Increased timeout
+
+    while (AudioCache.isProcessing(widget.mediaId) && attempts < maxAttempts) {
+      await Future.delayed(
+        const Duration(milliseconds: 100),
+      ); // Shorter intervals
       attempts++;
 
-      if (AudioCache.getAudioPath(widget.mediaId) != null) {
+      // Check if processing completed
+      if (AudioCache.isReady(widget.mediaId) ||
+          AudioCache.getError(widget.mediaId) != null) {
         break;
       }
     }
 
-    final cachedPath = AudioCache.getAudioPath(widget.mediaId);
-    final cachedError = AudioCache.getError(widget.mediaId);
+    if (!mounted) return;
 
-    if (cachedError != null && mounted) {
+    final cachedError = AudioCache.getError(widget.mediaId);
+    if (cachedError != null) {
       setState(() {
         _errorMessage = cachedError;
         _isLoading = false;
       });
-    } else if (cachedPath != null && mounted) {
-      _filePath = cachedPath;
-      _audioPlayer = AudioCache.getPlayer(widget.mediaId);
-      _duration = AudioCache.getDuration(widget.mediaId) ?? Duration.zero;
-
-      if (_audioPlayer != null) {
-        _setupPlayerListeners();
-      } else {
-        await _createNewPlayer();
-      }
-
-      setState(() {
-        _isReady = true;
-        _isLoading = false;
-      });
-    } else if (mounted) {
-      setState(() {
-        _errorMessage = 'Failed to load audio';
-        _isLoading = false;
-      });
+      return;
     }
+
+    if (AudioCache.isReady(widget.mediaId)) {
+      final cachedPath = AudioCache.getAudioPath(widget.mediaId);
+      final cachedPlayer = AudioCache.getPlayer(widget.mediaId);
+
+      if (cachedPath != null && cachedPlayer != null) {
+        _filePath = cachedPath;
+        _audioPlayer = cachedPlayer;
+        _duration = AudioCache.getDuration(widget.mediaId) ?? Duration.zero;
+        _setupPlayerListeners();
+        setState(() {
+          _isReady = true;
+          _isLoading = false;
+        });
+        return;
+      }
+    }
+
+    // If we reach here, something went wrong
+    setState(() {
+      _errorMessage = 'Failed to load audio';
+      _isLoading = false;
+    });
   }
 
-  /// Process audio file with better source detection
+  /// FIXED: Enhanced file processing with better error handling
   Future<void> _processAudioFile() async {
     try {
       debugPrint('Audio ${widget.mediaId}: Processing file...');
 
+      // Handle different URL types
       if (widget.fileUrl.startsWith('data:')) {
         debugPrint('Audio ${widget.mediaId}: Processing base64 data');
         _filePath = await _AudioFileUtils.saveBase64Audio(
@@ -274,8 +301,7 @@ class _WhatsAppAudioPlayerState extends State<_WhatsAppAudioPlayer>
         if (_filePath == null) {
           throw Exception('Failed to decode base64 audio data');
         }
-      } else if (widget.fileUrl.startsWith('http://') ||
-          widget.fileUrl.startsWith('https://')) {
+      } else if (_isNetworkUrl(widget.fileUrl)) {
         debugPrint('Audio ${widget.mediaId}: Using network URL');
         _filePath = widget.fileUrl;
       } else if (widget.fileUrl.startsWith('file://')) {
@@ -290,13 +316,30 @@ class _WhatsAppAudioPlayerState extends State<_WhatsAppAudioPlayer>
       }
 
       if (_filePath != null) {
-        if (!_isNetworkUrl(_filePath!) && !await File(_filePath!).exists()) {
-          throw Exception('Audio file not found: $_filePath');
+        // Verify file exists (for local files)
+        if (!_isNetworkUrl(_filePath!)) {
+          final file = File(_filePath!);
+          if (!await file.exists()) {
+            throw Exception('Audio file not found: $_filePath');
+          }
+
+          // Check file size
+          final fileSize = await file.length();
+          if (fileSize == 0) {
+            throw Exception('Audio file is empty: $_filePath');
+          }
+
+          debugPrint(
+            'Audio ${widget.mediaId}: File verified - size: $fileSize bytes',
+          );
         }
 
         debugPrint('Audio ${widget.mediaId}: File path resolved: $_filePath');
         AudioCache.setAudioPath(widget.mediaId, _filePath!);
         await _createNewPlayer();
+
+        // Mark as ready
+        AudioCache.setReady(widget.mediaId, true);
 
         if (mounted) {
           setState(() {
@@ -327,19 +370,41 @@ class _WhatsAppAudioPlayerState extends State<_WhatsAppAudioPlayer>
     return url.startsWith('http://') || url.startsWith('https://');
   }
 
-  /// Create and cache new audio player
+  /// FIXED: Enhanced player creation with validation
   Future<void> _createNewPlayer() async {
     try {
       _audioPlayer = AudioPlayer();
       AudioCache.setPlayer(widget.mediaId, _audioPlayer!);
       _setupPlayerListeners();
 
-      debugPrint(
-        'Audio ${widget.mediaId}: Player created, source will be set on first play',
-      );
+      // NEW: Preload the audio source to get duration immediately
+      if (_filePath != null) {
+        await _preloadAudioSource();
+      }
+
+      debugPrint('Audio ${widget.mediaId}: Player created and preloaded');
     } catch (e) {
       debugPrint('Audio ${widget.mediaId}: Player creation error: $e');
       throw Exception('Failed to create audio player: $e');
+    }
+  }
+
+  /// NEW: Preload audio source to get duration and validate file
+  Future<void> _preloadAudioSource() async {
+    if (_audioPlayer == null || _filePath == null) return;
+
+    try {
+      // Set the source without playing
+      if (_isNetworkUrl(_filePath!)) {
+        await _audioPlayer!.setSource(UrlSource(_filePath!));
+      } else {
+        await _audioPlayer!.setSource(DeviceFileSource(_filePath!));
+      }
+
+      debugPrint('Audio ${widget.mediaId}: Source preloaded successfully');
+    } catch (e) {
+      debugPrint('Audio ${widget.mediaId}: Preload error: $e');
+      throw Exception('Failed to preload audio: $e');
     }
   }
 
@@ -388,7 +453,7 @@ class _WhatsAppAudioPlayerState extends State<_WhatsAppAudioPlayer>
     });
   }
 
-  /// WhatsApp-style play/pause toggle
+  /// FIXED: Enhanced play/pause with better error handling
   Future<void> _togglePlayPause() async {
     if (_audioPlayer == null || _filePath == null) {
       debugPrint('Audio ${widget.mediaId}: Player or file path not ready');
@@ -408,11 +473,9 @@ class _WhatsAppAudioPlayerState extends State<_WhatsAppAudioPlayer>
         // Set playback speed before playing
         await _audioPlayer!.setPlaybackRate(_playbackSpeed);
 
-        if (_isNetworkUrl(_filePath!)) {
-          await _audioPlayer!.play(UrlSource(_filePath!));
-        } else {
-          await _audioPlayer!.play(DeviceFileSource(_filePath!));
-        }
+        // Play the audio
+        await _audioPlayer!.resume();
+
         debugPrint(
           'Audio ${widget.mediaId}: Started playing at ${_playbackSpeed}x speed',
         );
@@ -501,13 +564,17 @@ class _WhatsAppAudioPlayerState extends State<_WhatsAppAudioPlayer>
         isCompact: widget.isCompact,
         isSent: widget.isSent,
         onRetry: () {
+          // FIXED: Better retry mechanism
           AudioCache.clearError(widget.mediaId);
+          AudioCache.setReady(widget.mediaId, false);
           AudioCache.disposePlayer(widget.mediaId);
-          // setState(() {
-          //   _errorMessage = null;
-          //   _isLoading = true;
-          //   _isReady = false;
-          // });
+
+          setState(() {
+            _errorMessage = null;
+            _isLoading = true;
+            _isReady = false;
+          });
+
           _initializeAudioOnce();
         },
       );
@@ -920,9 +987,11 @@ class _WhatsAppAudioError extends StatelessWidget {
   }
 }
 
-/// Optimized audio file utilities
+/// ENHANCED: Optimized audio file utilities with better caching
 class _AudioFileUtils {
   static final Map<String, String> _audioPathCache = {};
+  static final Map<String, DateTime> _fileCacheTime = {};
+  static const Duration _cacheExpiration = Duration(hours: 24);
 
   static Future<String?> saveBase64Audio(
     String base64Data,
@@ -951,11 +1020,20 @@ class _AudioFileUtils {
 
       final fileName = '$baseFileName$extension';
 
+      // Check cache with expiration
       if (_audioPathCache.containsKey(fileName)) {
         final cachedPath = _audioPathCache[fileName]!;
-        if (await File(cachedPath).exists()) {
+        final cacheTime = _fileCacheTime[fileName];
+
+        if (cacheTime != null &&
+            DateTime.now().difference(cacheTime) < _cacheExpiration &&
+            await File(cachedPath).exists()) {
           debugPrint('Audio file cache hit: $fileName');
           return cachedPath;
+        } else {
+          // Remove expired cache
+          _audioPathCache.remove(fileName);
+          _fileCacheTime.remove(fileName);
         }
       }
 
@@ -964,20 +1042,61 @@ class _AudioFileUtils {
         throw Exception('Empty audio data after base64 decode');
       }
 
-      final directory = await getTemporaryDirectory();
-      final file = File('${directory.path}/$fileName');
+      // Use application documents directory for persistence
+      final directory = await getApplicationDocumentsDirectory();
+      final audioDir = Directory('${directory.path}/audio_cache');
+
+      // Create directory if it doesn't exist
+      if (!await audioDir.exists()) {
+        await audioDir.create(recursive: true);
+      }
+
+      final file = File('${audioDir.path}/$fileName');
       await file.writeAsBytes(bytes);
 
       if (!await file.exists()) {
         throw Exception('Failed to write audio file');
       }
 
+      // Verify file integrity
+      final writtenBytes = await file.readAsBytes();
+      if (writtenBytes.length != bytes.length) {
+        throw Exception('File integrity check failed');
+      }
+
       debugPrint('Audio file saved: ${file.path} (${bytes.length} bytes)');
       _audioPathCache[fileName] = file.path;
+      _fileCacheTime[fileName] = DateTime.now();
+
       return file.path;
     } catch (e) {
       debugPrint('Error saving base64 audio: $e');
       return null;
+    }
+  }
+
+  /// Clean up expired cache files
+  static Future<void> cleanupExpiredCache() async {
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final audioDir = Directory('${directory.path}/audio_cache');
+
+      if (!await audioDir.exists()) return;
+
+      final files = await audioDir.list().toList();
+      final now = DateTime.now();
+
+      for (final entity in files) {
+        if (entity is File) {
+          final stat = await entity.stat();
+          if (now.difference(stat.modified) > _cacheExpiration) {
+            await entity.delete();
+            debugPrint('Deleted expired cache file: ${entity.path}');
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error cleaning up cache: $e');
     }
   }
 }

@@ -48,6 +48,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
 
   void _initializeAnimations() {
     context.read<ChatCubit>().resetChatState();
+    _loadChatData();
+
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
@@ -76,6 +78,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
       _animationController.reverse();
     } else {
       _animationController.forward();
+    }
+  }
+
+  void _loadChatData() {
+    final chatId = widget.data?['chat_id'];
+    if (chatId != null) {
+      context.read<ChatCubit>().getChatEntry(chatId: chatId);
     }
   }
 
@@ -407,34 +416,41 @@ class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ Use BlocBuilder with proper selector instead of BlocSelector
     return BlocBuilder<ChatCubit, ChatState>(
-      // selector: (state) =>
-      //     (status: state.isChatEntry, entries: state.chatEntry?.entries),
-      builder: (context, data) {
-        log('🏗️ Building with status: ${data.isChatEntry}');
+      // ✅ Use buildWhen to control when to rebuild
+      buildWhen: (previous, current) {
+        return previous.isChatEntry != current.isChatEntry ||
+            previous.chatEntry != current.chatEntry;
+      },
+      builder: (context, state) {
+        log('🏗️ Building with status: ${state.isChatEntry}');
+        log('📊 Entries count: ${state.chatEntry?.entries?.length ?? 0}');
 
-        if (data.isChatEntry == ApiFetchStatus.loading) {
+        // ✅ Show shimmer for loading state
+        if (state.isChatEntry == ApiFetchStatus.loading) {
           log('📱 Showing shimmer');
-
           return _buildShimmerList();
         }
 
-        if (data.chatEntry?.entries?.isEmpty ?? true) {
+        // ✅ Show empty state if no entries
+        if (state.chatEntry?.entries?.isEmpty ?? true) {
+          log('📱 Showing empty state');
           return const AnimatedEmptyChatWidget();
         }
 
-        // Check if we need to scroll to bottom
-        _checkAndScrollToBottom(data.chatEntry?.entries ?? []);
-
-        return _buildMessagesList(data.chatEntry?.entries ?? []);
+        // ✅ Show messages list
+        log('📱 Showing messages list');
+        _checkAndScrollToBottom(state.chatEntry?.entries ?? []);
+        return _buildMessagesList(state.chatEntry?.entries ?? []);
       },
     );
   }
 
   Widget _buildShimmerList() {
     return ListView.builder(
-      padding: EdgeInsets.symmetric(horizontal: 16.w),
-      itemCount: 3,
+      padding: EdgeInsets.symmetric(horizontal: 0.w),
+      itemCount: 6, // Show more shimmer items
       itemBuilder: (context, index) =>
           ChatMessageShimmer(isSent: index % 2 == 0),
     );
@@ -456,7 +472,7 @@ class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
         return ListView.builder(
           cacheExtent: 2000,
           controller: _scrollController,
-          padding: EdgeInsets.symmetric(horizontal: 16.w),
+          padding: EdgeInsets.symmetric(horizontal: 12.w),
           itemCount: pinnedList.length,
           itemBuilder: (context, index) {
             final messageData = pinnedList[index];

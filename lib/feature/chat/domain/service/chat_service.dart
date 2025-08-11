@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:injectable/injectable.dart';
@@ -20,6 +21,7 @@ import 'package:soxo_chat/shared/utils/result.dart';
 @LazySingleton(as: ChatRepositories)
 class ChatService implements ChatRepositories {
   final NetworkProvider _networkProvider = NetworkProvider();
+  static final Map<String, Map<String, dynamic>> _mediaCache = {};
 
   @override
   Future<ResponseResult<List<ChatListResponse>>> chatList() async {
@@ -244,6 +246,26 @@ class ChatService implements ChatRepositories {
   @override
   Future<Map<String, dynamic>> getFileFromApi(String media) async {
     try {
+      // Check if we already have this media cached
+      if (_mediaCache.containsKey(media)) {
+        final cached = _mediaCache[media]!;
+        // Verify the file still exists for audio/video types
+        if (cached['type'] == 'audio' || cached['type'] == 'video') {
+          if (await File(cached['data']).exists()) {
+            log('Using cached file for: $media');
+            return cached;
+          } else {
+            // Remove from cache if file doesn't exist
+            _mediaCache.remove(media);
+          }
+        } else {
+          log('Using cached data for: $media');
+          return cached;
+        }
+      }
+
+      log('Fetching from API: $media');
+
       final response = await _networkProvider.get(
         ApiEndpoints.mediaType(media),
         options: Options(
@@ -263,60 +285,83 @@ class ChatService implements ChatRepositories {
       final mimeType = lookupMimeType(media) ?? 'application/octet-stream';
       final fileType = _getFileType(mimeType);
 
-      // UPDATED: Handle all file types consistently
+      Map<String, dynamic> result;
+
+      // Handle all file types consistently
       switch (fileType) {
         case 'image':
           // Images as base64 (existing working logic)
           final base64String = base64Encode(bytes);
-          return {
+          result = {
             'type': 'image',
             'data': 'data:$mimeType;base64,$base64String',
             'bytes': bytes,
             'mimeType': mimeType,
           };
+          break;
 
         case 'document':
-          // FIXED: PDFs as base64 instead of temp files
+          // PDFs as base64
           final base64String = base64Encode(bytes);
-          return {
+          result = {
             'type': 'document',
             'data': 'data:$mimeType;base64,$base64String',
             'bytes': bytes,
             'mimeType': mimeType,
           };
+          break;
 
         case 'audio':
-          // Audio files still need to be saved as files for playback
+          // FIXED: Audio files with consistent naming for caching
           final extension = media.toLowerCase().split('.').last;
-          final tempFile = await _saveToTempFile(bytes, extension);
-          return {
+          final persistentFile = await _saveToPersistentFile(
+            bytes,
+            media,
+            extension,
+          );
+          result = {
             'type': 'audio',
-            'data': tempFile.path,
+            'data': persistentFile.path,
             'bytes': bytes,
             'mimeType': mimeType,
+            'mediaId': _generateConsistentId(media), // Add consistent media ID
           };
+          break;
 
         case 'video':
-          // Video files as temp files
+          // Video files with consistent naming
           final extension = media.toLowerCase().split('.').last;
-          final tempFile = await _saveToTempFile(bytes, extension);
-          return {
+          final persistentFile = await _saveToPersistentFile(
+            bytes,
+            media,
+            extension,
+          );
+          result = {
             'type': 'video',
-            'data': tempFile.path,
+            'data': persistentFile.path,
             'bytes': bytes,
             'mimeType': mimeType,
+            'mediaId': _generateConsistentId(media),
           };
+          break;
 
         default:
           // Unknown files as base64
           final base64String = base64Encode(bytes);
-          return {
+          result = {
             'type': 'unknown',
             'data': 'data:$mimeType;base64,$base64String',
             'bytes': bytes,
             'mimeType': mimeType,
           };
+          break;
       }
+
+      // Cache the result
+      _mediaCache[media] = result;
+      log('Successfully cached: $media');
+
+      return result;
     } catch (e) {
       log('API call failed: $e');
       rethrow;
@@ -332,25 +377,149 @@ class ChatService implements ChatRepositories {
     return 'unknown';
   }
 
-  // UPDATED: Use permanent storage for files that need to persist
-  Future<File> _saveToTempFile(List<int> bytes, String extension) async {
+  /// FIXED: Generate consistent ID from media filename
+  String _generateConsistentId(String media) {
+    // Use MD5 hash of the media path/name for consistent IDs
+    final bytes = utf8.encode(media);
+    final digest = md5.convert(bytes);
+    return digest.toString().substring(0, 16);
+  }
+
+  /// FIXED: Save files with consistent naming based on content hash
+  Future<File> _saveToPersistentFile(
+    List<int> bytes,
+    String media,
+    String extension,
+  ) async {
+    // Generate consistent filename based on media identifier
+    final mediaId = _generateConsistentId(media);
+    final fileName = 'media_$mediaId.$extension';
+
     Directory directory;
 
     // Use permanent storage for audio/video files that need to persist
-    if (extension == 'mp3' ||
-        extension == 'wav' ||
-        extension == 'm4a' ||
-        extension == 'mp4' ||
-        extension == 'mov') {
+    if (_isAudioVideoExtension(extension)) {
       directory = await getApplicationDocumentsDirectory();
+
+      // Create subdirectory for better organization
+      final mediaDir = Directory('${directory.path}/media_files');
+      if (!await mediaDir.exists()) {
+        await mediaDir.create(recursive: true);
+      }
+      directory = mediaDir;
     } else {
       directory = await getTemporaryDirectory();
     }
 
-    final tempFile = File(
-      '${directory.path}/media_${DateTime.now().millisecondsSinceEpoch}.$extension',
-    );
-    await tempFile.writeAsBytes(bytes);
-    return tempFile;
+    final file = File('${directory.path}/$fileName');
+
+    // Check if file already exists and is valid
+    if (await file.exists()) {
+      try {
+        final existingBytes = await file.readAsBytes();
+        if (existingBytes.length == bytes.length) {
+          log('File already exists and is valid: ${file.path}');
+          return file;
+        } else {
+          log('Existing file size mismatch, recreating: ${file.path}');
+          await file.delete();
+        }
+      } catch (e) {
+        log('Error reading existing file, recreating: $e');
+        await file.delete();
+      }
+    }
+
+    // Write the file
+    await file.writeAsBytes(bytes);
+
+    // Verify the file was written correctly
+    if (!await file.exists()) {
+      throw Exception('Failed to create file: ${file.path}');
+    }
+
+    final writtenSize = await file.length();
+    if (writtenSize != bytes.length) {
+      await file.delete();
+      throw Exception('File size mismatch after writing');
+    }
+
+    log('File saved successfully: ${file.path} (${bytes.length} bytes)');
+    return file;
+  }
+
+  bool _isAudioVideoExtension(String extension) {
+    const audioVideoExtensions = [
+      'mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac', // Audio
+      'mp4', 'mov', 'avi', 'mkv', 'webm', // Video
+    ];
+    return audioVideoExtensions.contains(extension.toLowerCase());
+  }
+
+  /// Clear the media cache (call this when user logs out or memory is low)
+  static void clearCache() {
+    _mediaCache.clear();
+    log('Media cache cleared');
+  }
+
+  /// Clean up old media files (call this periodically)
+  static Future<void> cleanupOldFiles() async {
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final mediaDir = Directory('${directory.path}/media_files');
+
+      if (!await mediaDir.exists()) return;
+
+      final files = await mediaDir.list().toList();
+      final cutoffTime = DateTime.now().subtract(const Duration(days: 7));
+      int deletedCount = 0;
+
+      for (final entity in files) {
+        if (entity is File) {
+          final stat = await entity.stat();
+          if (stat.modified.isBefore(cutoffTime)) {
+            await entity.delete();
+            deletedCount++;
+          }
+        }
+      }
+
+      log('Cleaned up $deletedCount old media files');
+    } catch (e) {
+      log('Error during cleanup: $e');
+    }
+  }
+
+  /// Get cache statistics (for debugging)
+  static Map<String, dynamic> getCacheStats() {
+    int audioCount = 0;
+    int videoCount = 0;
+    int imageCount = 0;
+    int documentCount = 0;
+
+    _mediaCache.forEach((key, value) {
+      switch (value['type']) {
+        case 'audio':
+          audioCount++;
+          break;
+        case 'video':
+          videoCount++;
+          break;
+        case 'image':
+          imageCount++;
+          break;
+        case 'document':
+          documentCount++;
+          break;
+      }
+    });
+
+    return {
+      'total': _mediaCache.length,
+      'audio': audioCount,
+      'video': videoCount,
+      'image': imageCount,
+      'document': documentCount,
+    };
   }
 }
