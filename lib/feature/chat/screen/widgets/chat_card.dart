@@ -9,7 +9,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_entry/chat_entry_response.dart';
-import 'package:soxo_chat/feature/chat/screen/widgets/audio_player.dart';
+import 'package:soxo_chat/feature/chat/domain/repositories/chat_repositories.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/image_show.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/pdf_viewer.dart';
 import 'package:soxo_chat/shared/widgets/media/media_cache.dart';
@@ -84,10 +84,16 @@ class _InstantMediaBuilder extends StatelessWidget {
     debugPrint(
       'Media $mediaId: fileUrl=$fileUrl, isLoading=$isLoading, type=$fileType',
     );
-
+    debugPrint('🔍 Media Analysis:');
+    debugPrint('  - mediaId: $mediaId');
+    debugPrint('  - fileUrl: $fileUrl');
+    debugPrint('  - media.mediaUrl: ${media.mediaUrl}');
+    debugPrint('  - media.mediaType: ${media.mediaType}');
+    debugPrint('  - isLoading: $isLoading');
     // Check cache first for instant loading
     if (fileUrl != null && !MediaCache.isLoading(mediaId)) {
       return _MediaTypeDispatcher(
+        media: media,
         fileUrl: fileUrl!,
         fileType: fileType ?? _inferTypeFromMedia(media),
         mediaId: mediaId,
@@ -101,6 +107,7 @@ class _InstantMediaBuilder extends StatelessWidget {
       if (media.mediaUrl != null && media.mediaUrl!.isNotEmpty) {
         debugPrint('Using media.url directly: ${media.mediaUrl}');
         return _MediaTypeDispatcher(
+          media: media,
           fileUrl: media.mediaUrl!,
           fileType: fileType ?? _inferTypeFromMedia(media),
           mediaId: mediaId,
@@ -144,6 +151,7 @@ class _InstantMediaBuilder extends StatelessWidget {
         final result = snapshot.data;
         if (result != null && result.isNotEmpty) {
           return _MediaTypeDispatcher(
+            media: media,
             fileUrl: result,
             fileType: fileType ?? _inferTypeFromMedia(media),
             mediaId: mediaId,
@@ -234,7 +242,7 @@ class _MediaTypeDispatcher extends StatelessWidget {
   final bool isInChatBubble;
   final double? maxWidth;
   final double? maxHeight;
-  final ChatMedias? media;
+  final ChatMedias media;
 
   const _MediaTypeDispatcher({
     required this.fileUrl,
@@ -243,11 +251,18 @@ class _MediaTypeDispatcher extends StatelessWidget {
     required this.isInChatBubble,
     this.maxWidth,
     this.maxHeight,
-    this.media,
+    required this.media,
   });
 
   @override
   Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _handleMediaTap(context),
+      child: _buildMediaWidget(),
+    );
+  }
+
+  Widget _buildMediaWidget() {
     switch (fileType.toLowerCase()) {
       case 'image':
       case 'jpg':
@@ -260,6 +275,7 @@ class _MediaTypeDispatcher extends StatelessWidget {
           isInChatBubble: isInChatBubble,
           maxWidth: maxWidth,
           maxHeight: maxHeight,
+          enableTap: true,
         );
 
       case 'audio':
@@ -271,9 +287,9 @@ class _MediaTypeDispatcher extends StatelessWidget {
           fileUrl: fileUrl,
           mediaId: mediaId,
           isInChatBubble: isInChatBubble,
-
           maxWidth: maxWidth,
           maxHeight: maxHeight,
+          enableTap: false, // Handled by parent GestureDetector
         );
 
       case 'document':
@@ -284,6 +300,8 @@ class _MediaTypeDispatcher extends StatelessWidget {
           isInChatBubble: isInChatBubble,
           maxWidth: maxWidth,
           maxHeight: maxHeight,
+          enableTap: true,
+          media: media,
         );
 
       default:
@@ -294,15 +312,20 @@ class _MediaTypeDispatcher extends StatelessWidget {
         );
     }
   }
+
+  void _handleMediaTap(BuildContext context) {
+    log('📱 Media tapped: ${media.id}, type: $fileType');
+    context.read<ChatCubit>().viewMediaFile(media);
+  }
 }
 
-/// Instant image preview with aggressive caching
 class _InstantImagePreview extends StatelessWidget {
   final String fileUrl;
   final String mediaId;
   final bool isInChatBubble;
   final double? maxWidth;
   final double? maxHeight;
+  final bool enableTap;
 
   const _InstantImagePreview({
     required this.fileUrl,
@@ -310,29 +333,34 @@ class _InstantImagePreview extends StatelessWidget {
     required this.isInChatBubble,
     this.maxWidth,
     this.maxHeight,
+    this.enableTap = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        showMyDialog(context, fileUrl, mediaId);
-      },
-      child: Container(
-        constraints: BoxConstraints(
-          maxWidth: maxWidth ?? (isInChatBubble ? 200.w : double.infinity),
-          maxHeight: maxHeight ?? (isInChatBubble ? 200.h : double.infinity),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(8.r),
-          child: CachedImageDisplay(
-            fileUrl: fileUrl,
-            mediaId: mediaId,
-            isInChatBubble: isInChatBubble,
-          ),
+    Widget imageWidget = Container(
+      constraints: BoxConstraints(
+        maxWidth: maxWidth ?? (isInChatBubble ? 200.w : double.infinity),
+        maxHeight: maxHeight ?? (isInChatBubble ? 200.h : double.infinity),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8.r),
+        child: CachedImageDisplay(
+          fileUrl: fileUrl,
+          mediaId: mediaId,
+          isInChatBubble: isInChatBubble,
         ),
       ),
     );
+
+    if (enableTap) {
+      return GestureDetector(
+        onTap: () => showMyDialog(context, fileUrl, mediaId),
+        child: imageWidget,
+      );
+    }
+
+    return imageWidget;
   }
 }
 
@@ -459,12 +487,108 @@ class CachedImageDisplay extends StatelessWidget {
   }
 }
 
+/// Audio preview widget
+class InstantAudioPreview extends StatelessWidget {
+  final String fileUrl;
+  final String mediaId;
+  final bool isInChatBubble;
+  final double? maxWidth;
+  final double? maxHeight;
+  final bool enableTap;
+
+  const InstantAudioPreview({
+    super.key,
+    required this.fileUrl,
+    required this.mediaId,
+    required this.isInChatBubble,
+    this.maxWidth,
+    this.maxHeight,
+    this.enableTap = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Widget audioWidget = Container(
+      constraints: BoxConstraints(
+        maxWidth: maxWidth ?? (isInChatBubble ? 200.w : double.infinity),
+        maxHeight: maxHeight ?? (isInChatBubble ? 60.h : 80.h),
+      ),
+      decoration: BoxDecoration(
+        color: Colors.blue[50],
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: Colors.blue[200]!),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(8.w),
+        child: Row(
+          children: [
+            Icon(
+              Icons.audiotrack,
+              color: Colors.blue[700],
+              size: isInChatBubble ? 20.sp : 24.sp,
+            ),
+            SizedBox(width: 8.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Audio message',
+                    style: TextStyle(
+                      fontSize: isInChatBubble ? 12.sp : 14.sp,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.blue[700],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (!isInChatBubble) ...[
+                    SizedBox(height: 2.h),
+                    Text(
+                      'Tap to play',
+                      style: TextStyle(
+                        fontSize: 10.sp,
+                        color: Colors.blue[600],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            Icon(
+              Icons.play_arrow,
+              color: Colors.blue[700],
+              size: isInChatBubble ? 16.sp : 20.sp,
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (enableTap) {
+      return GestureDetector(
+        onTap: () {
+          // Individual audio tap handler if needed
+          log('🎵 Audio tapped: $mediaId');
+        },
+        child: audioWidget,
+      );
+    }
+
+    return audioWidget;
+  }
+}
+
+/// Document preview widget
 class _InstantDocumentPreview extends StatelessWidget {
   final String fileUrl;
   final String mediaId;
   final bool isInChatBubble;
   final double? maxWidth;
   final double? maxHeight;
+  final bool enableTap;
+  final ChatMedias media;
 
   const _InstantDocumentPreview({
     required this.fileUrl,
@@ -472,88 +596,256 @@ class _InstantDocumentPreview extends StatelessWidget {
     required this.isInChatBubble,
     this.maxWidth,
     this.maxHeight,
+    this.enableTap = true,
+    required this.media,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    Widget documentWidget = Container(
+      constraints: BoxConstraints(
+        maxWidth: maxWidth ?? (isInChatBubble ? 200.w : double.infinity),
+        maxHeight: maxHeight ?? (isInChatBubble ? 60.h : 80.h),
+      ),
       decoration: BoxDecoration(
         color: Colors.red[50],
         borderRadius: BorderRadius.circular(8.r),
         border: Border.all(color: Colors.red[200]!),
       ),
-      child: InkWell(
-        onTap: () => _handleDocumentTap(context),
-        borderRadius: BorderRadius.circular(8.r),
-        child: Padding(
-          padding: EdgeInsets.all(8.w),
-          child: Row(
-            children: [
-              Icon(
-                Icons.picture_as_pdf,
-                color: Colors.red[700],
-                size: isInChatBubble ? 24.sp : 32.sp,
-              ),
-              SizedBox(width: 8.w),
-              Expanded(
-                child: Text(
-                  'PDF document',
-                  style: TextStyle(
-                    fontSize: isInChatBubble ? 12.sp : 14.sp,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.red[700],
+      child: Padding(
+        padding: EdgeInsets.all(8.w),
+        child: Row(
+          children: [
+            Icon(
+              Icons.picture_as_pdf,
+              color: Colors.red[700],
+              size: isInChatBubble ? 20.sp : 24.sp,
+            ),
+            SizedBox(width: 8.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'PDF document',
+                    style: TextStyle(
+                      fontSize: isInChatBubble ? 12.sp : 14.sp,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.red[700],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                  if (!isInChatBubble) ...[
+                    SizedBox(height: 2.h),
+                    Text(
+                      'Tap to open',
+                      style: TextStyle(fontSize: 10.sp, color: Colors.red[600]),
+                    ),
+                  ],
+                ],
               ),
-            ],
-          ),
+            ),
+            Icon(
+              Icons.open_in_new,
+              color: Colors.red[700],
+              size: isInChatBubble ? 16.sp : 20.sp,
+            ),
+          ],
         ),
       ),
     );
+
+    if (enableTap) {
+      return InkWell(
+        onTap: () => _handleDocumentTap(context, media),
+        borderRadius: BorderRadius.circular(8.r),
+        child: documentWidget,
+      );
+    }
+
+    return documentWidget;
   }
 
-  Future<void> _handleDocumentTap(BuildContext context) async {
+  Future<void> _handleDocumentTap(
+    BuildContext context,
+    ChatMedias media,
+  ) async {
     try {
+      _showLoadingSnackBar(context, 'Loading PDF...');
+
       String? filePath = MediaCache.getFilePath(mediaId);
 
-      if (filePath == null) {
+      if (filePath != null && filePath.contains('/cache/temp_')) {
+        log('🔄 Detected old temp file, forcing reload: $filePath');
+        MediaCache.clearFilePath(mediaId);
+        filePath = null;
+      }
+
+      if (fileUrl.contains('/cache/temp_')) {
+        log('🔄 FileUrl is old temp path, forcing complete reload: $fileUrl');
+        return;
+      }
+
+      if (filePath == null || !await File(filePath).exists()) {
+        log('📄 No valid cached file, processing fileUrl: $fileUrl');
+
         if (fileUrl.startsWith('data:')) {
+          log('📄 Converting base64 to PDF file...');
           filePath = await _FileUtils.saveBase64ToFile(
             fileUrl,
             'document_$mediaId.pdf',
           );
+
+          if (filePath != null) {
+            MediaCache.setFilePath(mediaId, filePath);
+            log('✅ PDF saved to: $filePath');
+          }
+        } else if (fileUrl.startsWith('http')) {
+          log('📄 Downloading from server...');
+          filePath = await _downloadPdfFromServer(context, fileUrl);
           if (filePath != null) {
             MediaCache.setFilePath(mediaId, filePath);
           }
-        } else {
+        } else if (await File(fileUrl).exists()) {
           filePath = fileUrl;
+        } else {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          log('❌ Invalid fileUrl, forcing reload: $fileUrl');
+          return;
         }
+      } else {
+        log('📄 Using cached file: $filePath');
       }
 
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
       if (filePath != null && await File(filePath).exists()) {
-        log('Opening PDF: $filePath');
+        log('✅ Opening PDF: $filePath');
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) =>
-                PdfViewScreen(filePath: filePath!, fileName: 'PDF VIEWER'),
+                PdfViewScreen(filePath: filePath!, fileName: 'PDF Document'),
           ),
         );
       } else {
-        _showSnackBar(context, 'PDF file not found');
+        _showSnackBar(context, 'Could not load PDF file');
+        log('❌ PDF file not accessible: $filePath');
       }
     } catch (e) {
-      log('Document open error: $e');
-      _showSnackBar(context, 'Failed to open document');
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      log('❌ Document error: $e');
+      _showSnackBar(context, 'Error opening document: ${e.toString()}');
     }
   }
 
+  void _showLoadingSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+            SizedBox(width: 12),
+            Text(message),
+          ],
+        ),
+        duration: Duration(seconds: 10),
+      ),
+    );
+  }
+
   void _showSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red[600],
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
+
+  Future<String?> _downloadPdfFromServer(
+    BuildContext context,
+    String serverUrl,
+  ) async {
+    try {
+      log('📥 Downloading PDF from server: $serverUrl');
+
+      final cubit = context.read<ChatCubit>();
+
+      final existingFileUrl = cubit.getFileUrl(mediaId);
+      final existingFileType = cubit.getFileType(mediaId);
+
+      if (existingFileUrl != null && existingFileType == 'document') {
+        if (!existingFileUrl.startsWith('http') &&
+            !existingFileUrl.startsWith('data:')) {
+          if (await File(existingFileUrl).exists()) {
+            return existingFileUrl;
+          }
+        }
+      }
+
+      final tempMedia = ChatMedias(
+        id: int.tryParse(mediaId),
+        mediaUrl: serverUrl,
+        mediaType: 'document',
+      );
+
+      await cubit.loadMediaFile(tempMedia);
+
+      await Future.delayed(const Duration(milliseconds: 1000));
+
+      final downloadedFileUrl = cubit.getFileUrl(mediaId);
+
+      if (downloadedFileUrl != null) {
+        if (downloadedFileUrl.startsWith('data:')) {
+          return await _FileUtils.saveBase64ToFile(
+            downloadedFileUrl,
+            'downloaded_$mediaId.pdf',
+          );
+        } else if (!downloadedFileUrl.startsWith('http')) {
+          if (await File(downloadedFileUrl).exists()) {
+            return downloadedFileUrl;
+          }
+        }
+      }
+      ChatRepositories? chatRespositories;
+
+      log('📥 Fallback: Direct download from repository');
+      final fileData = await chatRespositories!.getFileFromApi(serverUrl);
+
+      if (fileData['data'] != null) {
+        if (fileData['type'] == 'document' && fileData['data'] is String) {
+          final data = fileData['data'] as String;
+
+          if (data.startsWith('data:')) {
+            return await _FileUtils.saveBase64ToFile(
+              data,
+              'repository_$mediaId.pdf',
+            );
+          } else {
+            if (await File(data).exists()) {
+              return data;
+            }
+          }
+        }
+      }
+
+      log('❌ Failed to download PDF from server');
+      return null;
+    } catch (e) {
+      log('❌ Error downloading PDF: $e');
+      return null;
+    }
   }
 }
 
@@ -596,6 +888,7 @@ class _CompactErrorWidget extends StatelessWidget {
   }
 }
 
+/// Generic file preview
 class _GenericFilePreview extends StatelessWidget {
   final bool isInChatBubble;
   final double? maxWidth;
@@ -632,7 +925,7 @@ class _GenericFilePreview extends StatelessWidget {
   }
 }
 
-/// Optimized file utils with caching
+/// File utilities
 class _FileUtils {
   static final Map<String, String> _pathCache = {};
 
@@ -644,9 +937,14 @@ class _FileUtils {
     if (_pathCache.containsKey(fileName)) {
       final cachedPath = _pathCache[fileName]!;
       if (await File(cachedPath).exists()) {
+        log('📄 Using cached PDF: $cachedPath');
         return cachedPath;
+      } else {
+        log('📄 Cached file no longer exists, creating new one');
+        _pathCache.remove(fileName);
       }
     }
+    log('📄 Converting base64 to file: $fileName');
 
     try {
       String cleanBase64 = base64Data;
@@ -655,11 +953,13 @@ class _FileUtils {
       }
 
       final bytes = base64Decode(cleanBase64);
-      final directory = await getTemporaryDirectory();
+      final directory = await getApplicationDocumentsDirectory();
       final file = File('${directory.path}/$fileName');
       await file.writeAsBytes(bytes);
 
       _pathCache[fileName] = file.path;
+      log('✅ PDF saved successfully: ${file.path} (${bytes.length} bytes)');
+
       return file.path;
     } catch (e) {
       log('Error saving base64 to file: $e');

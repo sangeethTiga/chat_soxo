@@ -19,6 +19,8 @@ class ChatState extends Equatable {
   final double uploadProgress;
   final Map<String, String>? fileUrls;
   final Map<String, String>? fileTypes;
+  final Map<String, dynamic>? viewingFile;
+  final bool? isLoadingMedia;
 
   const ChatState({
     this.isArrow = false,
@@ -38,6 +40,8 @@ class ChatState extends Equatable {
     this.uploadProgress = 0.0,
     this.fileUrls,
     this.fileTypes,
+    this.viewingFile,
+    this.isLoadingMedia,
   });
 
   ChatState copyWith({
@@ -58,6 +62,8 @@ class ChatState extends Equatable {
     double? uploadProgress,
     Map<String, String>? fileUrls,
     Map<String, String>? fileTypes,
+    Map<String, dynamic>? viewingFile,
+    bool? isLoadingMedia,
   }) {
     return ChatState(
       isArrow: isArrow ?? this.isArrow,
@@ -78,6 +84,8 @@ class ChatState extends Equatable {
       uploadProgress: uploadProgress ?? this.uploadProgress,
       fileUrls: fileUrls ?? this.fileUrls,
       fileTypes: fileTypes ?? this.fileTypes,
+      viewingFile: viewingFile ?? this.viewingFile,
+      isLoadingMedia: isLoadingMedia ?? this.isLoadingMedia,
     );
   }
 
@@ -100,6 +108,8 @@ class ChatState extends Equatable {
     uploadProgress,
     fileUrls,
     fileTypes,
+    viewingFile,
+    isLoadingMedia,
   ];
 }
 

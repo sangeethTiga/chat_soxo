@@ -63,37 +63,6 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
       ),
     );
   }
-  //   return Align(
-  //     alignment: widget.isSent ? Alignment.centerRight : Alignment.centerLeft,
-  //     child: Container(
-  //       constraints: BoxConstraints(maxWidth: 280.w),
-  //       margin: EdgeInsets.symmetric(vertical: 4.h),
-  //       padding: EdgeInsets.all(12.w),
-  //       decoration: BoxDecoration(
-  //         color: widget.isSent ? Color(0xFFE6F2EC) : Colors.grey[200],
-  //         borderRadius: BorderRadius.circular(16.r),
-  //       ),
-  //       child: Column(
-  //         crossAxisAlignment: CrossAxisAlignment.start,
-  //         children: [
-  //           _buildMessageContent(),
-
-  //           // Media attachments section
-  //           if (widget.chatMedias != null && widget.chatMedias!.isNotEmpty) ...[
-  //             SizedBox(height: 8.h),
-  //             _buildMediaAttachments(),
-  //           ],
-
-  //           SizedBox(height: 4.h),
-  //           Text(
-  //             widget.timestamp,
-  //             style: TextStyle(fontSize: 10.sp, color: Colors.grey[600]),
-  //           ),
-  //         ],
-  //       ),
-  //     ),
-  //   );
-  // }
 
   Widget _buildMessageContent() {
     switch (widget.type?.toLowerCase()) {
@@ -101,8 +70,6 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
         return FixedSizeHtmlWidget(htmlContent: widget.message);
 
       case 'voice':
-        // REMOVED: Don't show separate voice UI here
-        // Voice will be handled by MediaPreviewWidget in _buildMediaAttachments()
         return widget.message.isNotEmpty
             ? _buildTextContent()
             : const SizedBox.shrink();

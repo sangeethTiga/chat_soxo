@@ -12,6 +12,17 @@ class MediaCache {
     _failedItems.remove(key);
   }
 
+  static void clearFilePath(String mediaId) {
+    _failedItems.remove(mediaId);
+  }
+
+  static void clearAll() {
+    _failedItems.clear();
+    _imageCache.clear();
+    _filePathCache.clear();
+    _loadingItems.clear();
+  }
+
   static String? getFilePath(String key) => _filePathCache[key];
   static void setFilePath(String key, String path) {
     _filePathCache[key] = path;

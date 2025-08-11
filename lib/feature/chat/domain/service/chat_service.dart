@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:injectable/injectable.dart';
+import 'package:mime/mime.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:soxo_chat/feature/chat/domain/models/add_chat/add_chatentry_request.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_entry/chat_entry_response.dart'
@@ -238,105 +239,116 @@ class ChatService implements ChatRepositories {
     }
   }
 
+  // UPDATE your existing getFileFromApi method in ChatCubit
+
   @override
   Future<Map<String, dynamic>> getFileFromApi(String media) async {
     try {
       final response = await _networkProvider.get(
-        ApiEndpoints.mediaType(media ?? ''),
+        ApiEndpoints.mediaType(media),
         options: Options(
           headers: {
             'Authorization':
-                'Bearer ${await AuthUtils.instance.readAccessToken}', // Use your actual token
+                'Bearer ${await AuthUtils.instance.readAccessToken}',
           },
           responseType: ResponseType.bytes,
         ),
       );
 
-      if (response.data != null) {
-        final bytes = response.data as List<int>;
-        final fileName = media;
-        final extension = fileName.toLowerCase().split('.').last;
+      if (response.data == null) {
+        throw Exception('No data received from server');
+      }
 
-        String mimeType;
-        String fileType;
+      final bytes = response.data as List<int>;
+      final mimeType = lookupMimeType(media) ?? 'application/octet-stream';
+      final fileType = _getFileType(mimeType);
 
-        switch (extension) {
-          case 'jpg':
-          case 'jpeg':
-            mimeType = 'image/jpeg';
-            fileType = 'image';
-            break;
-          case 'png':
-            mimeType = 'image/png';
-            fileType = 'image';
-            break;
-          case 'gif':
-            mimeType = 'image/gif';
-            fileType = 'image';
-            break;
-          case 'pdf':
-            mimeType = 'application/pdf';
-            fileType = 'document';
-            break;
-          case 'doc':
-          case 'docx':
-            mimeType = 'application/msword';
-            fileType = 'document';
-            break;
-          case 'mp3':
-            mimeType = 'audio/mpeg';
-            fileType = 'audio';
-            break;
-          case 'wav':
-            mimeType = 'audio/wav';
-            fileType = 'audio';
-            break;
-          case 'm4a':
-          case 'aac':
-            mimeType = 'audio/aac';
-            fileType = 'audio';
-            break;
-          case 'mp4':
-            mimeType = 'video/mp4';
-            fileType = 'video';
-            break;
-          default:
-            mimeType = 'application/octet-stream';
-            fileType = 'document';
-        }
-
-        if (fileType == 'image') {
+      // UPDATED: Handle all file types consistently
+      switch (fileType) {
+        case 'image':
+          // Images as base64 (existing working logic)
           final base64String = base64Encode(bytes);
           return {
             'type': 'image',
             'data': 'data:$mimeType;base64,$base64String',
             'bytes': bytes,
+            'mimeType': mimeType,
           };
-        } else if (fileType == 'audio') {
-          final tempFile = await _saveToTempFile(bytes, extension);
-          return {'type': 'audio', 'data': tempFile.path, 'bytes': bytes};
-        } else {
-          final tempFile = await _saveToTempFile(bytes, extension);
+
+        case 'document':
+          // FIXED: PDFs as base64 instead of temp files
+          final base64String = base64Encode(bytes);
           return {
             'type': 'document',
+            'data': 'data:$mimeType;base64,$base64String',
+            'bytes': bytes,
+            'mimeType': mimeType,
+          };
+
+        case 'audio':
+          // Audio files still need to be saved as files for playback
+          final extension = media.toLowerCase().split('.').last;
+          final tempFile = await _saveToTempFile(bytes, extension);
+          return {
+            'type': 'audio',
             'data': tempFile.path,
             'bytes': bytes,
             'mimeType': mimeType,
           };
-        }
+
+        case 'video':
+          // Video files as temp files
+          final extension = media.toLowerCase().split('.').last;
+          final tempFile = await _saveToTempFile(bytes, extension);
+          return {
+            'type': 'video',
+            'data': tempFile.path,
+            'bytes': bytes,
+            'mimeType': mimeType,
+          };
+
+        default:
+          // Unknown files as base64
+          final base64String = base64Encode(bytes);
+          return {
+            'type': 'unknown',
+            'data': 'data:$mimeType;base64,$base64String',
+            'bytes': bytes,
+            'mimeType': mimeType,
+          };
       }
     } catch (e) {
       log('API call failed: $e');
       rethrow;
     }
-
-    throw Exception('Failed to load file');
   }
 
+  String _getFileType(String mimeType) {
+    if (mimeType.startsWith('image/')) return 'image';
+    if (mimeType.startsWith('audio/')) return 'audio';
+    if (mimeType.startsWith('video/')) return 'video';
+    if (mimeType == 'application/pdf') return 'document';
+    if (mimeType.startsWith('application/')) return 'document';
+    return 'unknown';
+  }
+
+  // UPDATED: Use permanent storage for files that need to persist
   Future<File> _saveToTempFile(List<int> bytes, String extension) async {
-    final tempDir = await getTemporaryDirectory();
+    Directory directory;
+
+    // Use permanent storage for audio/video files that need to persist
+    if (extension == 'mp3' ||
+        extension == 'wav' ||
+        extension == 'm4a' ||
+        extension == 'mp4' ||
+        extension == 'mov') {
+      directory = await getApplicationDocumentsDirectory();
+    } else {
+      directory = await getTemporaryDirectory();
+    }
+
     final tempFile = File(
-      '${tempDir.path}/temp_${DateTime.now().millisecondsSinceEpoch}.$extension',
+      '${directory.path}/media_${DateTime.now().millisecondsSinceEpoch}.$extension',
     );
     await tempFile.writeAsBytes(bytes);
     return tempFile;

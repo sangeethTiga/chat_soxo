@@ -17,6 +17,7 @@ import 'package:soxo_chat/feature/chat/domain/models/chat_res/chat_list_response
 import 'package:soxo_chat/feature/chat/domain/repositories/chat_repositories.dart';
 import 'package:soxo_chat/shared/app/enums/api_fetch_status.dart';
 import 'package:soxo_chat/shared/utils/auth/auth_utils.dart';
+import 'package:soxo_chat/shared/widgets/media/media_cache.dart';
 
 part 'chat_state.dart';
 
@@ -741,7 +742,21 @@ class ChatCubit extends Cubit<ChatState> {
       log('Removed file at index $index');
     }
   }
-
+Future<void> clearOldFileCache() async {
+  log('🧹 Clearing old file cache...');
+  
+  // Clear cubit's file cache
+  _fileUrls.clear();
+  _fileTypes.clear();
+  _loadingFiles.clear();
+  _fileCacheTimestamps.clear();
+  _failedLoads.clear();
+  
+  // Clear MediaCache
+  MediaCache.clearAll(); // You'll need to add this method to MediaCache
+  
+  log('✅ Old cache cleared');
+}
   void clearSelectedFiles() {
     if (_isDisposed) return;
 
@@ -839,6 +854,57 @@ class ChatCubit extends Cubit<ChatState> {
     _chatCache.remove(chatId);
     _chatCacheTimestamps.remove(chatId);
     log('🗑️ Cleared cache for chat $chatId');
+  }
+
+  Future<void> viewMediaFile(ChatMedias media) async {
+    if (_isDisposed || media.id == null || media.mediaUrl == null) return;
+
+    final mediaId = media.id.toString();
+
+    // Check if already loaded
+    if (!isFileLoaded(mediaId)) {
+      emit(state.copyWith(isLoadingMedia: true));
+      await loadMediaFile(media);
+      emit(state.copyWith(isLoadingMedia: false));
+    }
+
+    final fileUrl = getFileUrl(mediaId);
+    final fileType = getFileType(mediaId);
+
+    if (fileUrl != null && fileType != null) {
+      // Create file data map for viewing
+      final fileData = {
+        'type': fileType,
+        'data': fileUrl,
+        'mimeType': _getMimeTypeForFile(fileType),
+      };
+
+      // Emit state for UI to handle viewing
+      emit(state.copyWith(viewingFile: fileData));
+      log('📱 Viewing file: $mediaId, type: $fileType');
+    } else {
+      emit(
+        state.copyWith(
+          errorMessage: 'Failed to load file for viewing',
+          isLoadingMedia: false,
+        ),
+      );
+    }
+  }
+
+  String _getMimeTypeForFile(String fileType) {
+    switch (fileType) {
+      case 'image':
+        return 'image/jpeg'; // You might want to store actual mime type
+      case 'audio':
+        return 'audio/mpeg';
+      case 'document':
+        return 'application/pdf';
+      case 'video':
+        return 'video/mp4';
+      default:
+        return 'application/octet-stream';
+    }
   }
 
   @override
