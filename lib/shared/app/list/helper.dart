@@ -57,6 +57,7 @@ class Helper {
       await _deleteCacheDir();
       await _deleteAppDir();
       await AuthUtils.instance.deleteAll();
+      await clearCache();
       // context.read<AuthBloc>().add(LogoutEventClear());
 
       if (!context.mounted) return;
@@ -95,6 +96,14 @@ class Helper {
     } catch (e) {
       log('Error deleting application directory: $e');
     }
+  }
+}
+
+Future<void> clearCache() async {
+  final cacheDir = await getTemporaryDirectory();
+
+  if (cacheDir.existsSync()) {
+    cacheDir.deleteSync(recursive: true); // Deletes everything in cache
   }
 }
 
