@@ -4,7 +4,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soxo_chat/feature/auth/cubit/auth_cubit.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
-import 'package:soxo_chat/feature/chat/screen/widgets/chat_card.dart';
 import 'package:soxo_chat/feature/person_lists/cubit/person_lists_cubit.dart';
 import 'package:soxo_chat/shared/dependency_injection/injectable.dart';
 import 'package:soxo_chat/shared/routes/route_generator.dart';
