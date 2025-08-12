@@ -12,7 +12,16 @@ import 'package:soxo_chat/shared/themes/app_theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   configureDependencies();
-  runApp(MyApp());
+  runApp(
+    MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (context) => getIt<ChatCubit>(), lazy: false),
+        BlocProvider(create: (context) => getIt<PersonListsCubit>()),
+        BlocProvider(create: (context) => getIt<AuthCubit>()),
+      ],
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -26,21 +35,15 @@ class MyApp extends StatelessWidget {
       minTextAdapt: true,
       useInheritedMediaQuery: true,
       builder: (context, child) {
-        return MultiBlocProvider(
-          providers: [
-            BlocProvider(create: (context) => getIt<ChatCubit>(), lazy: false),
-            BlocProvider(create: (context) => getIt<PersonListsCubit>()),
-            BlocProvider(create: (context) => getIt<AuthCubit>()),
-          ],
-          child: MaterialApp.router(
-            debugShowCheckedModeBanner: false,
-            title: 'SOXO CHAT',
-            theme: AppTheme.lightTheme,
-            themeMode: ThemeMode.light,
-            routerConfig: router,
-          ),
+        return MaterialApp.router(
+          debugShowCheckedModeBanner: false,
+          title: 'SOXO CHAT',
+          theme: AppTheme.lightTheme,
+          themeMode: ThemeMode.light,
+          routerConfig: router,
         );
       },
+      // child: const SizedBox(),
     );
   }
 }

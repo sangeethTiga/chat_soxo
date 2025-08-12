@@ -34,7 +34,6 @@ class _AnimatedEmptyStateState extends State<AnimatedEmptyState>
   }
 
   void _initializeAnimations() {
-    // Main animation controller for icon
     _mainController = AnimationController(
       duration: const Duration(milliseconds: 1200),
       vsync: this,
@@ -144,20 +143,13 @@ class _AnimatedEmptyStateState extends State<AnimatedEmptyState>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _buildAnimatedIcon(),
-
-            SizedBox(height: 32.h),
-
+            32.verticalSpace,
             _buildAnimatedTitle(),
-
-            SizedBox(height: 16.h),
-
+            16.verticalSpace,
             _buildAnimatedDescription(),
-
-            SizedBox(height: 40.h),
-
+            40.verticalSpace,
             _buildAnimatedActionButton(),
-
-            SizedBox(height: 120.h),
+            120.verticalSpace,
           ],
         ),
       ),
@@ -191,8 +183,8 @@ class _AnimatedEmptyStateState extends State<AnimatedEmptyState>
                       BoxShadow(
                         color: (_colorAnimation.value ?? Colors.grey[400])!
                             .withOpacity(0.2),
-                        blurRadius: 20,
-                        spreadRadius: 5,
+                        blurRadius: 20.r,
+                        spreadRadius: 5.r,
                       ),
                     ],
                   ),
