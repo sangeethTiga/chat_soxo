@@ -10,9 +10,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_entry/chat_entry_response.dart';
 import 'package:soxo_chat/feature/chat/domain/repositories/chat_repositories.dart';
-import 'package:soxo_chat/feature/chat/screen/widgets/audio_player.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/image_show.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/pdf_viewer.dart';
+import 'package:soxo_chat/shared/widgets/audio_player.dart/audi_player.dart';
 import 'package:soxo_chat/shared/widgets/media/media_cache.dart';
 import 'package:soxo_chat/shared/widgets/shimmer/shimmer_card.dart';
 

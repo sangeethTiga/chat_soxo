@@ -184,67 +184,6 @@ class PersonListsScreen extends StatelessWidget {
                                             );
                                           }
                                         }
-
-                                        // HapticFeedback.selectionClick();
-                                        // final user = await AuthUtils.instance
-                                        //     .readUserData();
-                                        // context
-                                        //     .read<ChatCubit>()
-                                        //     .initStateClear();
-
-                                        // final chatResponse = await context
-                                        //     .read<PersonListsCubit>()
-                                        //     .createChat(
-                                        //       ChatRequest(
-                                        //         mode: 'MIS',
-                                        //         type: 'personal',
-                                        //         code: generateRandomString(4),
-                                        //         title: data?.name ?? '',
-                                        //         description: '',
-                                        //         status: 'Running',
-                                        //         createdBy: 1,
-                                        //         branchPtr: 'TR',
-                                        //         firmPtr: "F1",
-                                        //         userChats: [
-                                        //           UserChat(
-                                        //             userId: data?.id,
-                                        //             role: 'member',
-                                        //             type: 'Normal',
-                                        //           ),
-                                        //           UserChat(
-                                        //             userId: int.tryParse(
-                                        //               user?.result?.userId
-                                        //                       .toString() ??
-                                        //                   '',
-                                        //             ),
-                                        //             role: 'member',
-                                        //             type: 'Normal',
-                                        //           ),
-                                        //         ],
-                                        //       ),
-                                        //     );
-                                        // context.read<ChatCubit>().getChatList();
-
-                                        // if (chatResponse?.chatId != null) {
-                                        //   await context
-                                        //       .read<ChatCubit>()
-                                        //       .getChatEntry(
-                                        //         chatId: chatResponse!.chatId,
-                                        //         userId: int.tryParse(
-                                        //           user?.result?.userId
-                                        //                   .toString() ??
-                                        //               '',
-                                        //         ),
-                                        //       );
-
-                                        //   context.push(
-                                        //     routeChatDetail,
-                                        //     extra: {
-                                        //       "title": data?.name,
-                                        //       "chat_id": chatResponse.chatId,
-                                        //     },
-                                        //   );
-                                        // }
                                       },
 
                                       isShow: true,
