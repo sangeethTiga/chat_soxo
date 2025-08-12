@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -9,8 +10,12 @@ import 'package:soxo_chat/shared/dependency_injection/injectable.dart';
 import 'package:soxo_chat/shared/routes/route_generator.dart';
 import 'package:soxo_chat/shared/themes/app_theme.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
   configureDependencies();
   runApp(
     MultiBlocProvider(
@@ -43,7 +48,6 @@ class MyApp extends StatelessWidget {
           routerConfig: router,
         );
       },
-      // child: const SizedBox(),
     );
   }
 }
