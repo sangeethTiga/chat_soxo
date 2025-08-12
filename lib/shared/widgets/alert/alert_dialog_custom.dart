@@ -1,8 +1,6 @@
 import 'dart:ui';
 
-
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
@@ -93,7 +91,7 @@ class CustomAlertDialog extends StatelessWidget {
           ? Text(
               title,
               style: TextStyle(
-                fontSize: 16.sp,
+                fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: kPrimaryColor,
               ),
@@ -101,10 +99,7 @@ class CustomAlertDialog extends StatelessWidget {
           : null,
       content: content is Widget
           ? content
-          : Text(
-              content,
-              style: TextStyle(fontSize: 15.sp, color: kPrimaryColor),
-            ),
+          : Text(content, style: TextStyle(fontSize: 15, color: kPrimaryColor)),
       actions:
           actions ??
           [
@@ -128,6 +123,7 @@ class CustomAlertDialog extends StatelessWidget {
     );
   }
 }
+
 void showPermissionDialog(BuildContext context) {
   showDialog(
     context: context,

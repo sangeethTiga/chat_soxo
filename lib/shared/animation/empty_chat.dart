@@ -154,7 +154,7 @@ class _AnimatedEmptyChatWidgetState extends State<AnimatedEmptyChatWidget>
                   child: Center(
                     child: Icon(
                       Icons.chat_bubble_outline_rounded,
-                      size: 40.sp,
+                      size: 40,
                       color: const Color(0xFF4CAF50),
                     ),
                   ),
@@ -185,7 +185,7 @@ class _AnimatedEmptyChatWidgetState extends State<AnimatedEmptyChatWidget>
                   child: Text(
                     'No Messages Yet',
                     style: TextStyle(
-                      fontSize: 20.sp,
+                      fontSize: 20,
                       fontWeight: FontWeight.w600,
                       color: const Color(0xFF515978),
                       letterSpacing: 0.5,
@@ -223,7 +223,7 @@ class _AnimatedEmptyChatWidgetState extends State<AnimatedEmptyChatWidget>
             child: Text(
               'Start the conversation by sending\nyour first message below',
               style: TextStyle(
-                fontSize: 14.sp,
+                fontSize: 14,
                 color: const Color(0xFF9E9E9E),
                 height: 1.4,
               ),
@@ -279,13 +279,13 @@ class _AnimatedEmptyChatWidgetState extends State<AnimatedEmptyChatWidget>
                       },
                       icon: Icon(
                         Icons.send_rounded,
-                        size: 18.sp,
+                        size: 18,
                         color: Colors.white,
                       ),
                       label: Text(
                         'Send First Message',
                         style: TextStyle(
-                          fontSize: 14.sp,
+                          fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
                         ),

@@ -1,110 +1,302 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:go_router/go_router.dart';
+import 'package:soxo_chat/feature/chat/screen/widgets/user_data.dart';
+import 'package:soxo_chat/shared/app/list/helper.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
+import 'package:soxo_chat/shared/routes/routes.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
 
-class AppbarWidget extends StatelessWidget implements PreferredSizeWidget {
-  const AppbarWidget({
-    super.key,
-    this.title,
-    this.logo = false,
-    this.centerTitle = true,
-    this.actions = const [],
-    this.color = kWhite,
-    this.iconColor,
-    this.actionTitle,
-    this.titleColor,
-    this.shadow = false,
-    this.hideLeading = false,
-    this.height = kToolbarHeight,
-    this.style,
-    this.onLeadingPressed,
-    this.leadingIcon,
-    this.titleWidget,
-    this.automaticallyImplyLeading = true,
-  });
-
-  final String? title, actionTitle;
-  final bool logo, shadow, centerTitle;
-  final List<Widget> actions;
-  final Color? color, iconColor, titleColor;
-  final bool hideLeading, automaticallyImplyLeading;
-  final double height;
-  final TextStyle? style;
-  final VoidCallback? onLeadingPressed;
-  final Widget? leadingIcon, titleWidget;
-
-  @override
-  Widget build(BuildContext context) {
-    final bool canPop = Navigator.canPop(context);
-
-    return AppBar(
-      toolbarHeight: height,
-      surfaceTintColor: Colors.transparent,
-      iconTheme: IconThemeData(color: iconColor ?? kBlack, size: 20.sp),
-      backgroundColor: color,
-      elevation: shadow ? 1.0 : 0,
-      shadowColor: shadow ? kBlack.withOpacity(0.1) : null,
-      leadingWidth: logo ? 22.w : null,
-      automaticallyImplyLeading: automaticallyImplyLeading,
-      shape: shadow
-          ? Border(
-              bottom: BorderSide(color: kBlack.withOpacity(0.1), width: 0.5),
-            )
-          : null,
-      leading: _buildLeading(context, canPop),
-      titleSpacing: canPop ? 0 : null,
-      title: _buildTitle(),
-      centerTitle: centerTitle,
-      actions: _buildActions(),
-    );
-  }
-
-  Widget? _buildLeading(BuildContext context, bool canPop) {
-    if (hideLeading) return null;
-
-    if (!automaticallyImplyLeading && !canPop) return null;
-
-    return leadingIcon ??
-        IconButton(
-          onPressed: onLeadingPressed ?? () => Navigator.maybePop(context),
-          icon: Icon(Icons.arrow_back_ios, color: iconColor ?? kBlack),
-          tooltip: 'Back',
-        );
-  }
-
-  Widget? _buildTitle() {
-    if (titleWidget != null) return titleWidget;
-
-    if (title != null) {
-      return Text(
-        title!,
-        style: (style ?? FontPalette.hW700S14).copyWith(color: titleColor),
-        overflow: TextOverflow.ellipsis,
-        textAlign: TextAlign.center,
-      );
-    }
-
-    return null;
-  }
-
-  List<Widget> _buildActions() {
-    if (actionTitle != null) {
-      return [
-        TextButton(
-          onPressed: () {}, // Add your action callback
-          child: Text(
-            actionTitle!,
-            style: FontPalette.hW700S14.copyWith(color: iconColor ?? kBlack),
+PreferredSizeWidget buildAppBar(
+  BuildContext context,
+  Map<String, dynamic>? arguments, {
+  bool? isLeading = false,
+  String? title,
+  double? height,
+  int? notificationCount,
+  VoidCallback? onNotificationTap,
+  VoidCallback? onBackPressed,
+  bool? isNotification = false,
+}) {
+  return PreferredSize(
+    preferredSize: Size.fromHeight(height ?? 55.h),
+    child: AppBar(
+      elevation: 0,
+      automaticallyImplyLeading: false,
+      flexibleSpace: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFB7E8CA), Color(0xFFF2F2F2)],
           ),
         ),
-        SizedBox(width: 8.w),
-      ];
-    }
+        child: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+            child: Row(
+              children: [
+                if (isLeading == true) ...[
+                  Container(
+                    padding: EdgeInsets.only(left: 5.w),
+                    alignment: Alignment.center,
+                    height: 39.h,
+                    width: 39.w,
+                    decoration: const BoxDecoration(
+                      color: kWhite,
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: onBackPressed ?? () => Navigator.pop(context),
+                      icon: const Icon(Icons.arrow_back_ios, size: 18),
+                    ),
+                  ),
+                  10.horizontalSpace,
+                ],
 
-    return actions;
-  }
+                Expanded(
+                  child: Text(
+                    title ?? '',
+                    style: FontPalette.hW400S18,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (isNotification == false)
+                  _buildNotificationBell(
+                    notificationCount: notificationCount ?? 5,
+                    onTap: onNotificationTap,
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
 
-  @override
-  Size get preferredSize => Size.fromHeight(height);
+Widget _buildNotificationBell({
+  required int notificationCount,
+  VoidCallback? onTap,
+}) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Stack(
+      clipBehavior: Clip.none,
+      children: [
+        SvgPicture.asset('assets/icons/bell.svg', width: 24.w, height: 24.h),
+        if (notificationCount > 0)
+          Positioned(
+            right: -2,
+            top: -2,
+            child: Container(
+              constraints: BoxConstraints(minWidth: 14.w, minHeight: 14.h),
+              padding: EdgeInsets.symmetric(horizontal: 4.w),
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(
+                color: Color(0xFFE42168),
+                shape: BoxShape.circle,
+              ),
+              child: Text(
+                notificationCount > 99 ? '99+' : notificationCount.toString(),
+                style: FontPalette.hW400S8.copyWith(
+                  color: kWhite,
+                  fontSize: notificationCount > 99 ? 6 : 8,
+                ),
+              ),
+            ),
+          ),
+      ],
+    ),
+  );
+}
+
+PreferredSizeWidget buildAppBarWithProfile(
+  BuildContext context,
+  Map<String, dynamic>? arguments, {
+  final String? title,
+}) {
+  return PreferredSize(
+    preferredSize: Size.fromHeight(65.h),
+    child: AppBar(
+      elevation: 0,
+      automaticallyImplyLeading: false,
+      flexibleSpace: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFB7E8CA), Color(0xFFF2F2F2)],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+            child: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.only(left: 5.w),
+                  alignment: Alignment.center,
+                  height: 39.h,
+                  width: 39.w,
+                  decoration: const BoxDecoration(
+                    color: kWhite,
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    icon: const Icon(Icons.arrow_back_ios),
+                  ),
+                ),
+                6.horizontalSpace,
+                ChatAvatar(name: title ?? '', size: 40.h),
+                6.horizontalSpace,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    4.verticalSpace,
+                    Text(title ?? '', style: FontPalette.hW400S18),
+                    1.verticalSpace,
+
+                    Row(
+                      children: [
+                        Container(
+                          height: 8.h,
+                          width: 8.w,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF68D391),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        5.horizontalSpace,
+                        Text('Online', style: FontPalette.hW600S12),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+PreferredSizeWidget buildSeamlessAppBar(
+  BuildContext context,
+  Map<String, dynamic>? arguments, {
+  bool? isLeading = false,
+  String? title,
+  double? height,
+  bool? isNotification = false,
+}) {
+  return PreferredSize(
+    preferredSize: Size.fromHeight(height ?? 55.h),
+    child: Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFB7E8CA), Color(0xFFF2F2F2)],
+          stops: [0.0, 0.9],
+        ),
+      ),
+      child: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        automaticallyImplyLeading: false,
+        flexibleSpace: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+            child: Row(
+              children: [
+                if (isLeading == true) ...[
+                  Container(
+                    padding: EdgeInsets.only(left: 5.w),
+                    alignment: Alignment.center,
+                    height: 39.h,
+                    width: 39.w,
+                    decoration: const BoxDecoration(
+                      color: kWhite,
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.arrow_back_ios, size: 18),
+                    ),
+                  ),
+                  SizedBox(width: 10.w),
+                ],
+                Expanded(
+                  child: Text(
+                    title ?? '',
+                    style: FontPalette.hW400S18,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (isNotification == false)
+                  GestureDetector(
+                    onTap: () {
+                      context.push(routeNotification);
+                    },
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        SvgPicture.asset('assets/icons/bell.svg'),
+                        Positioned(
+                          right: -2,
+                          top: -2,
+                          child: Container(
+                            alignment: Alignment.center,
+                            width: 14.w,
+                            height: 14.h,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFE42168),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Text(
+                              '5',
+                              style: FontPalette.hW400S8.copyWith(
+                                color: kWhite,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                18.horizontalSpace,
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (v) {
+              Helper().logout(context);
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'Logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout),
+                    SizedBox(width: 8),
+                    Text('Logout'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
 }

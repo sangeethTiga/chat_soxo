@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:soxo_chat/feature/chat/screen/widgets/appbar.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
+import 'package:soxo_chat/shared/widgets/appbar/appbar.dart';
 import 'package:soxo_chat/shared/widgets/divider/divider_widget.dart';
 import 'package:soxo_chat/shared/widgets/padding/main_padding.dart'
     show MainPadding;

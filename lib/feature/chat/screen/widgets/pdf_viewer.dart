@@ -124,7 +124,7 @@ class _PdfViewScreenState extends State<PdfViewScreen> {
       foregroundColor: Colors.white,
       title: Text(
         widget.fileName ?? 'PDF Document',
-        style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
       actions: [
         if (!_isLoading && !_hasError) ...[
@@ -139,7 +139,7 @@ class _PdfViewScreenState extends State<PdfViewScreen> {
               '${_currentPage + 1} / $_totalPages',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 12.sp,
+                fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -261,13 +261,13 @@ class _PdfViewScreenState extends State<PdfViewScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 64.sp, color: Colors.red[400]),
+            Icon(Icons.error_outline, size: 64, color: Colors.red[400]),
             SizedBox(height: 16.h),
             Text(
               'Failed to Load PDF',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 18.sp,
+                fontSize: 18,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -370,7 +370,7 @@ class _PdfViewScreenState extends State<PdfViewScreen> {
       icon: Icon(
         icon,
         color: onPressed != null ? Colors.white : Colors.grey[600],
-        size: 20.sp,
+        size: 20,
       ),
       padding: EdgeInsets.all(8.w),
       constraints: BoxConstraints(minWidth: 40.w, minHeight: 40.h),
@@ -503,7 +503,7 @@ class InstantDocumentPreview extends StatelessWidget {
               Icon(
                 Icons.picture_as_pdf,
                 color: Colors.red[700],
-                size: isInChatBubble ? 24.sp : 32.sp,
+                size: isInChatBubble ? 24.sp : 32,
               ),
               SizedBox(width: 8.w),
               Expanded(
@@ -514,7 +514,7 @@ class InstantDocumentPreview extends StatelessWidget {
                     Text(
                       'PDF Document',
                       style: TextStyle(
-                        fontSize: isInChatBubble ? 12.sp : 14.sp,
+                        fontSize: isInChatBubble ? 12 : 14,
                         fontWeight: FontWeight.w600,
                         color: Colors.red[700],
                       ),
@@ -525,16 +525,13 @@ class InstantDocumentPreview extends StatelessWidget {
                       SizedBox(height: 2.h),
                       Text(
                         'Tap to open',
-                        style: TextStyle(
-                          fontSize: 10.sp,
-                          color: Colors.red[500],
-                        ),
+                        style: TextStyle(fontSize: 10, color: Colors.red[500]),
                       ),
                     ],
                   ],
                 ),
               ),
-              Icon(Icons.open_in_new, size: 16.sp, color: Colors.red[600]),
+              Icon(Icons.open_in_new, size: 16, color: Colors.red[600]),
             ],
           ),
         ),

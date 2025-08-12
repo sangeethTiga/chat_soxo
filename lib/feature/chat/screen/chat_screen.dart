@@ -14,6 +14,7 @@ import 'package:soxo_chat/shared/animation/empty_state.dart';
 import 'package:soxo_chat/shared/app/list/helper.dart';
 import 'package:soxo_chat/shared/routes/routes.dart';
 import 'package:soxo_chat/shared/utils/auth/auth_utils.dart';
+import 'package:soxo_chat/shared/widgets/appbar/appbar.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});

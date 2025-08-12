@@ -198,7 +198,7 @@ class _AnimatedEmptyStateState extends State<AnimatedEmptyState>
                   ),
                   child: Icon(
                     _getEmptyStateIcon(widget.selectedTab),
-                    size: 60.sp,
+                    size: 60,
                     color: _colorAnimation.value ?? Colors.grey[400],
                   ),
                 ),
@@ -268,7 +268,7 @@ class _AnimatedEmptyStateState extends State<AnimatedEmptyState>
               child: Text(
                 _getEmptyStateMessage(widget.selectedTab),
                 style: TextStyle(
-                  fontSize: 16.sp,
+                  fontSize: 16,
                   color: Colors.grey[500],
                   height: 1.5,
                 ),
@@ -322,10 +322,7 @@ class _AnimatedEmptyStateState extends State<AnimatedEmptyState>
                     ),
                     child: ElevatedButton.icon(
                       onPressed: () => _handleActionTap(),
-                      icon: Icon(
-                        _getActionIcon(widget.selectedTab),
-                        size: 18.sp,
-                      ),
+                      icon: Icon(_getActionIcon(widget.selectedTab), size: 18),
                       label: Text(
                         _getActionText(widget.selectedTab),
                         style: TextStyle(

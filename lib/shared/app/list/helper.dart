@@ -179,16 +179,12 @@ Widget buildEmptyState(String selectedTab) {
     child: Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
-          getEmptyStateIcon(selectedTab),
-          size: 80.sp,
-          color: Colors.grey[400],
-        ),
+        Icon(getEmptyStateIcon(selectedTab), size: 80, color: Colors.grey[400]),
         16.verticalSpace,
         Text(
           'No ${selectedTab.toLowerCase()} found',
           style: TextStyle(
-            fontSize: 18.sp,
+            fontSize: 18,
             fontWeight: FontWeight.w500,
             color: Colors.grey[600],
           ),
@@ -196,7 +192,7 @@ Widget buildEmptyState(String selectedTab) {
         8.verticalSpace,
         Text(
           _getEmptyStateMessage(selectedTab),
-          style: TextStyle(fontSize: 14.sp, color: Colors.grey[500]),
+          style: TextStyle(fontSize: 14, color: Colors.grey[500]),
           textAlign: TextAlign.center,
         ),
         120.verticalSpace,

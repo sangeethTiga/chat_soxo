@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_res/chat_list_response.dart'
     hide UserChat;
-import 'package:soxo_chat/feature/chat/screen/widgets/appbar.dart';
 import 'package:soxo_chat/feature/group/screen/widgets/build_item_widget.dart';
 import 'package:soxo_chat/feature/person_lists/cubit/person_lists_cubit.dart';
 import 'package:soxo_chat/feature/person_lists/domain/models/chat_request/chat_request.dart';
@@ -15,6 +14,7 @@ import 'package:soxo_chat/shared/constants/colors.dart';
 import 'package:soxo_chat/shared/routes/routes.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
 import 'package:soxo_chat/shared/utils/auth/auth_utils.dart';
+import 'package:soxo_chat/shared/widgets/appbar/appbar.dart';
 import 'package:soxo_chat/shared/widgets/padding/main_padding.dart';
 import 'package:soxo_chat/shared/widgets/shimmer/shimmer_card.dart';
 import 'package:soxo_chat/shared/widgets/text_fields/text_field_widget.dart';

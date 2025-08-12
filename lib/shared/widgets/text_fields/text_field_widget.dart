@@ -54,7 +54,7 @@ class TextFeildWidget extends StatelessWidget {
     this.isRequired = false,
     this.hight,
     this.prefix,
-    this.miniLength
+    this.miniLength,
   });
   final String? labelText;
   final String? topLabelText;
@@ -135,7 +135,7 @@ class TextFeildWidget extends StatelessWidget {
                 textStyle ??
                 FontPalette.hW500S13.copyWith(
                   color: fontColor,
-                  fontSize: fontSize ?? 15.sp,
+                  fontSize: fontSize ?? 15,
                   fontWeight: FontWeight.w400,
                 ),
             textAlign: textAlign,
@@ -167,14 +167,14 @@ class TextFeildWidget extends StatelessWidget {
               hintStyle:
                   hintStyle ??
                   TextStyle(
-                    fontSize: hintSize ?? 14.sp,
+                    fontSize: hintSize ?? 14,
                     color: Color(0XFF8B8B8B),
                     fontWeight: FontWeight.w400,
                   ),
               isDense: isDense,
               errorText: errorText,
               errorStyle: errorStyle
-                  ? TextStyle(color: errorColor, fontSize: 10.sp, height: 1)
+                  ? TextStyle(color: errorColor, fontSize: 10, height: 1)
                   : const TextStyle(fontSize: 0.01),
               constraints: constraints,
               contentPadding: contentPadding,
@@ -298,7 +298,7 @@ class AddressTextField extends StatelessWidget {
                   fieldState.errorText ?? '',
                   style: TextStyle(
                     color: Colors.red,
-                    fontSize: 11.sp,
+                    fontSize: 11,
                     fontWeight: FontWeight.w400,
                   ),
                 ),

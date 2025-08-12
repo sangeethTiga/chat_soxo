@@ -12,10 +12,6 @@ import 'package:soxo_chat/shared/themes/app_theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   configureDependencies();
-  // MediaCacheManager.initialize();
-  // if (Platform.isAndroid) {
-  //   WebView.platform = SurfaceAndroidWebView(); // or AndroidWebView()
-  // }
   runApp(MyApp());
 }
 
@@ -38,7 +34,7 @@ class MyApp extends StatelessWidget {
           ],
           child: MaterialApp.router(
             debugShowCheckedModeBanner: false,
-            title: '',
+            title: 'SOXO CHAT',
             theme: AppTheme.lightTheme,
             themeMode: ThemeMode.light,
             routerConfig: router,

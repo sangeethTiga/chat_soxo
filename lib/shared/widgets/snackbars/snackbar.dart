@@ -35,7 +35,7 @@ void kSnackBar({
                   ? Icon(
                       Icons.error_outline,
                       color: kSnackBarIconColor,
-                      size: 18.sp,
+                      size: 18,
                     )
                   : success == true
                   ? Icon(Icons.done, color: kSnackBarIconColor, size: 18.sp)
@@ -91,11 +91,7 @@ SnackBar kGetSnackBar({
             Icon(icon, color: kSnackBarIconColor, size: 18.sp)
           else
             error == true
-                ? Icon(
-                    Icons.error_outline,
-                    color: kSnackBarIconColor,
-                    size: 18.sp,
-                  )
+                ? Icon(Icons.error_outline, color: kSnackBarIconColor, size: 18)
                 : success == true
                 ? Icon(Icons.done, color: kSnackBarIconColor, size: 18.sp)
                 : delete == true

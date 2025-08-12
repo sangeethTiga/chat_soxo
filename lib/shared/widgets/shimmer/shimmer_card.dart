@@ -147,7 +147,7 @@ class ImageShimmer extends StatelessWidget {
           children: [
             Icon(
               Icons.image,
-              size: isInChatBubble ? 32.sp : 48.sp,
+              size: isInChatBubble ? 32 : 48,
               color: Colors.grey[400],
             ),
             SizedBox(height: 8.h),

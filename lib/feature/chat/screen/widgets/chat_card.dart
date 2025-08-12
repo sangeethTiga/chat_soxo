@@ -518,7 +518,7 @@ class _InstantDocumentPreview extends StatelessWidget {
             Icon(
               Icons.picture_as_pdf,
               color: Colors.red[700],
-              size: isInChatBubble ? 20.sp : 24.sp,
+              size: isInChatBubble ? 20.sp : 24,
             ),
             SizedBox(width: 8.w),
             Expanded(
@@ -529,7 +529,7 @@ class _InstantDocumentPreview extends StatelessWidget {
                   Text(
                     'PDF document',
                     style: TextStyle(
-                      fontSize: isInChatBubble ? 12.sp : 14.sp,
+                      fontSize: isInChatBubble ? 12 : 14,
                       fontWeight: FontWeight.w600,
                       color: Colors.red[700],
                     ),
@@ -540,7 +540,7 @@ class _InstantDocumentPreview extends StatelessWidget {
                     SizedBox(height: 2.h),
                     Text(
                       'Tap to open',
-                      style: TextStyle(fontSize: 10.sp, color: Colors.red[600]),
+                      style: TextStyle(fontSize: 10, color: Colors.red[600]),
                     ),
                   ],
                 ],
@@ -549,7 +549,7 @@ class _InstantDocumentPreview extends StatelessWidget {
             Icon(
               Icons.open_in_new,
               color: Colors.red[700],
-              size: isInChatBubble ? 16.sp : 20.sp,
+              size: isInChatBubble ? 16.sp : 20,
             ),
           ],
         ),
@@ -774,11 +774,11 @@ class _CompactErrorWidget extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline, size: 16.sp, color: Colors.red[600]),
+          Icon(Icons.error_outline, size: 16, color: Colors.red[600]),
           SizedBox(height: 2.h),
           Text(
             message,
-            style: TextStyle(fontSize: 8.sp, color: Colors.red[600]),
+            style: TextStyle(fontSize: 8, color: Colors.red[600]),
             textAlign: TextAlign.center,
           ),
         ],
@@ -812,12 +812,9 @@ class _GenericFilePreview extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.insert_drive_file, size: 20.sp, color: Colors.grey[600]),
+          Icon(Icons.insert_drive_file, size: 20, color: Colors.grey[600]),
           SizedBox(height: 2.h),
-          Text(
-            'File',
-            style: TextStyle(fontSize: 8.sp, color: Colors.grey[600]),
-          ),
+          Text('File', style: TextStyle(fontSize: 8, color: Colors.grey[600])),
         ],
       ),
     );

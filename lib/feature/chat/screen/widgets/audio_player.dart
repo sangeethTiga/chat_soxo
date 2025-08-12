@@ -627,7 +627,7 @@ class _WhatsAppAudioPlayerState extends State<_WhatsAppAudioPlayer>
                           color: widget.isSent
                               ? Colors.green[600]
                               : Colors.white,
-                          size: 20.sp,
+                          size: 20,
                         ),
                       ),
                     ),
@@ -675,7 +675,7 @@ class _WhatsAppAudioPlayerState extends State<_WhatsAppAudioPlayer>
                               ? '${_formatDuration(_position)} / ${_formatDuration(_duration)}'
                               : _formatDuration(_duration),
                           style: TextStyle(
-                            fontSize: 11.sp,
+                            fontSize: 11,
                             color: textColor.withOpacity(0.7),
                             fontWeight: FontWeight.w400,
                           ),
@@ -687,7 +687,7 @@ class _WhatsAppAudioPlayerState extends State<_WhatsAppAudioPlayer>
                             if (_isPlaying) ...[
                               Icon(
                                 Icons.keyboard_voice,
-                                size: 12.sp,
+                                size: 12,
                                 color: Colors.green[600],
                               ),
                               SizedBox(width: 8.w),
@@ -717,7 +717,7 @@ class _WhatsAppAudioPlayerState extends State<_WhatsAppAudioPlayer>
                                       child: Text(
                                         '${_playbackSpeed.toString().replaceAll('.0', '')}x',
                                         style: TextStyle(
-                                          fontSize: 10.sp,
+                                          fontSize: 10,
                                           color: _playbackSpeed != 1.0
                                               ? Colors.white
                                               : Colors.grey[600],
@@ -955,7 +955,7 @@ class _WhatsAppAudioError extends StatelessWidget {
               child: Icon(
                 Icons.error_outline,
                 color: Colors.red[600],
-                size: 20.sp,
+                size: 20,
               ),
             ),
             SizedBox(width: 12.w),
@@ -967,7 +967,7 @@ class _WhatsAppAudioError extends StatelessWidget {
                   Text(
                     'Voice message failed',
                     style: TextStyle(
-                      fontSize: 12.sp,
+                      fontSize: 12,
                       color: Colors.red[700],
                       fontWeight: FontWeight.w500,
                     ),
@@ -975,7 +975,7 @@ class _WhatsAppAudioError extends StatelessWidget {
                   SizedBox(height: 2.h),
                   Text(
                     'Tap to retry',
-                    style: TextStyle(fontSize: 10.sp, color: Colors.red[500]),
+                    style: TextStyle(fontSize: 10, color: Colors.red[500]),
                   ),
                 ],
               ),

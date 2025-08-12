@@ -55,7 +55,7 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
                   : Alignment.bottomLeft,
               child: Text(
                 widget.timestamp,
-                style: TextStyle(fontSize: 10.sp, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 10, color: Colors.grey[600]),
               ),
             ),
           ],
@@ -89,7 +89,7 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
   Widget _buildTextContent() {
     return SelectableText(
       widget.message,
-      style: TextStyle(fontSize: 14.sp, color: Colors.black87),
+      style: TextStyle(fontSize: 14, color: Colors.black87),
     );
   }
 
@@ -170,12 +170,12 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.attach_file, size: 14.sp, color: Colors.grey[600]),
+          Icon(Icons.attach_file, size: 14, color: Colors.grey[600]),
           SizedBox(width: 4.w),
           Text(
             '+$remainingCount more attachment${remainingCount > 1 ? 's' : ''}',
             style: TextStyle(
-              fontSize: 12.sp,
+              fontSize: 12,
               color: Colors.grey[600],
               fontWeight: FontWeight.w500,
             ),
