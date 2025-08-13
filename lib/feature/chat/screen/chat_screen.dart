@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path/path.dart' as path;
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/build_chat_item.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/floating_button.dart';
@@ -306,4 +307,44 @@ void onChatItemTappedWithGo(
       "chat_id": state.chatList?[index].chatId,
     },
   );
+}
+
+class PdfNameExtractor {
+  // Method 1: Extract filename from URL
+  static String extractFileNameFromUrl(String fileUrl) {
+    try {
+      // Remove query parameters and fragments
+      final uri = Uri.parse(fileUrl);
+      String fileName = path.basename(uri.path);
+
+      // If no extension, add .pdf
+      if (!fileName.toLowerCase().endsWith('.pdf')) {
+        fileName = '$fileName.pdf';
+      }
+
+      // If empty or just extension, use default
+      if (fileName.isEmpty || fileName == '.pdf') {
+        return 'Document.pdf';
+      }
+
+      return fileName;
+    } catch (e) {
+      return 'Document.pdf';
+    }
+  }
+
+  // Method 2: Extract from file path
+  static String extractFileNameFromPath(String filePath) {
+    try {
+      String fileName = path.basename(filePath);
+
+      if (fileName.isEmpty) {
+        return 'Document.pdf';
+      }
+
+      return fileName;
+    } catch (e) {
+      return 'Document.pdf';
+    }
+  }
 }

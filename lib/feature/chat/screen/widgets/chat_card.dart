@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_entry/chat_entry_response.dart';
 import 'package:soxo_chat/feature/chat/domain/repositories/chat_repositories.dart';
+import 'package:soxo_chat/feature/chat/screen/chat_screen.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/image_show.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/pdf_viewer.dart';
 import 'package:soxo_chat/shared/widgets/audio_player.dart/audi_player.dart';
@@ -488,6 +489,7 @@ class _InstantDocumentPreview extends StatelessWidget {
   final double? maxHeight;
   final bool enableTap;
   final ChatMedias media;
+  final String? customFileName;
 
   const _InstantDocumentPreview({
     required this.fileUrl,
@@ -497,7 +499,27 @@ class _InstantDocumentPreview extends StatelessWidget {
     this.maxHeight,
     this.enableTap = true,
     required this.media,
+    this.customFileName,
   });
+  String get fileName {
+    // Priority 1: Custom filename if provided
+    if (customFileName != null && customFileName!.isNotEmpty) {
+      return customFileName!;
+    }
+
+    // Priority 2: From media object if it has a name/filename property
+    if (media.fileName != null && media.fileName!.isNotEmpty) {
+      return media.fileName!;
+    }
+
+    // Priority 3: Extract from URL
+    if (fileUrl.isNotEmpty) {
+      return PdfNameExtractor.extractFileNameFromUrl(fileUrl);
+    }
+
+    // Fallback
+    return 'Document.pdf';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -507,34 +529,33 @@ class _InstantDocumentPreview extends StatelessWidget {
         maxHeight: maxHeight ?? (isInChatBubble ? 60.h : 80.h),
       ),
       decoration: BoxDecoration(
-        color: Colors.red[50],
+        color: Colors.grey[50],
         borderRadius: BorderRadius.circular(8.r),
-        border: Border.all(color: Colors.red[200]!),
+        border: Border.all(color: Colors.grey[200]!),
       ),
       child: Padding(
         padding: EdgeInsets.all(8.w),
         child: Row(
           children: [
-            Icon(
-              Icons.picture_as_pdf,
-              color: Colors.red[700],
-              size: isInChatBubble ? 20.sp : 24,
-            ),
-            SizedBox(width: 8.w),
+            Image.asset('assets/icons/pdf.png', height: 24.h, width: 24),
+
+            SizedBox(width: 4.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    'PDF document',
-                    style: TextStyle(
-                      fontSize: isInChatBubble ? 12 : 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.red[700],
+                  Flexible(
+                    fit: FlexFit.loose,
+                    child: Text(
+                      fileName,
+                      style: TextStyle(
+                        fontSize: isInChatBubble ? 12 : 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: isInChatBubble ? 3 : 2,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                   if (!isInChatBubble) ...[
                     SizedBox(height: 2.h),
@@ -545,11 +566,6 @@ class _InstantDocumentPreview extends StatelessWidget {
                   ],
                 ],
               ),
-            ),
-            Icon(
-              Icons.open_in_new,
-              color: Colors.red[700],
-              size: isInChatBubble ? 16.sp : 20,
             ),
           ],
         ),
