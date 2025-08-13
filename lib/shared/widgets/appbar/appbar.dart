@@ -5,8 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/user_data.dart';
 import 'package:soxo_chat/shared/app/list/helper.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
-import 'package:soxo_chat/shared/routes/routes.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
+import 'package:soxo_chat/shared/widgets/animated_divider/notification_anmation.dart';
 
 PreferredSizeWidget buildAppBar(
   BuildContext context,
@@ -242,58 +242,73 @@ PreferredSizeWidget buildSeamlessAppBar(
                   ),
                 ),
                 if (isNotification == false)
-                  GestureDetector(
+                  AnimatedNotificationBell(
+                    notificationCount: 5,
                     onTap: () {
-                      context.push(routeNotification);
+                      context.push('/notifications');
                     },
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        SvgPicture.asset('assets/icons/bell.svg'),
-                        Positioned(
-                          right: -2,
-                          top: -2,
-                          child: Container(
-                            alignment: Alignment.center,
-                            width: 14.w,
-                            height: 14.h,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFE42168),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Text(
-                              '5',
-                              style: FontPalette.hW400S8.copyWith(
-                                color: kWhite,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                    autoAnimate: true,
+                    animationInterval: const Duration(seconds: 3),
                   ),
+                // GestureDetector(
+                //   onTap: () {
+                //     context.push(routeNotification);
+                //   },
+                //   child: Stack(
+                //     clipBehavior: Clip.none,
+                //     children: [
+                //       SvgPicture.asset('assets/icons/bell.svg'),
+                //       Positioned(
+                //         right: -2,
+                //         top: -2,
+                //         child: Container(
+                //           alignment: Alignment.center,
+                //           width: 14.w,
+                //           height: 14.h,
+                //           decoration: const BoxDecoration(
+                //             color: Color(0xFFE42168),
+                //             shape: BoxShape.circle,
+                //           ),
+                //           child: Text(
+                //             '5',
+                //             style: FontPalette.hW400S8.copyWith(
+                //               color: kWhite,
+                //             ),
+                //           ),
+                //         ),
+                //       ),
+                //     ],
+                //   ),
+                // ),
                 18.horizontalSpace,
               ],
             ),
           ),
         ),
         actions: [
-          PopupMenuButton<String>(
-            onSelected: (v) {
-              Helper().logout(context);
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'Logout',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout),
-                    SizedBox(width: 8),
-                    Text('Logout'),
-                  ],
+          GestureDetector(
+            onTapDown: (details) {
+              showMenu(
+                context: context,
+                position: RelativeRect.fromLTRB(
+                  details.globalPosition.dx, // left
+                  details.globalPosition.dy, // top
+                  0, // right
+                  0, // bottom
                 ),
-              ),
-            ],
+                items: [
+                  const PopupMenuItem(value: 'Logout', child: Text('Logout')),
+                ],
+              ).then((value) {
+                if (value == 'Logout') {
+                  Helper().logout(context);
+                }
+              });
+            },
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 6, right: 8),
+              child: const Icon(Icons.more_vert),
+            ),
           ),
         ],
       ),

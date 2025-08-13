@@ -240,13 +240,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                       itemBuilder: (context, index) {
                         final data = filteredChats[index];
 
-                        // final delay = index * 100;
-                        // final progress =
-                        //     (_listAnimationController.value * 1000 - delay) /
-                        //     400;
-                        // final itemOpacity = progress.clamp(0.0, 1.0);
-                        // final itemTranslate = (1 - itemOpacity) * 30;
-
                         final delay = (index * 0.1).clamp(
                           0.0,
                           1.0,

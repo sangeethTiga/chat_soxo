@@ -118,7 +118,6 @@ class _AnimatedEmptyChatWidgetState extends State<AnimatedEmptyChatWidget>
             SizedBox(height: 12.h),
             _buildAnimatedSubtitle(),
             SizedBox(height: 56.h),
-            // _buildAnimatedStartButton(),
           ],
         ),
       ),
@@ -228,84 +227,6 @@ class _AnimatedEmptyChatWidgetState extends State<AnimatedEmptyChatWidget>
                 height: 1.4,
               ),
               textAlign: TextAlign.center,
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildAnimatedStartButton() {
-    return AnimatedBuilder(
-      animation: _textController,
-      builder: (context, child) {
-        return SlideTransition(
-          position: Tween<Offset>(begin: const Offset(0, 1.0), end: Offset.zero)
-              .animate(
-                CurvedAnimation(
-                  parent: _textController,
-                  curve: const Interval(0.5, 1.0, curve: Curves.easeOutBack),
-                ),
-              ),
-          child: FadeTransition(
-            opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
-              CurvedAnimation(
-                parent: _textController,
-                curve: const Interval(0.5, 1.0, curve: Curves.easeOut),
-              ),
-            ),
-            child: TweenAnimationBuilder<double>(
-              duration: const Duration(milliseconds: 800),
-              tween: Tween(begin: 0.0, end: 1.0),
-              curve: Curves.elasticOut,
-              builder: (context, value, child) {
-                return Transform.scale(
-                  scale: value,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20.r),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF4CAF50).withOpacity(0.2),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        // Focus on message input
-                        // You can add logic here to focus the text field
-                      },
-                      icon: Icon(
-                        Icons.send_rounded,
-                        size: 18,
-                        color: Colors.white,
-                      ),
-                      label: Text(
-                        'Send First Message',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4CAF50),
-                        foregroundColor: Colors.white,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 24.w,
-                          vertical: 12.h,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20.r),
-                        ),
-                        elevation: 0,
-                      ),
-                    ),
-                  ),
-                );
-              },
             ),
           ),
         );
