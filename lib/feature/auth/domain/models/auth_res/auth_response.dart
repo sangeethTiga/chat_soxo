@@ -36,7 +36,7 @@ class AuthResponse with _$AuthResponse {
 @freezed
 class Result with _$Result {
   const factory Result({
-    @JsonKey(name: "userId") String? userId,
+    @JsonKey(name: "userId") int? userId,
     @JsonKey(name: "userName") String? userName,
     @JsonKey(name: "mobile") dynamic mobile,
     @JsonKey(name: "email") dynamic email,

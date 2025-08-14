@@ -27,7 +27,7 @@ class ChatService implements ChatRepositories {
   Future<ResponseResult<List<ChatListResponse>>> chatList() async {
     final user = await AuthUtils.instance.readUserData();
     final res = await NetworkProvider().get(
-      ApiEndpoints.chatList(user?.result?.userId ?? ''),
+      ApiEndpoints.chatList(user?.result?.userId ?? 0),
     );
     switch (res.statusCode) {
       case 200:

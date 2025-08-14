@@ -37,7 +37,7 @@ Map<String, dynamic> _$$AuthResponseImplToJson(_$AuthResponseImpl instance) =>
     };
 
 _$ResultImpl _$$ResultImplFromJson(Map<String, dynamic> json) => _$ResultImpl(
-  userId: json['userId'] as String?,
+  userId: (json['userId'] as num?)?.toInt(),
   userName: json['userName'] as String?,
   mobile: json['mobile'],
   email: json['email'],

@@ -295,7 +295,7 @@ void onChatItemTappedWithGo(
   final user = await AuthUtils.instance.readUserData();
   context.read<ChatCubit>().getChatEntry(
     chatId: state.chatList?[index].chatId,
-    userId: int.tryParse(user?.result?.userId ?? ''),
+    userId: user?.result?.userId ?? 0,
   );
 
   context.read<ChatCubit>().initStateClear();

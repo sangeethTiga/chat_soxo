@@ -438,7 +438,7 @@ Result _$ResultFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$Result {
   @JsonKey(name: "userId")
-  String? get userId => throw _privateConstructorUsedError;
+  int? get userId => throw _privateConstructorUsedError;
   @JsonKey(name: "userName")
   String? get userName => throw _privateConstructorUsedError;
   @JsonKey(name: "mobile")
@@ -481,7 +481,7 @@ abstract class $ResultCopyWith<$Res> {
       _$ResultCopyWithImpl<$Res, Result>;
   @useResult
   $Res call({
-    @JsonKey(name: "userId") String? userId,
+    @JsonKey(name: "userId") int? userId,
     @JsonKey(name: "userName") String? userName,
     @JsonKey(name: "mobile") dynamic mobile,
     @JsonKey(name: "email") dynamic email,
@@ -533,7 +533,7 @@ class _$ResultCopyWithImpl<$Res, $Val extends Result>
             userId: freezed == userId
                 ? _value.userId
                 : userId // ignore: cast_nullable_to_non_nullable
-                      as String?,
+                      as int?,
             userName: freezed == userName
                 ? _value.userName
                 : userName // ignore: cast_nullable_to_non_nullable
@@ -601,7 +601,7 @@ abstract class _$$ResultImplCopyWith<$Res> implements $ResultCopyWith<$Res> {
   @override
   @useResult
   $Res call({
-    @JsonKey(name: "userId") String? userId,
+    @JsonKey(name: "userId") int? userId,
     @JsonKey(name: "userName") String? userName,
     @JsonKey(name: "mobile") dynamic mobile,
     @JsonKey(name: "email") dynamic email,
@@ -652,7 +652,7 @@ class __$$ResultImplCopyWithImpl<$Res>
         userId: freezed == userId
             ? _value.userId
             : userId // ignore: cast_nullable_to_non_nullable
-                  as String?,
+                  as int?,
         userName: freezed == userName
             ? _value.userName
             : userName // ignore: cast_nullable_to_non_nullable
@@ -735,7 +735,7 @@ class _$ResultImpl implements _Result {
 
   @override
   @JsonKey(name: "userId")
-  final String? userId;
+  final int? userId;
   @override
   @JsonKey(name: "userName")
   final String? userName;
@@ -844,7 +844,7 @@ class _$ResultImpl implements _Result {
 
 abstract class _Result implements Result {
   const factory _Result({
-    @JsonKey(name: "userId") final String? userId,
+    @JsonKey(name: "userId") final int? userId,
     @JsonKey(name: "userName") final String? userName,
     @JsonKey(name: "mobile") final dynamic mobile,
     @JsonKey(name: "email") final dynamic email,
@@ -864,7 +864,7 @@ abstract class _Result implements Result {
 
   @override
   @JsonKey(name: "userId")
-  String? get userId;
+  int? get userId;
   @override
   @JsonKey(name: "userName")
   String? get userName;
