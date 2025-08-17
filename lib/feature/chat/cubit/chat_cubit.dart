@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
@@ -59,15 +60,26 @@ class ChatCubit extends Cubit<ChatState> {
     _hasPendingUpdates = true;
     _batchUpdateTimer?.cancel();
 
-    _batchUpdateTimer = Timer(_batchDelay, () {
+    // ✅ IMMEDIATE UPDATE for better UX
+    _batchUpdateTimer = Timer(const Duration(milliseconds: 50), () {
       if (_hasPendingUpdates && !_isDisposed) {
-        emit(
-          state.copyWith(
-            fileUrls: Map<String, String>.from(_fileUrls),
-            fileTypes: Map<String, String>.from(_fileTypes),
-          ),
+        log('🔄 Emitting media update state');
+        log('📊 Current file URLs: ${_fileUrls.keys.length}');
+
+        // ✅ Log what's being emitted
+        _fileUrls.forEach((id, url) {
+          log('   Media $id: ${url.length} chars, type: ${_fileTypes[id]}');
+        });
+
+        final newState = state.copyWith(
+          fileUrls: Map<String, String>.from(_fileUrls),
+          fileTypes: Map<String, String>.from(_fileTypes),
         );
+
+        emit(newState);
         _hasPendingUpdates = false;
+
+        log('✅ Media state emitted - should trigger UI rebuild');
       }
     });
   }
@@ -179,6 +191,18 @@ class ChatCubit extends Cubit<ChatState> {
       log(
         '📝 Entry: ID=${entry.id}, ChatID=${entry.chatId}, Content=${entry.content}',
       );
+      log(
+        '📝 MessageType: ${entry.messageType}, Media: ${entry.chatMedias?.length ?? 0} items',
+      );
+
+      // Log media details
+      if (entry.chatMedias?.isNotEmpty == true) {
+        for (var media in entry.chatMedias!) {
+          log(
+            '📎 Media: ID=${media.id}, Type=${media.mediaType}, URL=${media.mediaUrl?.substring(0, 50)}...',
+          );
+        }
+      }
     }
 
     if (_currentChatId == null) {
@@ -229,12 +253,24 @@ class ChatCubit extends Cubit<ChatState> {
           ),
         );
 
-        // Load media for new entries
-        _loadMediaInBackground(filteredNewEntries);
+        // ✅ IMPORTANT: Load media for new entries immediately
+        for (var entry in filteredNewEntries) {
+          if (entry.chatMedias?.isNotEmpty == true) {
+            log('📎 Loading media for new entry: ${entry.id}');
+            _loadMediaInBackground([entry]);
+          }
+        }
 
         log('✅ State updated with ${filteredNewEntries.length} new entries');
         log('📊 Total entries now: ${updatedChatEntry.entries?.length}');
+        debugMediaState();
+        // ✅ ADD VISUAL FEEDBACK
+        // You could add a brief animation or notification here
+      } else {
+        log('ℹ️ All entries already exist (duplicates filtered)');
       }
+    } else {
+      log('ℹ️ No relevant entries for current chat $_currentChatId');
     }
   }
 
@@ -486,6 +522,36 @@ class ChatCubit extends Cubit<ChatState> {
         );
       }
     }
+  }
+
+  void debugMediaState() {
+    log('🔍 ===== Media Debug State =====');
+    log('📊 File URLs count: ${_fileUrls.length}');
+    log('📊 File types count: ${_fileTypes.length}');
+    log('📊 Loading files count: ${_loadingFiles.length}');
+    log('📊 Failed loads count: ${_failedLoads.length}');
+
+    log('📂 File URLs:');
+    _fileUrls.forEach((id, url) {
+      log('   $id: ${url.substring(0, math.min(100, url.length))}...');
+    });
+
+    log('📂 File Types:');
+    _fileTypes.forEach((id, type) {
+      log('   $id: $type');
+    });
+
+    log('🔄 Currently Loading:');
+    _loadingFiles.forEach((id, loading) {
+      if (loading) log('   $id: loading');
+    });
+
+    log('❌ Failed Loads:');
+    for (var id in _failedLoads) {
+      log('   $id: failed');
+    }
+
+    log('🔍 ===============================');
   }
 
   void debugSignalRState() {
@@ -884,6 +950,34 @@ class ChatCubit extends Cubit<ChatState> {
   ///=-=-=-=-=-=-=-=-=  Background Media Loading - NO UI BLOCKING
   void _loadMediaInBackground(List<Entry> entries) {
     if (_isDisposed) return;
+
+    log('📎 Starting background media loading for ${entries.length} entries');
+
+    // Process immediately for real-time messages
+    for (final entry in entries) {
+      if (entry.chatMedias?.isNotEmpty == true) {
+        log('📎 Entry ${entry.id} has ${entry.chatMedias!.length} media items');
+
+        for (final media in entry.chatMedias!) {
+          if (media.id != null && media.mediaUrl != null) {
+            final mediaId = media.id.toString();
+            log('📎 Processing media: $mediaId, type: ${media.mediaType}');
+            log('📎 Media URL: ${media.mediaUrl}');
+
+            // ✅ Load immediately for real-time messages
+            unawaited(_loadSingleMediaFile(media));
+          } else {
+            log(
+              '⚠️ Skipping invalid media: ID=${media.id}, URL=${media.mediaUrl}',
+            );
+          }
+        }
+      } else {
+        log('ℹ️ Entry ${entry.id} has no media');
+      }
+    }
+
+    // Also trigger the optimized batch loading
     unawaited(_loadMediaFilesOptimized(entries));
   }
 
@@ -927,34 +1021,62 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   Future<void> _loadSingleMediaFile(ChatMedias media) async {
-    if (_isDisposed || media.id == null || media.mediaUrl == null) return;
-    final String mediaId = media.id.toString();
-    if (_loadingFiles[mediaId] == true || _failedLoads.contains(mediaId)) {
+    if (_isDisposed || media.id == null || media.mediaUrl == null) {
+      log(
+        '❌ Cannot load media: disposed=$_isDisposed, id=${media.id}, url=${media.mediaUrl}',
+      );
       return;
     }
+
+    final String mediaId = media.id.toString();
+    log('📎 Starting media load for ID: $mediaId');
+
+    if (_loadingFiles[mediaId] == true || _failedLoads.contains(mediaId)) {
+      log('⚠️ Media $mediaId already loading or failed');
+      return;
+    }
+
     if (_isFileLoadedAndValid(mediaId)) {
+      log('✅ Media $mediaId already loaded and valid');
       return;
     }
 
     _loadingFiles[mediaId] = true;
 
     try {
+      log('📡 Calling getFileFromApi for media $mediaId...');
       final fileData = await _chatRepositories.getFileFromApi(media.mediaUrl!);
+
       if (_isDisposed) return;
+
+      log('📡 API Response for media $mediaId:');
+      log('   - Data exists: ${fileData['data'] != null}');
+      log('   - File type: ${fileData['type']}');
+
       if (fileData['data'] != null && fileData['data'].toString().isNotEmpty) {
         _fileUrls[mediaId] = fileData['data'] ?? '';
         _fileTypes[mediaId] = fileData['type'] ?? 'unknown';
         _fileCacheTimestamps[mediaId] = DateTime.now();
         _failedLoads.remove(mediaId);
 
-        log('Successfully loaded media: $mediaId, type: ${fileData['type']}');
+        log('✅ Successfully stored media $mediaId:');
+        log('   - Type: ${_fileTypes[mediaId]}');
+        log('   - URL length: ${_fileUrls[mediaId]?.length}');
+
+        // ✅ FORCE IMMEDIATE UI UPDATE
+        emit(
+          state.copyWith(
+            fileUrls: Map<String, String>.from(_fileUrls),
+            fileTypes: Map<String, String>.from(_fileTypes),
+          ),
+        );
+
+        log('🚀 IMMEDIATE state emission for media $mediaId');
       } else {
         throw Exception('Empty or invalid file data received');
       }
-
-      log('Loaded media: $mediaId, type: ${fileData['type']}');
     } catch (e) {
-      log('Error loading media $mediaId: $e');
+      log('❌ Error loading media $mediaId: $e');
       _failedLoads.add(mediaId);
       _fileUrls.remove(mediaId);
       _fileTypes.remove(mediaId);

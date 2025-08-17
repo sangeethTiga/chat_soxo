@@ -256,18 +256,18 @@ class ChatSignalRService {
   // ✅ GENERIC RESPONSE HANDLER
   void _handleGenericResponse(String methodName, dynamic arguments) {
     try {
+      log('🔧 Processing SignalR method: $methodName');
+
       switch (methodName.toLowerCase()) {
-        case 'ReceiveMessage':
-        case 'newmessage':
         case 'receivemessage':
+        case 'newmessage':
         case 'messagereceived':
         case 'broadcastmessage':
-          _handleMessageResponse(arguments);
-          _handleChatEntryResponse(arguments);
-          _handleEntryUpdateResponse(arguments);
-          _handleEntryUpdateResponse(arguments);
-          _handleEntryUpdateResponse(arguments);
+          log('📨 Handling ReceiveMessage as new chat entry');
 
+          // ✅ FIXED: Only call the correct handler
+          log('📨 Handling ReceiveMessage as new chat entry');
+          _handleReceiveMessageAsEntry(arguments);
           break;
 
         case 'receivechatentry':
@@ -414,11 +414,13 @@ class ChatSignalRService {
       try {
         final messageData = arguments[0];
 
-        // Handle both JSON string and Map formats
+        // Handle JSON string format (what your server sends)
         Map<String, dynamic> parsedData;
         if (messageData is String) {
+          log('🔄 Parsing JSON string message data');
           parsedData = jsonDecode(messageData) as Map<String, dynamic>;
         } else if (messageData is Map<String, dynamic>) {
+          log('🔄 Using Map message data');
           parsedData = messageData;
         } else {
           log(
@@ -427,12 +429,56 @@ class ChatSignalRService {
           return;
         }
 
-        log('✅ SignalR: Parsed message data successfully');
+        log('✅ SignalR: Successfully parsed message data');
         log(
           '📊 Message details: ID=${parsedData['Id']}, ChatId=${parsedData['ChatId']}, Content="${parsedData['Content']}"',
         );
+        log('📊 Message type: ${parsedData['MessageType']}');
 
-        // Convert to Entry object
+        // ✅ ENHANCED: Handle ChatMedias properly
+        List<ChatMedias>? chatMedias;
+        if (parsedData['ChatMedias'] != null &&
+            parsedData['ChatMedias'] is List) {
+          final mediaList = parsedData['ChatMedias'] as List;
+          if (mediaList.isNotEmpty) {
+            log('📎 Processing ${mediaList.length} media attachments');
+            chatMedias = [];
+
+            for (var mediaJson in mediaList) {
+              try {
+                if (mediaJson is Map<String, dynamic>) {
+                  final media = ChatMedias.fromJson(mediaJson);
+                  chatMedias.add(media);
+                  log(
+                    '📎 Media parsed: ID=${media.id}, Type=${media.mediaType}, URL=${media.mediaUrl?.substring(0, 50)}...',
+                  );
+                }
+              } catch (e) {
+                log('❌ Error parsing individual media: $e');
+              }
+            }
+
+            log('✅ Successfully parsed ${chatMedias.length} media items');
+          }
+        } else {
+          log('ℹ️ No media attachments in this message');
+        }
+
+        // ✅ ENHANCED: Handle Sender information
+        Sender? sender;
+        if (parsedData['Sender'] != null &&
+            parsedData['Sender'] is Map<String, dynamic>) {
+          try {
+            sender = Sender.fromJson(
+              parsedData['Sender'] as Map<String, dynamic>,
+            );
+            log('👤 Sender: ${sender.name}');
+          } catch (e) {
+            log('❌ Error parsing sender: $e');
+          }
+        }
+
+        // Convert to Entry object with all fields
         final newEntry = Entry(
           id: parsedData['Id'],
           chatId: parsedData['ChatId'],
@@ -443,28 +489,41 @@ class ChatSignalRService {
           type: parsedData['Type'],
           typeValue: parsedData['TypeValue'],
           thread: parsedData['Thread'],
-          // Handle media if present
-          chatMedias: parsedData['ChatMedias'] != null
-              ? (parsedData['ChatMedias'] as List)
-                    .map((m) => ChatMedias.fromJson(m))
-                    .toList()
-              : null,
+          pinned: parsedData['Pinned'],
+
+          // ✅ IMPORTANT: Include media and sender
+          chatMedias: chatMedias,
+          sender: sender,
         );
 
-        log('✅ SignalR: Created Entry object from ReceiveMessage');
+        log('✅ SignalR: Created Entry object with:');
+        log('   - Media items: ${newEntry.chatMedias?.length ?? 0}');
+        log('   - Message type: ${newEntry.messageType}');
+        log('   - Content: ${newEntry.content}');
+
+        // Log each media item for debugging
+        if (newEntry.chatMedias?.isNotEmpty == true) {
+          for (var media in newEntry.chatMedias!) {
+            log(
+              '   📎 Media ID: ${media.id}, Type: ${media.mediaType}, Has URL: ${media.mediaUrl != null}',
+            );
+          }
+        }
+
+        log('📤 Sending to onNewEntriesReceived handler');
 
         // Call the new entries handler with a single entry
         onNewEntriesReceived?.call([newEntry]);
       } catch (e) {
         log('❌ SignalR: Error parsing ReceiveMessage: $e');
-        log('❌ SignalR: Raw data: $arguments');
+        // log('❌ SignalR: Raw message data: ${messageData}');
+        log('❌ SignalR: Stack trace: ${e.toString()}');
       }
     } else {
-      log('⚠️ SignalR: Invalid ReceiveMessage arguments');
+      log('⚠️ SignalR: Invalid ReceiveMessage arguments format');
     }
   }
 
-  // ✅ IMPROVED: Better new entries handling
   void _handleNewEntriesResponse(dynamic arguments) {
     log('📨 Processing NewEntries response...');
     if (arguments != null && arguments is List && arguments.isNotEmpty) {
