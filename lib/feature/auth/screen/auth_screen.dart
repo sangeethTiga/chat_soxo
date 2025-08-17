@@ -6,6 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soxo_chat/feature/auth/cubit/auth_cubit.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
+import 'package:soxo_chat/feature/chat/domain/service/signalR_service.dart';
 import 'package:soxo_chat/shared/app/enums/api_fetch_status.dart';
 import 'package:soxo_chat/shared/routes/routes.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
@@ -35,6 +36,8 @@ class SignInScreen extends StatelessWidget {
 
               AuthUtils.instance.readAccessToken.then((value) {
                 log('token $value');
+                ChatSignalRService service = ChatSignalRService();
+                service.initializeConnection();
                 context.push(routeChat);
               });
               AuthUtils.instance.writeUserData(state.authResponse!);
