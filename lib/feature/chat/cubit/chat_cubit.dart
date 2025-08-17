@@ -172,13 +172,12 @@ class ChatCubit extends Cubit<ChatState> {
   void _handleNewEntries(List<Entry> newEntries) {
     log('📨 SignalR: Received ${newEntries.length} new entries');
     log('📊 Current chat ID: $_currentChatId');
-    log('📊 Has state.chatEntry: ${state.chatEntry != null}');
+    log('📊 Current chat state: ${state.isChatEntry}');
+    log('📊 Has chatEntry: ${state.chatEntry != null}');
 
-    // Print detailed entry information
-    for (var entry in newEntries) {
-      log(
-        '📝 Entry: ID=${entry.id}, ChatID=${entry.chatId}, Content=${entry.content}',
-      );
+    if (_isDisposed) {
+      log('⚠️ Cubit is disposed, ignoring new entries');
+      return;
     }
 
     if (_currentChatId == null) {
@@ -187,54 +186,92 @@ class ChatCubit extends Cubit<ChatState> {
     }
 
     if (state.chatEntry == null) {
-      log('⚠️ No chat entry state');
+      log('⚠️ No chat entry state - requesting fresh data');
+      // If we don't have chat data, request it
+      getChatEntry(chatId: _currentChatId);
       return;
     }
 
-    // Filter entries for current chat
+    // ✅ FIXED: Better chat ID comparison
+    final currentChatIdStr = _currentChatId.toString();
     final relevantEntries = newEntries.where((entry) {
-      final entryChat = entry.chatId?.toString();
-      final currentChat = _currentChatId.toString();
-      log('🔍 Comparing entry chat: "$entryChat" with current: "$currentChat"');
-      return entryChat == currentChat;
+      final entryChatId = entry.chatId?.toString() ?? '';
+      final isRelevant = entryChatId == currentChatIdStr;
+      log(
+        '🔍 Entry ${entry.id}: chatId="$entryChatId" vs current="$currentChatIdStr" -> $isRelevant',
+      );
+      return isRelevant;
     }).toList();
 
     log('📊 Relevant entries for current chat: ${relevantEntries.length}');
 
-    if (relevantEntries.isNotEmpty) {
-      final currentEntries = state.chatEntry!.entries ?? [];
-      final existingIds = currentEntries.map((e) => e.id).toSet();
-      final filteredNewEntries = relevantEntries
-          .where((entry) => !existingIds.contains(entry.id))
-          .toList();
+    if (relevantEntries.isEmpty) {
+      log('ℹ️ No relevant entries for current chat $_currentChatId');
+      return;
+    }
 
-      log(
-        '📊 New entries after filtering duplicates: ${filteredNewEntries.length}',
+    // ✅ FIXED: Better duplicate filtering
+    final currentEntries = List<Entry>.from(state.chatEntry!.entries ?? []);
+    final existingIds = currentEntries
+        .map((e) => e.id?.toString())
+        .where((id) => id != null)
+        .toSet();
+
+    final filteredNewEntries = relevantEntries.where((entry) {
+      final entryId = entry.id?.toString();
+      final isNew = entryId != null && !existingIds.contains(entryId);
+      log('🔍 Entry ${entry.id}: exists=${!isNew}');
+      return isNew;
+    }).toList();
+
+    log(
+      '📊 New entries after filtering duplicates: ${filteredNewEntries.length}',
+    );
+
+    if (filteredNewEntries.isEmpty) {
+      log('ℹ️ No new entries to add (all already exist)');
+      return;
+    }
+
+    // ✅ FIXED: Ensure UI update
+    try {
+      final updatedEntries = [...currentEntries, ...filteredNewEntries];
+      final updatedChatEntry = state.chatEntry!.copyWith(
+        entries: updatedEntries,
       );
 
-      if (filteredNewEntries.isNotEmpty) {
-        final updatedChatEntry = state.chatEntry!.copyWith(
-          entries: [...currentEntries, ...filteredNewEntries],
-        );
+      // Update cache
+      _chatCache[_currentChatId!] = updatedChatEntry;
+      _chatCacheTimestamps[_currentChatId!] = DateTime.now();
 
-        // Update cache
-        _chatCache[_currentChatId!] = updatedChatEntry;
-        _chatCacheTimestamps[_currentChatId!] = DateTime.now();
+      log(
+        '🚀 EMITTING STATE UPDATE with ${filteredNewEntries.length} new entries',
+      );
+      log('📊 Total entries now: ${updatedEntries.length}');
 
-        // ✅ IMPORTANT: Emit new state
-        emit(
-          state.copyWith(
-            chatEntry: updatedChatEntry,
-            isChatEntry: ApiFetchStatus.success,
-          ),
-        );
+      // ✅ CRITICAL: Emit the new state
+      emit(
+        state.copyWith(
+          chatEntry: updatedChatEntry,
+          isChatEntry: ApiFetchStatus.success,
+          errorMessage: null, // Clear any errors
+        ),
+      );
 
-        // Load media for new entries
-        _loadMediaInBackground(filteredNewEntries);
+      // Load media for new entries in background
+      _loadMediaInBackground(filteredNewEntries);
 
-        log('✅ State updated with ${filteredNewEntries.length} new entries');
-        log('📊 Total entries now: ${updatedChatEntry.entries?.length}');
-      }
+      log('✅ STATE EMITTED SUCCESSFULLY');
+
+      // ✅ Debug: Verify state after emit
+      Future.delayed(Duration(milliseconds: 100), () {
+        log('🔍 Post-emit verification:');
+        log('  - State entries: ${state.chatEntry?.entries?.length}');
+        log('  - State status: ${state.isChatEntry}');
+      });
+    } catch (e) {
+      log('❌ Error updating state with new entries: $e');
+      emit(state.copyWith(errorMessage: 'Failed to update chat: $e'));
     }
   }
 
@@ -244,116 +281,108 @@ class ChatCubit extends Cubit<ChatState> {
       '📨 SignalR: Received new chat entry with ${newChatEntry.entries?.length ?? 0} entries',
     );
 
-    if (_currentChatId == null || state.chatEntry == null) {
-      log('⚠️ SignalR: No current chat or chat entry to update');
+    if (_isDisposed) {
+      log('⚠️ Cubit is disposed, ignoring chat entry');
       return;
     }
 
-    // Filter entries that belong to current chat
-    final relevantEntries =
-        newChatEntry.entries?.where((entry) {
-          final entryChat = entry.chatId?.toString();
-          final currentChat = _currentChatId.toString();
-          log('🔍 Comparing entry chat: $entryChat with current: $currentChat');
-          return entryChat == currentChat;
-        }).toList() ??
-        [];
+    if (_currentChatId == null) {
+      log('⚠️ No current chat ID set');
+      return;
+    }
 
-    log(
-      '📊 Found ${relevantEntries.length} relevant entries for chat $_currentChatId',
-    );
-
-    if (relevantEntries.isNotEmpty) {
-      final currentEntries = state.chatEntry!.entries ?? [];
-
-      // Filter out duplicates based on entry ID
-      final existingIds = currentEntries.map((e) => e.id).toSet();
-      final newEntries = relevantEntries
-          .where((entry) => !existingIds.contains(entry.id))
-          .toList();
-
-      log('📊 New entries after duplicate filtering: ${newEntries.length}');
-
-      if (newEntries.isNotEmpty) {
-        final updatedChatEntry = state.chatEntry!.copyWith(
-          entries: [...currentEntries, ...newEntries],
-        );
-
-        // Update cache
-        _chatCache[_currentChatId!] = updatedChatEntry;
-        _chatCacheTimestamps[_currentChatId!] = DateTime.now();
-
-        // Emit updated state
-        emit(
-          state.copyWith(
-            chatEntry: updatedChatEntry,
-            isChatEntry: ApiFetchStatus.success,
-          ),
-        );
-
-        // Load media for new entries
-        _loadMediaInBackground(newEntries);
-
-        log('✅ Added ${newEntries.length} new entries to chat $_currentChatId');
-      } else {
-        log('ℹ️ No new entries to add (all already exist)');
-      }
+    // ✅ Extract entries and handle them
+    final entries = newChatEntry.entries ?? [];
+    if (entries.isNotEmpty) {
+      log('🔄 Processing ${entries.length} entries from chat entry response');
+      _handleNewEntries(entries);
     } else {
-      log('ℹ️ No relevant entries for current chat $_currentChatId');
+      log('ℹ️ Chat entry response has no entries');
     }
   }
 
   void _handleEntryUpdate(Entry updatedEntry) {
     log('📝 SignalR: Entry updated - ${updatedEntry.id}');
 
-    if (_currentChatId == null || state.chatEntry == null) {
-      log('⚠️ SignalR: No current chat context for entry update');
+    if (_isDisposed || _currentChatId == null || state.chatEntry == null) {
+      log('⚠️ Cannot handle entry update - invalid state');
       return;
     }
 
-    // Check if this entry belongs to current chat
-    if (updatedEntry.chatId?.toString() != _currentChatId.toString()) {
-      log('ℹ️ SignalR: Entry update not for current chat');
+    // ✅ FIXED: Better chat ID comparison
+    final entryChatId = updatedEntry.chatId?.toString();
+    final currentChatId = _currentChatId.toString();
+
+    if (entryChatId != currentChatId) {
+      log(
+        'ℹ️ Entry update not for current chat: $entryChatId vs $currentChatId',
+      );
       return;
     }
 
-    final currentEntries = state.chatEntry!.entries ?? [];
-    final updatedEntries = currentEntries.map((entry) {
-      return entry.id == updatedEntry.id ? updatedEntry : entry;
-    }).toList();
+    try {
+      final currentEntries = List<Entry>.from(state.chatEntry!.entries ?? []);
+      bool wasUpdated = false;
 
-    final updatedChatEntry = state.chatEntry!.copyWith(entries: updatedEntries);
+      final updatedEntries = currentEntries.map((entry) {
+        if (entry.id?.toString() == updatedEntry.id?.toString()) {
+          wasUpdated = true;
+          log('✅ Found and updating entry ${entry.id}');
+          return updatedEntry;
+        }
+        return entry;
+      }).toList();
 
-    // Update cache
-    _chatCache[_currentChatId!] = updatedChatEntry;
-    _chatCacheTimestamps[_currentChatId!] = DateTime.now();
+      if (!wasUpdated) {
+        log('⚠️ Entry ${updatedEntry.id} not found in current entries');
+        return;
+      }
 
-    // Emit updated state
-    emit(
-      state.copyWith(
-        chatEntry: updatedChatEntry,
-        isChatEntry: ApiFetchStatus.success,
-      ),
-    );
+      final updatedChatEntry = state.chatEntry!.copyWith(
+        entries: updatedEntries,
+      );
 
-    log('✅ Entry ${updatedEntry.id} updated in chat');
+      // Update cache
+      _chatCache[_currentChatId!] = updatedChatEntry;
+      _chatCacheTimestamps[_currentChatId!] = DateTime.now();
+
+      log('🚀 EMITTING ENTRY UPDATE for ${updatedEntry.id}');
+
+      emit(
+        state.copyWith(
+          chatEntry: updatedChatEntry,
+          isChatEntry: ApiFetchStatus.success,
+        ),
+      );
+
+      log('✅ Entry ${updatedEntry.id} updated successfully');
+    } catch (e) {
+      log('❌ Error updating entry: $e');
+    }
   }
 
+  // ✅ FIXED: Better entry deletion handler
   void _handleEntryDeletion(String entryId) {
     log('🗑️ SignalR: Entry deleted - $entryId');
 
-    if (_currentChatId == null || state.chatEntry == null) {
-      log('⚠️ SignalR: No current chat context for entry deletion');
+    if (_isDisposed || _currentChatId == null || state.chatEntry == null) {
+      log('⚠️ Cannot handle entry deletion - invalid state');
       return;
     }
 
-    final currentEntries = state.chatEntry!.entries ?? [];
-    final filteredEntries = currentEntries
-        .where((entry) => entry.id != entryId)
-        .toList();
+    try {
+      final currentEntries = List<Entry>.from(state.chatEntry!.entries ?? []);
+      final originalCount = currentEntries.length;
 
-    // Only update if an entry was actually removed
-    if (filteredEntries.length < currentEntries.length) {
+      final filteredEntries = currentEntries
+          .where((entry) => entry.id?.toString() != entryId)
+          .toList();
+
+      if (filteredEntries.length == originalCount) {
+        log('ℹ️ Entry $entryId not found in current chat');
+        return;
+      }
+
       final updatedChatEntry = state.chatEntry!.copyWith(
         entries: filteredEntries,
       );
@@ -362,7 +391,8 @@ class ChatCubit extends Cubit<ChatState> {
       _chatCache[_currentChatId!] = updatedChatEntry;
       _chatCacheTimestamps[_currentChatId!] = DateTime.now();
 
-      // Emit updated state
+      log('🚀 EMITTING ENTRY DELETION for $entryId');
+
       emit(
         state.copyWith(
           chatEntry: updatedChatEntry,
@@ -370,11 +400,48 @@ class ChatCubit extends Cubit<ChatState> {
         ),
       );
 
-      log('✅ Entry $entryId deleted from chat');
-    } else {
-      log('ℹ️ Entry $entryId not found in current chat');
+      log('✅ Entry $entryId deleted successfully');
+    } catch (e) {
+      log('❌ Error deleting entry: $e');
     }
   }
+
+  // void _handleEntryDeletion(String entryId) {
+  //   log('🗑️ SignalR: Entry deleted - $entryId');
+
+  //   if (_currentChatId == null || state.chatEntry == null) {
+  //     log('⚠️ SignalR: No current chat context for entry deletion');
+  //     return;
+  //   }
+
+  //   final currentEntries = state.chatEntry!.entries ?? [];
+  //   final filteredEntries = currentEntries
+  //       .where((entry) => entry.id != entryId)
+  //       .toList();
+
+  //   // Only update if an entry was actually removed
+  //   if (filteredEntries.length < currentEntries.length) {
+  //     final updatedChatEntry = state.chatEntry!.copyWith(
+  //       entries: filteredEntries,
+  //     );
+
+  //     // Update cache
+  //     _chatCache[_currentChatId!] = updatedChatEntry;
+  //     _chatCacheTimestamps[_currentChatId!] = DateTime.now();
+
+  //     // Emit updated state
+  //     emit(
+  //       state.copyWith(
+  //         chatEntry: updatedChatEntry,
+  //         isChatEntry: ApiFetchStatus.success,
+  //       ),
+  //     );
+
+  //     log('✅ Entry $entryId deleted from chat');
+  //   } else {
+  //     log('ℹ️ Entry $entryId not found in current chat');
+  //   }
+  // }
 
   Future<void> getChatEntry({int? chatId, int? userId}) async {
     final currentChatId = chatId ?? 0;

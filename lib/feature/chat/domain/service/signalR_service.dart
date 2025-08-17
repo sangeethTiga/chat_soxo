@@ -167,53 +167,195 @@ class ChatSignalRService {
   }
 
   void _setupMessageHandlers() {
-    // ✅ LISTEN TO ALL EVENTS AND LOG THEM
-    final allPossibleMethods = [
+    // ✅ Simplified approach - listen to most common events
+    final primaryMethods = [
       'ReceiveMessage',
       'ReceiveChatEntry',
       'ReceiveNewEntries',
       'ReceiveEntryUpdate',
       'ReceiveEntryDeletion',
       'ReceiveTypingStatus',
-      'NewMessage',
-      'MessageReceived',
-      'ChatEntryReceived',
-      'EntryAdded',
-      'EntryUpdated',
-      'EntryDeleted',
-      'BroadcastMessage',
-      'SendMessage',
-      'UpdateEntry',
-      'DeleteEntry',
-      'UserJoined',
-      'UserLeft',
-      // ✅ ADD MORE POSSIBLE SERVER METHODS
-      'NotifyNewMessage',
-      'NotifyEntryUpdate',
-      'ChatUpdated',
-      'MessageSent',
-      'EntryReceived',
-      'DataReceived',
     ];
 
-    // ✅ SET UP LISTENERS FOR ALL POSSIBLE METHODS
-    for (String methodName in allPossibleMethods) {
+    // ✅ Set up primary listeners
+    for (String methodName in primaryMethods) {
       _hubConnection?.on(methodName, (arguments) {
         log('🎯 SignalR: Method "$methodName" called!');
         _logResponse(methodName, arguments);
-        _handleGenericResponse(methodName, arguments);
+        _handleSpecificResponse(methodName, arguments);
       });
     }
 
-    // ✅ UNIVERSAL LISTENER
+    // ✅ Catch-all for debugging unknown methods
     _hubConnection?.on('*', (arguments) {
       log('🌟 SignalR: CATCH-ALL triggered with: $arguments');
       _logResponse('CATCH_ALL', arguments);
     });
 
     log(
-      '✅ SignalR: Set up listeners for ${allPossibleMethods.length} possible methods',
+      '✅ SignalR: Set up listeners for ${primaryMethods.length} primary methods',
     );
+  }
+
+  // ✅ FIXED: More specific response handler
+  void _handleSpecificResponse(String methodName, dynamic arguments) {
+    try {
+      log('🔄 Processing $methodName with arguments: $arguments');
+
+      switch (methodName) {
+        case 'ReceiveMessage':
+          // ✅ Only handle as message, don't mix with other handlers
+          _handleMessageResponse(arguments);
+          break;
+
+        case 'ReceiveChatEntry':
+          _handleChatEntryResponse(arguments);
+          break;
+
+        case 'ReceiveNewEntries':
+          _handleNewEntriesResponse(arguments);
+          break;
+
+        case 'ReceiveEntryUpdate':
+          _handleEntryUpdateResponse(arguments);
+          break;
+
+        case 'ReceiveEntryDeletion':
+          _handleEntryDeletionResponse(arguments);
+          break;
+
+        case 'ReceiveTypingStatus':
+          _handleTypingStatusResponse(arguments);
+          break;
+
+        default:
+          log('🤷‍♂️ SignalR: Unknown method "$methodName"');
+          // ✅ Try to handle as generic message if it looks like chat data
+          if (arguments != null && arguments is List && arguments.isNotEmpty) {
+            final data = arguments[0];
+            if (data is Map &&
+                (data.containsKey('Id') || data.containsKey('ChatId'))) {
+              log('📦 Treating unknown method as chat entry');
+              _handleChatEntryResponse(arguments);
+            } else {
+              log('📦 Treating unknown method as message');
+              _handleMessageResponse(arguments);
+            }
+          }
+          break;
+      }
+    } catch (e) {
+      log('❌ SignalR: Error in response handler for $methodName: $e');
+    }
+  }
+
+  // ✅ ENHANCED: Better message response handling
+  void _handleMessageResponse(dynamic arguments) {
+    log('📨 Processing message response...');
+
+    if (arguments != null && arguments is List && arguments.isNotEmpty) {
+      try {
+        final messageData = arguments[0];
+        log('📊 Message data type: ${messageData.runtimeType}');
+        log('📊 Message data: $messageData');
+
+        // ✅ Check if this is actually a chat entry in disguise
+        if (messageData is Map<String, dynamic>) {
+          if (messageData.containsKey('Id') &&
+              messageData.containsKey('ChatId')) {
+            log('🔄 Message contains chat entry structure, converting...');
+            _convertMessageToChatEntry(messageData);
+            return;
+          }
+        } else if (messageData is String) {
+          try {
+            final parsed = jsonDecode(messageData);
+            if (parsed is Map<String, dynamic> &&
+                parsed.containsKey('Id') &&
+                parsed.containsKey('ChatId')) {
+              log('🔄 String message contains chat entry JSON, converting...');
+              _convertMessageToChatEntry(parsed);
+              return;
+            }
+          } catch (e) {
+            log('📝 String message is not JSON: $messageData');
+          }
+        }
+
+        // ✅ Handle as regular message
+        log('✅ Handling as regular message');
+        onMessageReceived?.call(messageData);
+      } catch (e) {
+        log('❌ Error processing message response: $e');
+      }
+    }
+  }
+
+  // ✅ NEW: Convert message data to chat entry
+  void _convertMessageToChatEntry(Map<String, dynamic> messageData) {
+    try {
+      log('🔄 Converting message to chat entry...');
+
+      // Create Entry object from message data
+      final newEntry = Entry(
+        id: messageData['Id'] ?? messageData['id'],
+        chatId: messageData['ChatId'] ?? messageData['chatId'],
+        senderId: messageData['SenderId'] ?? messageData['senderId'],
+        messageType: messageData['MessageType'] ?? messageData['messageType'],
+        content: messageData['Content'] ?? messageData['content'],
+        createdAt: messageData['CreatedAt'] ?? messageData['createdAt'],
+        type: messageData['Type'] ?? messageData['type'],
+        typeValue: messageData['TypeValue'] ?? messageData['typeValue'],
+        thread: messageData['Thread'] ?? messageData['thread'],
+        chatMedias: messageData['ChatMedias'] != null
+            ? (messageData['ChatMedias'] as List)
+                  .map((m) => ChatMedias.fromJson(m))
+                  .toList()
+            : null,
+      );
+
+      log('✅ Created Entry: ID=${newEntry.id}, ChatID=${newEntry.chatId}');
+
+      // ✅ Call the new entries handler
+      onNewEntriesReceived?.call([newEntry]);
+    } catch (e) {
+      log('❌ Error converting message to entry: $e');
+    }
+  }
+
+  // ✅ ENHANCED: Better chat entry response handling
+  void _handleChatEntryResponse(dynamic arguments) {
+    log('📨 Processing ChatEntry response...');
+
+    if (arguments != null && arguments is List && arguments.isNotEmpty) {
+      try {
+        final chatEntryData = arguments[0];
+        log('📊 ChatEntry data type: ${chatEntryData.runtimeType}');
+
+        ChatEntryResponse? chatEntry;
+
+        if (chatEntryData is Map<String, dynamic>) {
+          log('✅ Parsing Map as ChatEntryResponse');
+          chatEntry = ChatEntryResponse.fromJson(chatEntryData);
+        } else if (chatEntryData is String) {
+          log('✅ Parsing JSON string as ChatEntryResponse');
+          final jsonData = jsonDecode(chatEntryData) as Map<String, dynamic>;
+          chatEntry = ChatEntryResponse.fromJson(jsonData);
+        }
+
+        if (chatEntry != null) {
+          log(
+            '✅ ChatEntry parsed successfully with ${chatEntry.entries?.length ?? 0} entries',
+          );
+          onChatEntryReceived?.call(chatEntry);
+        } else {
+          log('❌ Failed to parse ChatEntry');
+        }
+      } catch (e) {
+        log('❌ Error parsing chat entry: $e');
+        log('📊 Raw data: $arguments');
+      }
+    }
   }
 
   // ✅ ADD TEST METHOD TO TRIGGER SERVER RESPONSES
@@ -253,86 +395,33 @@ class ChatSignalRService {
     }
   }
 
-  // ✅ GENERIC RESPONSE HANDLER
-  void _handleGenericResponse(String methodName, dynamic arguments) {
-    try {
-      switch (methodName.toLowerCase()) {
-        case 'ReceiveMessage':
-        case 'newmessage':
-        case 'receivemessage':
-        case 'messagereceived':
-        case 'broadcastmessage':
-          _handleMessageResponse(arguments);
-          _handleChatEntryResponse(arguments);
-          _handleEntryUpdateResponse(arguments);
-          _handleEntryUpdateResponse(arguments);
-          _handleEntryUpdateResponse(arguments);
+  // void _handleChatEntryResponse(dynamic arguments) {
+  //   log('📨 Processing ChatEntry response...');
+  //   if (arguments != null && arguments is List && arguments.isNotEmpty) {
+  //     try {
+  //       final chatEntryData = arguments[0];
 
-          break;
-
-        case 'receivechatentry':
-        case 'chatentryreceived':
-          _handleChatEntryResponse(arguments);
-          break;
-
-        case 'receivenewentries':
-        case 'entryadded':
-          _handleNewEntriesResponse(arguments);
-          break;
-
-        case 'receiveentryupdate':
-        case 'entryupdated':
-        case 'updateentry':
-          _handleEntryUpdateResponse(arguments);
-          break;
-
-        case 'receiveentrydeletion':
-        case 'entrydeleted':
-        case 'deleteentry':
-          _handleEntryDeletionResponse(arguments);
-          break;
-
-        case 'receivetypingstatus':
-          _handleTypingStatusResponse(arguments);
-          break;
-
-        default:
-          log(
-            '🤷‍♂️ SignalR: Unknown method "$methodName" - no specific handler',
-          );
-      }
-    } catch (e) {
-      log('❌ SignalR: Error in generic response handler: $e');
-    }
-  }
-
-  void _handleChatEntryResponse(dynamic arguments) {
-    log('📨 Processing ChatEntry response...');
-    if (arguments != null && arguments is List && arguments.isNotEmpty) {
-      try {
-        final chatEntryData = arguments[0];
-
-        if (chatEntryData is Map<String, dynamic>) {
-          log('✅ SignalR: Valid chat entry data structure');
-          final chatEntry = ChatEntryResponse.fromJson(chatEntryData);
-          log('✅ SignalR: Chat entry parsed successfully');
-          onChatEntryReceived?.call(chatEntry);
-        } else if (chatEntryData is String) {
-          // Try to parse JSON string
-          final jsonData = jsonDecode(chatEntryData) as Map<String, dynamic>;
-          final chatEntry = ChatEntryResponse.fromJson(jsonData);
-          log('✅ SignalR: Chat entry parsed from JSON string');
-          onChatEntryReceived?.call(chatEntry);
-        } else {
-          log(
-            '❌ SignalR: Invalid chat entry format: ${chatEntryData.runtimeType}',
-          );
-        }
-      } catch (e) {
-        log('❌ SignalR: Error parsing chat entry: $e');
-      }
-    }
-  }
+  //       if (chatEntryData is Map<String, dynamic>) {
+  //         log('✅ SignalR: Valid chat entry data structure');
+  //         final chatEntry = ChatEntryResponse.fromJson(chatEntryData);
+  //         log('✅ SignalR: Chat entry parsed successfully');
+  //         onChatEntryReceived?.call(chatEntry);
+  //       } else if (chatEntryData is String) {
+  //         // Try to parse JSON string
+  //         final jsonData = jsonDecode(chatEntryData) as Map<String, dynamic>;
+  //         final chatEntry = ChatEntryResponse.fromJson(jsonData);
+  //         log('✅ SignalR: Chat entry parsed from JSON string');
+  //         onChatEntryReceived?.call(chatEntry);
+  //       } else {
+  //         log(
+  //           '❌ SignalR: Invalid chat entry format: ${chatEntryData.runtimeType}',
+  //         );
+  //       }
+  //     } catch (e) {
+  //       log('❌ SignalR: Error parsing chat entry: $e');
+  //     }
+  //   }
+  // }
 
   void _handleEntryUpdateResponse(dynamic arguments) {
     log('📨 Processing EntryUpdate response...');
@@ -496,28 +585,28 @@ class ChatSignalRService {
   }
 
   // ✅ ENHANCED: Better message response handling
-  void _handleMessageResponse(dynamic arguments) {
-    log('📨 Processing generic message response...');
-    if (arguments != null && arguments is List && arguments.isNotEmpty) {
-      final message = arguments[0];
-      log('✅ SignalR: Message extracted: $message');
+  // void _handleMessageResponse(dynamic arguments) {
+  //   log('📨 Processing generic message response...');
+  //   if (arguments != null && arguments is List && arguments.isNotEmpty) {
+  //     final message = arguments[0];
+  //     log('✅ SignalR: Message extracted: $message');
 
-      // Handle both simple messages and chat entry messages
-      if (message is String &&
-          (message.contains('"Id":') || message.contains('"ChatId":'))) {
-        // This looks like a chat entry JSON, handle as new entry
-        log(
-          '🔄 SignalR: Message contains chat entry data, processing as new entry...',
-        );
-        _handleReceiveMessageAsEntry(arguments);
-      } else {
-        // Regular message
-        onMessageReceived?.call(message);
-      }
-    } else {
-      log('⚠️ SignalR: Invalid message arguments');
-    }
-  }
+  //     // Handle both simple messages and chat entry messages
+  //     if (message is String &&
+  //         (message.contains('"Id":') || message.contains('"ChatId":'))) {
+  //       // This looks like a chat entry JSON, handle as new entry
+  //       log(
+  //         '🔄 SignalR: Message contains chat entry data, processing as new entry...',
+  //       );
+  //       _handleReceiveMessageAsEntry(arguments);
+  //     } else {
+  //       // Regular message
+  //       onMessageReceived?.call(message);
+  //     }
+  //   } else {
+  //     log('⚠️ SignalR: Invalid message arguments');
+  //   }
+  // }
   // Future<void> requestChatEntry(String chatId, String userId) async {
   //   if (!_isConnected || _hubConnection == null) {
   //     log('SignalR: Cannot request chat entry - not connected');
