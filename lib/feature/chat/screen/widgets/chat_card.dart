@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
-import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -38,39 +37,12 @@ class MediaPreviewWidget extends StatelessWidget {
 
     final mediaId = media!.id.toString();
 
-    // ✅ FIXED: Use BlocBuilder instead of Builder for proper rebuilds
-    return BlocBuilder<ChatCubit, ChatState>(
-      // ✅ CRITICAL: Add buildWhen to listen for media changes
-      buildWhen: (previous, current) {
-        final prevUrls = previous.fileUrls;
-        final currUrls = current.fileUrls;
-
-        // Rebuild if this specific media's URL changed
-        final hasUrlChanged = prevUrls?[mediaId] != currUrls?[mediaId];
-
-        if (hasUrlChanged) {
-          log('🎨 MediaPreviewWidget rebuilding for media $mediaId');
-          log(
-            '   - Previous URL: ${prevUrls?[mediaId] != null ? "exists" : "null"}',
-          );
-          log(
-            '   - Current URL: ${currUrls?[mediaId] != null ? "exists" : "null"}',
-          );
-        }
-
-        return hasUrlChanged;
-      },
-      builder: (context, state) {
-        final cubit = context.read<ChatCubit>();
+    return Builder(
+      builder: (context) {
+        final cubit = context.watch<ChatCubit>();
         final fileUrl = cubit.getFileUrl(mediaId);
         final fileType = cubit.getFileType(mediaId);
         final isLoading = cubit.isFileLoading(mediaId);
-
-        log('🎨 Building MediaPreviewWidget for media $mediaId:');
-        log('   - Has URL: ${fileUrl != null}');
-        log('   - URL length: ${fileUrl?.length ?? 0}');
-        log('   - Type: $fileType');
-        log('   - Is Loading: $isLoading');
 
         return _InstantMediaBuilder(
           key: ValueKey('media_$mediaId'),
@@ -357,12 +329,6 @@ class _InstantImagePreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    log('🖼️ Building _InstantImagePreview for media $mediaId');
-    log('   - URL length: ${fileUrl.length}');
-    log(
-      '   - URL starts with: ${fileUrl.substring(0, math.min(50, fileUrl.length))}',
-    );
-
     Widget imageWidget = Container(
       constraints: BoxConstraints(
         maxWidth: maxWidth ?? (isInChatBubble ? 200.w : double.infinity),
@@ -380,10 +346,7 @@ class _InstantImagePreview extends StatelessWidget {
 
     if (enableTap) {
       return GestureDetector(
-        onTap: () {
-          log('🔍 Image tapped: $mediaId');
-          showMyDialog(context, fileUrl, mediaId);
-        },
+        onTap: () => showMyDialog(context, fileUrl, mediaId),
         child: imageWidget,
       );
     }
@@ -406,12 +369,8 @@ class CachedImageDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    log('🎨 Building CachedImageDisplay for media $mediaId');
-
-    // Check MediaCache first
     final cachedImage = MediaCache.getImage(mediaId);
     if (cachedImage != null) {
-      log('💾 Using cached image for media $mediaId');
       return Image.memory(
         cachedImage,
         fit: BoxFit.cover,
@@ -419,14 +378,11 @@ class CachedImageDisplay extends StatelessWidget {
       );
     }
 
-    // Handle base64 data URLs
-    if (fileUrl.startsWith('data:image')) {
-      log('🔄 Decoding base64 image for media $mediaId');
+    if (fileUrl.startsWith('data:')) {
       return FutureBuilder<Uint8List?>(
         future: _decodeBase64Image(fileUrl, mediaId),
         builder: (context, snapshot) {
           if (snapshot.hasData && snapshot.data != null) {
-            log('✅ Base64 image decoded for media $mediaId');
             return Image.memory(
               snapshot.data!,
               fit: BoxFit.cover,
@@ -434,64 +390,61 @@ class CachedImageDisplay extends StatelessWidget {
             );
           }
           if (snapshot.hasError) {
-            log('❌ Base64 decode error for media $mediaId: ${snapshot.error}');
-            return _buildErrorWidget('Decode Error');
+            return _CompactErrorWidget(
+              message: 'Invalid image',
+              isInChatBubble: isInChatBubble,
+            );
           }
-          log('⏳ Decoding base64 for media $mediaId...');
-          return _buildLoadingWidget();
+          return ShimmerLoadingWidget(
+            isInChatBubble: isInChatBubble,
+            mediaType: 'image',
+          );
         },
       );
     }
 
-    // Handle network URLs
     if (fileUrl.startsWith('http')) {
-      log('🌐 Loading network image for media $mediaId');
       return Image.network(
         fileUrl,
         fit: BoxFit.cover,
         cacheWidth: isInChatBubble ? 400 : null,
         loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) {
-            log('✅ Network image loaded for media $mediaId');
-            return child;
-          }
-          log('⏳ Loading network image for media $mediaId...');
-          return _buildLoadingWidget();
+          if (loadingProgress == null) return child;
+          return ShimmerLoadingWidget(
+            isInChatBubble: isInChatBubble,
+            mediaType: 'image',
+          );
         },
         errorBuilder: (context, error, stackTrace) {
-          log('❌ Network image error for media $mediaId: $error');
-          return _buildErrorWidget('Network Error');
+          return _CompactErrorWidget(
+            message: 'Failed to load',
+            isInChatBubble: isInChatBubble,
+          );
         },
       );
     }
 
-    log('❌ Unknown URL format for media $mediaId: ${fileUrl.substring(0, 50)}');
-    return _buildErrorWidget('Unknown Format');
-  }
-
-  Widget _buildLoadingWidget() {
-    return Container(
-      height: isInChatBubble ? 100 : 200,
-      width: isInChatBubble ? 100 : 200,
-      color: Colors.grey[200],
-      child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-    );
-  }
-
-  Widget _buildErrorWidget(String message) {
-    return Container(
-      height: isInChatBubble ? 100 : 200,
-      width: isInChatBubble ? 100 : 200,
-      color: Colors.red[100],
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error, color: Colors.red),
-            Text(message, style: TextStyle(fontSize: 12)),
-          ],
-        ),
-      ),
+    return FutureBuilder<Uint8List?>(
+      future: _loadFileImage(fileUrl, mediaId),
+      builder: (context, snapshot) {
+        if (snapshot.hasData && snapshot.data != null) {
+          return Image.memory(
+            snapshot.data!,
+            fit: BoxFit.cover,
+            cacheWidth: isInChatBubble ? 400 : null,
+          );
+        }
+        if (snapshot.hasError) {
+          return _CompactErrorWidget(
+            message: 'File not found',
+            isInChatBubble: isInChatBubble,
+          );
+        }
+        return ShimmerLoadingWidget(
+          isInChatBubble: isInChatBubble,
+          mediaType: 'image',
+        );
+      },
     );
   }
 
@@ -501,14 +454,25 @@ class CachedImageDisplay extends StatelessWidget {
           ? dataUrl.split(',').last
           : dataUrl;
       final bytes = base64Decode(base64Data);
-
-      // Cache the decoded image
       MediaCache.setImage(mediaId, bytes);
-      log('💾 Cached decoded image for media $mediaId');
-
       return bytes;
     } catch (e) {
-      log('❌ Base64 decode error for media $mediaId: $e');
+      log('Base64 decode error: $e');
+      return null;
+    }
+  }
+
+  Future<Uint8List?> _loadFileImage(String filePath, String mediaId) async {
+    try {
+      final file = File(filePath);
+      if (await file.exists()) {
+        final bytes = await file.readAsBytes();
+        MediaCache.setImage(mediaId, bytes);
+        return bytes;
+      }
+      return null;
+    } catch (e) {
+      log('File load error: $e');
       return null;
     }
   }
