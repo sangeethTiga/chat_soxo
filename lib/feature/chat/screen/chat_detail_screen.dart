@@ -400,6 +400,7 @@ class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
     // Check if new messages were added
     if (_previousEntries != null &&
         currentEntries.length > _previousEntries!.length) {
+      log('📱 New messages detected, scrolling to bottom');
       // New message added, scroll to bottom
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollToBottom();
@@ -416,17 +417,36 @@ class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ Use BlocBuilder with proper selector instead of BlocSelector
-    return BlocBuilder<ChatCubit, ChatState>(
-      // ✅ Use buildWhen to control when to rebuild
+    // ✅ Use BlocConsumer to listen for changes AND build UI
+    return BlocConsumer<ChatCubit, ChatState>(
+      // ✅ Listen for state changes
+      listenWhen: (previous, current) {
+        return previous.chatEntry?.entries?.length !=
+            current.chatEntry?.entries?.length;
+      },
+      listener: (context, state) {
+        log(
+          '🎧 Listener: Entries changed to ${state.chatEntry?.entries?.length ?? 0}',
+        );
+        if (state.chatEntry?.entries != null) {
+          _checkAndScrollToBottom(state.chatEntry!.entries!);
+        }
+      },
+      // ✅ Build when state changes
       buildWhen: (previous, current) {
-        return previous.isChatEntry != current.isChatEntry ||
-            previous.chatEntry != current.chatEntry;
+        final shouldBuild =
+            previous.isChatEntry != current.isChatEntry ||
+            previous.chatEntry?.entries?.length !=
+                current.chatEntry?.entries?.length;
+
+        if (shouldBuild) {
+          log('🏗️ Building with status: ${current.isChatEntry}');
+          log('📊 Entries count: ${current.chatEntry?.entries?.length ?? 0}');
+        }
+
+        return shouldBuild;
       },
       builder: (context, state) {
-        log('🏗️ Building with status: ${state.isChatEntry}');
-        log('📊 Entries count: ${state.chatEntry?.entries?.length ?? 0}');
-
         // ✅ Show shimmer for loading state
         if (state.isChatEntry == ApiFetchStatus.loading) {
           log('📱 Showing shimmer');
@@ -440,9 +460,10 @@ class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
         }
 
         // ✅ Show messages list
-        log('📱 Showing messages list');
-        _checkAndScrollToBottom(state.chatEntry?.entries ?? []);
-        return _buildMessagesList(state.chatEntry?.entries ?? []);
+        log(
+          '📱 Showing messages list with ${state.chatEntry!.entries!.length} entries',
+        );
+        return _buildMessagesList(state.chatEntry!.entries!);
       },
     );
   }
@@ -450,7 +471,7 @@ class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
   Widget _buildShimmerList() {
     return ListView.builder(
       padding: EdgeInsets.symmetric(horizontal: 0.w),
-      itemCount: 6, // Show more shimmer items
+      itemCount: 6,
       itemBuilder: (context, index) =>
           ChatMessageShimmer(isSent: index % 2 == 0),
     );
@@ -462,13 +483,6 @@ class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
     return FutureBuilder(
       future: AuthUtils.instance.readUserData(),
       builder: (context, asyncSnapshot) {
-        // Scroll to bottom when the FutureBuilder completes
-        if (asyncSnapshot.connectionState == ConnectionState.done) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _scrollToBottom(animate: false);
-          });
-        }
-
         return ListView.builder(
           cacheExtent: 2000,
           controller: _scrollController,
@@ -481,13 +495,14 @@ class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
                   asyncSnapshot.data?.result?.userId.toString() ?? '0',
                 ) ??
                 0;
+
             return Padding(
               padding: EdgeInsets.only(top: 15.h),
               child: ChatBubbleMessage(
                 type: messageData.messageType,
                 message: messageData.content ?? '',
                 timestamp: getFormattedDate(messageData.createdAt ?? ''),
-                isSent: messageData.senderId == userId ? true : false,
+                isSent: messageData.senderId == userId,
                 chatMedias: messageData.chatMedias,
               ),
             );

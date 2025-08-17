@@ -42,7 +42,7 @@ class ChatCubit extends Cubit<ChatState> {
   Timer? _batchUpdateTimer;
   bool _hasPendingUpdates = false;
   bool _isDisposed = false;
-  bool _isSignalRInitialized = false;
+  final bool _isSignalRInitialized = false;
   static const Duration _cacheExpiration = Duration(hours: 2);
   static const Duration _chatCacheExpiration = Duration(minutes: 10);
   static const Duration _batchDelay = Duration(milliseconds: 16);
@@ -51,79 +51,6 @@ class ChatCubit extends Cubit<ChatState> {
   ChatCubit(this._chatRepositories) : super(InitialChatState()) {
     _initializePermissions();
     _initializeSignalR();
-  }
-
-  // void emit(ChatState newState) {
-  //   if (!_isDisposed) {
-  //     emit(newState);
-  //   }
-  // }
-  Future<void> _initializeSignalR() async {
-    if (_isSignalRInitialized) return;
-
-    try {
-      final token = await AuthUtils.instance.readAccessToken;
-      final username = await AuthUtils.instance.readUserData();
-
-      if (token == null || username == null) {
-        log('SignalR: Token or username not found');
-        return;
-      }
-
-      await _signalRService.initializeConnection(token: token);
-
-      // Setup message handler
-      _signalRService.onMessageReceived = (message) {
-        _handleSignalRMessage(message);
-      };
-
-      _signalRService.onConnected = () {
-        log('SignalR: Connected successfully');
-        // Join current chat group if exists
-        if (_currentChatId != null) {
-          _signalRService.joinChatGroup(_currentChatId.toString());
-        }
-      };
-
-      _signalRService.onDisconnected = () {
-        log('SignalR: Disconnected');
-      };
-
-      _signalRService.onError = (error) {
-        log('SignalR: Error - $error');
-      };
-
-      _isSignalRInitialized = true;
-    } catch (e) {
-      log('Failed to initialize SignalR: $e');
-    }
-  }
-
-  void _handleSignalRMessage(dynamic message) {
-    log('📨 SignalR message received: $message');
-
-    if (message == "REGISTRATION") {
-      // Refresh current chat data
-      if (_currentChatId != null) {
-        log('🔄 Refreshing chat data due to REGISTRATION message');
-        getChatEntry(chatId: _currentChatId);
-      }
-    } else {
-      // Handle other message types
-      // You can parse the message and update the UI accordingly
-      _refreshCurrentChat();
-    }
-  }
-
-  Future<void> _refreshCurrentChat() async {
-    if (_currentChatId != null) {
-      // Clear cache for current chat to force refresh
-      _chatCache.remove(_currentChatId);
-      _chatCacheTimestamps.remove(_currentChatId);
-
-      // Reload chat entry
-      await getChatEntry(chatId: _currentChatId);
-    }
   }
 
   void _scheduleMediaUpdate() {
@@ -172,25 +99,323 @@ class ChatCubit extends Cubit<ChatState> {
     emit(state.copyWith(errorMessage: null));
   }
 
-  //==================== Enhanced Chat Entry with Smart Caching
+  void _initializeSignalR() {
+    _signalRService.onChatEntryReceived = _handleNewChatEntry;
+    _signalRService.onNewEntriesReceived = _handleNewEntries;
+    _signalRService.onEntryUpdated = _handleEntryUpdate;
+    _signalRService.onEntryDeleted = _handleEntryDeletion;
+    _signalRService.onConnected = _handleSignalRConnected;
+    _signalRService.onMessageReceived = _handleMessageReceived; // ✅ Add this
+    _signalRService.onDisconnected = _handleSignalRDisconnected; // ✅ Add this
+    _signalRService.onError = _handleSignalRError;
+    _connectSignalR();
+  }
+
+  Future<void> _connectSignalR() async {
+    try {
+      await _signalRService.initializeConnection();
+      log('✅ SignalR connected successfully');
+    } catch (e) {
+      log('❌ SignalR connection failed: $e');
+    }
+  }
+
+  void _handleMessageReceived(dynamic message) {
+    log('📨 SignalR: Generic message received: $message');
+
+    // Handle different message types
+    if (message == "REGISTRATION") {
+      log('📋 Registration confirmed, refreshing chat data...');
+      if (_currentChatId != null) {
+        // Refresh current chat data
+        getChatEntry(chatId: _currentChatId);
+      }
+    } else if (message is String && message.contains("NEW_MESSAGE")) {
+      log('📬 New message notification received');
+      // Handle new message notification
+    }
+  }
+
+  // ✅ NEW: Handle disconnections
+  void _handleSignalRDisconnected() {
+    log('🔌 SignalR disconnected');
+    emit(state.copyWith(errorMessage: 'Connection lost. Reconnecting...'));
+  }
+
+  // ✅ NEW: Handle errors
+  void _handleSignalRError(Exception? error) {
+    log('❌ SignalR error: $error');
+    emit(state.copyWith(errorMessage: 'Connection error: $error'));
+  }
+
+  void _handleSignalRConnected() {
+    log('🔗 SignalR connected successfully');
+
+    // Clear any connection error messages
+    if (state.errorMessage?.contains('Connection') == true) {
+      emit(state.copyWith(errorMessage: null));
+    }
+
+    // Rejoin current chat if exists
+    if (_currentChatId != null) {
+      log('🔄 Rejoining chat group: $_currentChatId');
+      _signalRService.joinChatGroup(_currentChatId.toString());
+
+      // Request updates for current chat
+      // _signalRService.requestChatEntry(
+      //   _currentChatId.toString(),
+      //   '0', // You might want to pass the actual user ID
+      // );
+    }
+  }
+
+  void _handleNewEntries(List<Entry> newEntries) {
+    log('📨 SignalR: Received ${newEntries.length} new entries');
+    log('📊 Current chat ID: $_currentChatId');
+    log('📊 Has state.chatEntry: ${state.chatEntry != null}');
+
+    // Print detailed entry information
+    for (var entry in newEntries) {
+      log(
+        '📝 Entry: ID=${entry.id}, ChatID=${entry.chatId}, Content=${entry.content}',
+      );
+    }
+
+    if (_currentChatId == null) {
+      log('⚠️ No current chat ID set');
+      return;
+    }
+
+    if (state.chatEntry == null) {
+      log('⚠️ No chat entry state');
+      return;
+    }
+
+    // Filter entries for current chat
+    final relevantEntries = newEntries.where((entry) {
+      final entryChat = entry.chatId?.toString();
+      final currentChat = _currentChatId.toString();
+      log('🔍 Comparing entry chat: "$entryChat" with current: "$currentChat"');
+      return entryChat == currentChat;
+    }).toList();
+
+    log('📊 Relevant entries for current chat: ${relevantEntries.length}');
+
+    if (relevantEntries.isNotEmpty) {
+      final currentEntries = state.chatEntry!.entries ?? [];
+      final existingIds = currentEntries.map((e) => e.id).toSet();
+      final filteredNewEntries = relevantEntries
+          .where((entry) => !existingIds.contains(entry.id))
+          .toList();
+
+      log(
+        '📊 New entries after filtering duplicates: ${filteredNewEntries.length}',
+      );
+
+      if (filteredNewEntries.isNotEmpty) {
+        final updatedChatEntry = state.chatEntry!.copyWith(
+          entries: [...currentEntries, ...filteredNewEntries],
+        );
+
+        // Update cache
+        _chatCache[_currentChatId!] = updatedChatEntry;
+        _chatCacheTimestamps[_currentChatId!] = DateTime.now();
+
+        // ✅ IMPORTANT: Emit new state
+        emit(
+          state.copyWith(
+            chatEntry: updatedChatEntry,
+            isChatEntry: ApiFetchStatus.success,
+          ),
+        );
+
+        // Load media for new entries
+        _loadMediaInBackground(filteredNewEntries);
+
+        log('✅ State updated with ${filteredNewEntries.length} new entries');
+        log('📊 Total entries now: ${updatedChatEntry.entries?.length}');
+      }
+    }
+  }
+
+  // ✅ FIXED: Enhanced event handlers with better chat ID matching
+  void _handleNewChatEntry(ChatEntryResponse newChatEntry) {
+    log(
+      '📨 SignalR: Received new chat entry with ${newChatEntry.entries?.length ?? 0} entries',
+    );
+
+    if (_currentChatId == null || state.chatEntry == null) {
+      log('⚠️ SignalR: No current chat or chat entry to update');
+      return;
+    }
+
+    // Filter entries that belong to current chat
+    final relevantEntries =
+        newChatEntry.entries?.where((entry) {
+          final entryChat = entry.chatId?.toString();
+          final currentChat = _currentChatId.toString();
+          log('🔍 Comparing entry chat: $entryChat with current: $currentChat');
+          return entryChat == currentChat;
+        }).toList() ??
+        [];
+
+    log(
+      '📊 Found ${relevantEntries.length} relevant entries for chat $_currentChatId',
+    );
+
+    if (relevantEntries.isNotEmpty) {
+      final currentEntries = state.chatEntry!.entries ?? [];
+
+      // Filter out duplicates based on entry ID
+      final existingIds = currentEntries.map((e) => e.id).toSet();
+      final newEntries = relevantEntries
+          .where((entry) => !existingIds.contains(entry.id))
+          .toList();
+
+      log('📊 New entries after duplicate filtering: ${newEntries.length}');
+
+      if (newEntries.isNotEmpty) {
+        final updatedChatEntry = state.chatEntry!.copyWith(
+          entries: [...currentEntries, ...newEntries],
+        );
+
+        // Update cache
+        _chatCache[_currentChatId!] = updatedChatEntry;
+        _chatCacheTimestamps[_currentChatId!] = DateTime.now();
+
+        // Emit updated state
+        emit(
+          state.copyWith(
+            chatEntry: updatedChatEntry,
+            isChatEntry: ApiFetchStatus.success,
+          ),
+        );
+
+        // Load media for new entries
+        _loadMediaInBackground(newEntries);
+
+        log('✅ Added ${newEntries.length} new entries to chat $_currentChatId');
+      } else {
+        log('ℹ️ No new entries to add (all already exist)');
+      }
+    } else {
+      log('ℹ️ No relevant entries for current chat $_currentChatId');
+    }
+  }
+
+  void _handleEntryUpdate(Entry updatedEntry) {
+    log('📝 SignalR: Entry updated - ${updatedEntry.id}');
+
+    if (_currentChatId == null || state.chatEntry == null) {
+      log('⚠️ SignalR: No current chat context for entry update');
+      return;
+    }
+
+    // Check if this entry belongs to current chat
+    if (updatedEntry.chatId?.toString() != _currentChatId.toString()) {
+      log('ℹ️ SignalR: Entry update not for current chat');
+      return;
+    }
+
+    final currentEntries = state.chatEntry!.entries ?? [];
+    final updatedEntries = currentEntries.map((entry) {
+      return entry.id == updatedEntry.id ? updatedEntry : entry;
+    }).toList();
+
+    final updatedChatEntry = state.chatEntry!.copyWith(entries: updatedEntries);
+
+    // Update cache
+    _chatCache[_currentChatId!] = updatedChatEntry;
+    _chatCacheTimestamps[_currentChatId!] = DateTime.now();
+
+    // Emit updated state
+    emit(
+      state.copyWith(
+        chatEntry: updatedChatEntry,
+        isChatEntry: ApiFetchStatus.success,
+      ),
+    );
+
+    log('✅ Entry ${updatedEntry.id} updated in chat');
+  }
+
+  void _handleEntryDeletion(String entryId) {
+    log('🗑️ SignalR: Entry deleted - $entryId');
+
+    if (_currentChatId == null || state.chatEntry == null) {
+      log('⚠️ SignalR: No current chat context for entry deletion');
+      return;
+    }
+
+    final currentEntries = state.chatEntry!.entries ?? [];
+    final filteredEntries = currentEntries
+        .where((entry) => entry.id != entryId)
+        .toList();
+
+    // Only update if an entry was actually removed
+    if (filteredEntries.length < currentEntries.length) {
+      final updatedChatEntry = state.chatEntry!.copyWith(
+        entries: filteredEntries,
+      );
+
+      // Update cache
+      _chatCache[_currentChatId!] = updatedChatEntry;
+      _chatCacheTimestamps[_currentChatId!] = DateTime.now();
+
+      // Emit updated state
+      emit(
+        state.copyWith(
+          chatEntry: updatedChatEntry,
+          isChatEntry: ApiFetchStatus.success,
+        ),
+      );
+
+      log('✅ Entry $entryId deleted from chat');
+    } else {
+      log('ℹ️ Entry $entryId not found in current chat');
+    }
+  }
 
   Future<void> getChatEntry({int? chatId, int? userId}) async {
     final currentChatId = chatId ?? 0;
     log('📱 Getting chat entry for chatId: $currentChatId');
 
-    // ✅ ALWAYS show loading first, regardless of cache
+    // Set current chat ID BEFORE any operations
+    final previousChatId = _currentChatId;
+    _currentChatId = currentChatId;
+
+    // Always show loading first
     emit(
       state.copyWith(
         isChatEntry: ApiFetchStatus.loading,
-        chatEntry: null, // Clear previous data
+        chatEntry: null,
         errorMessage: null,
       ),
     );
 
-    // ✅ Add a small delay to ensure shimmer is visible
     if (_isDisposed) return;
 
-    // Check if we already have valid cached data for this chat
+    // Handle chat switching
+    if (previousChatId != null && previousChatId != currentChatId) {
+      log('🔄 Switching chats: $previousChatId -> $currentChatId');
+    }
+
+    // ✅ ALWAYS join SignalR group for this chat FIRST
+    if (_signalRService.isConnected) {
+      await _signalRService.joinChatGroup(currentChatId.toString());
+      log('🔗 Joining SignalR group for chat $currentChatId');
+
+      // // ✅ IMPORTANT: Request chat entry via SignalR
+      // await _signalRService.requestChatEntry(
+      //   currentChatId.toString(),
+      //   (userId ?? 0).toString(),
+      // );
+      log('📡 Requested SignalR updates for chat $currentChatId');
+    } else {
+      log('⚠️ SignalR not connected, cannot join group');
+    }
+
+    // Check cache
     final cachedData = _chatCache[currentChatId];
     final cacheTimestamp = _chatCacheTimestamps[currentChatId];
     final isCacheValid =
@@ -198,28 +423,9 @@ class ChatCubit extends Cubit<ChatState> {
         cacheTimestamp != null &&
         DateTime.now().difference(cacheTimestamp) < _chatCacheExpiration;
 
-    // If switching to a different chat, clear current state first
-    if (_currentChatId != null && _currentChatId != currentChatId) {
-      log('🔄 Switching chats: $_currentChatId -> $currentChatId');
-
-      // Leave previous SignalR group and join new one
-      if (_signalRService.isConnected) {
-        await _signalRService.joinChatGroup(currentChatId.toString());
-      }
-    }
-
-    _currentChatId = currentChatId;
-
-    // Join SignalR group for this chat if not already joined
-    if (_signalRService.isConnected && _currentChatId != null) {
-      await _signalRService.joinChatGroup(_currentChatId.toString());
-    }
-
-    // Use cached data if valid (but we already showed loading)
+    // Use cached data if valid
     if (isCacheValid) {
       log('💾 Using cached data for chat $currentChatId');
-
-      // ✅ Add delay even for cached data to show shimmer briefly
       await Future.delayed(const Duration(milliseconds: 400));
 
       if (_isDisposed) return;
@@ -231,15 +437,15 @@ class ChatCubit extends Cubit<ChatState> {
         ),
       );
 
-      // Load media in background for cached data
       if (cachedData.entries?.isNotEmpty == true) {
         _loadMediaInBackground(cachedData.entries!);
       }
       return;
     }
 
+    // Make API call for fresh data
     try {
-      log('🌐 Making API call for chat $currentChatId (no valid cache)');
+      log('🌐 Making API call for chat $currentChatId');
       final res = await _chatRepositories.chatEntry(currentChatId, userId ?? 0);
 
       if (_isDisposed) return;
@@ -249,9 +455,9 @@ class ChatCubit extends Cubit<ChatState> {
         _chatCache[currentChatId] = res.data!;
         _chatCacheTimestamps[currentChatId] = DateTime.now();
 
-        log(
-          'Successfully loaded and cached chat entry for chat $currentChatId',
-        );
+        log('✅ Successfully loaded chat entry for chat $currentChatId');
+        log('📊 Loaded ${res.data!.entries?.length ?? 0} entries');
+
         emit(
           state.copyWith(
             chatEntry: res.data,
@@ -259,7 +465,7 @@ class ChatCubit extends Cubit<ChatState> {
           ),
         );
 
-        // Load media files in background
+        // Load media in background
         if (res.data?.entries != null && res.data!.entries!.isNotEmpty) {
           _loadMediaInBackground(res.data!.entries!);
         }
@@ -270,7 +476,7 @@ class ChatCubit extends Cubit<ChatState> {
         );
       }
     } catch (e) {
-      log('Error getting chat entry for chat $currentChatId: $e');
+      log('❌ Error getting chat entry for chat $currentChatId: $e');
       if (!_isDisposed) {
         emit(
           state.copyWith(
@@ -282,134 +488,27 @@ class ChatCubit extends Cubit<ChatState> {
     }
   }
 
-  void _setupSignalRCallbacks() {
-    // Handle complete chat entry data from SignalR
-    _signalRService.onChatEntryReceived = (chatEntry) {
-      if (_currentChatId != null) {
-        // Cache the data
-        _chatCache[_currentChatId!] = chatEntry;
-        _chatCacheTimestamps[_currentChatId!] = DateTime.now();
+  void debugSignalRState() {
+    log('🔍 ===== SignalR Debug State =====');
+    log('  - ChatCubit._currentChatId: $_currentChatId');
+    log('  - SignalR.isConnected: ${_signalRService.isConnected}');
+    // log('  - SignalR._currentChatId: ${_signalRService}');
+    log(
+      '  - State.chatEntry entries: ${state.chatEntry?.entries?.length ?? 0}',
+    );
+    log('  - State.isChatEntry: ${state.isChatEntry}');
+    log('🔍 ===============================');
 
-        log('📨 Received chat entry via SignalR for chat $_currentChatId');
-        emit(
-          state.copyWith(
-            chatEntry: chatEntry,
-            isChatEntry: ApiFetchStatus.success,
-            errorMessage: null,
-          ),
-        );
+    // Also print connection info
+    _signalRService.printConnectionInfo();
+  }
 
-        // Load media in background
-        if (chatEntry.entries?.isNotEmpty == true) {
-          _loadMediaInBackground(chatEntry.entries!);
-        }
-      }
-    };
-
-    // Handle new entries
-    _signalRService.onNewEntriesReceived = (newEntries) {
-      final currentState = state;
-      if (currentState.chatEntry != null) {
-        final updatedEntries = List<Entry>.from(
-          currentState.chatEntry!.entries ?? [],
-        );
-        updatedEntries.addAll(newEntries);
-
-        final updatedChatEntry = currentState.chatEntry!.copyWith(
-          entries: updatedEntries,
-        );
-
-        // Update cache
-        if (_currentChatId != null) {
-          _chatCache[_currentChatId!] = updatedChatEntry;
-          _chatCacheTimestamps[_currentChatId!] = DateTime.now();
-        }
-
-        emit(state.copyWith(chatEntry: updatedChatEntry));
-        log('📨 Added ${newEntries.length} new entries via SignalR');
-      }
-    };
-
-    // Handle entry updates
-    _signalRService.onEntryUpdated = (updatedEntry) {
-      final currentState = state;
-      if (currentState.chatEntry?.entries != null) {
-        final entries = currentState.chatEntry!.entries!;
-        final index = entries.indexWhere((e) => e.id == updatedEntry.id);
-
-        if (index != -1) {
-          final updatedEntries = List<Entry>.from(entries);
-          updatedEntries[index] = updatedEntry;
-
-          final updatedChatEntry = currentState.chatEntry!.copyWith(
-            entries: updatedEntries,
-          );
-
-          // Update cache
-          if (_currentChatId != null) {
-            _chatCache[_currentChatId!] = updatedChatEntry;
-            _chatCacheTimestamps[_currentChatId!] = DateTime.now();
-          }
-
-          emit(state.copyWith(chatEntry: updatedChatEntry));
-          log('📨 Updated entry via SignalR: ${updatedEntry.id}');
-        }
-      }
-    };
-
-    // Handle entry deletions
-    _signalRService.onEntryDeleted = (entryId) {
-      final currentState = state;
-      if (currentState.chatEntry?.entries != null) {
-        final entries = currentState.chatEntry!.entries!;
-        final updatedEntries = entries.where((e) => e.id != entryId).toList();
-
-        final updatedChatEntry = currentState.chatEntry!.copyWith(
-          entries: updatedEntries,
-        );
-
-        // Update cache
-        if (_currentChatId != null) {
-          _chatCache[_currentChatId!] = updatedChatEntry;
-          _chatCacheTimestamps[_currentChatId!] = DateTime.now();
-        }
-
-        emit(state.copyWith(chatEntry: updatedChatEntry));
-        log('📨 Deleted entry via SignalR: $entryId');
-      }
-    };
-
-    // Handle typing status
-    _signalRService.onTypingStatusChanged = (isTyping, userId) {
-      // Update typing indicators in UI
-      // emit(state.copyWith(
-      //   typingUsers: isTyping
-      //     ? [...(state.typingUsers ?? []), userId]
-      //     : (state.typingUsers ?? []).where((id) => id != userId).toList(),
-      // ));
-    };
-
-    _signalRService.onConnected = () {
-      log('SignalR: Connected successfully');
-      if (_currentChatId != null) {
-        _signalRService.joinChatGroup(_currentChatId.toString());
-      }
-    };
-
-    _signalRService.onDisconnected = () {
-      log('SignalR: Disconnected');
-      // You could show a "reconnecting" indicator here
-    };
-
-    _signalRService.onError = (error) {
-      log('SignalR: Error - $error');
-      emit(
-        state.copyWith(
-          isChatEntry: ApiFetchStatus.failed,
-          errorMessage: 'Connection error: ${error.toString()}',
-        ),
-      );
-    };
+  Future<void> syncWithSignalR() async {
+    if (_currentChatId != null && _signalRService.isConnected) {
+      log('🔄 Manually syncing with SignalR for chat $_currentChatId');
+      await _signalRService.joinChatGroup(_currentChatId.toString());
+      await _signalRService.testServerConnection();
+    }
   }
   // Future<void> getChatEntry({int? chatId, int? userId}) async {
   //   final currentChatId = chatId ?? 0;
@@ -509,59 +608,7 @@ class ChatCubit extends Cubit<ChatState> {
   //     }
   //   }
   // }
-  // Future<void> getChatEntry({int? chatId, int? userId}) async {
-  //   final currentChatId = chatId ?? 0;
-  //   log('📱 Getting chat entry for chatId: $currentChatId (SignalR-only)');
 
-  //   // Show loading state
-  //   emit(state.copyWith(
-  //     isChatEntry: ApiFetchStatus.loading,
-  //     chatEntry: null,
-  //     errorMessage: null,
-  //   ));
-
-  //   if (_isDisposed) return;
-
-  //   // Check cache first (for offline support)
-  //   final cachedData = _chatCache[currentChatId];
-  //   final cacheTimestamp = _chatCacheTimestamps[currentChatId];
-  //   final isCacheValid = cachedData != null &&
-  //       cacheTimestamp != null &&
-  //       DateTime.now().difference(cacheTimestamp) < _chatCacheExpiration;
-
-  //   // If switching chats, join new SignalR group
-  //   if (_currentChatId != null && _currentChatId != currentChatId) {
-  //     log('🔄 Switching chats: $_currentChatId -> $currentChatId');
-  //     if (_signalRService.isConnected) {
-  //       await _signalRService.joinChatGroup(currentChatId.toString());
-  //     }
-  //   }
-
-  //   _currentChatId = currentChatId;
-
-  //   // Join SignalR group for this chat
-  //   if (_signalRService.isConnected) {
-  //     await _signalRService.joinChatGroup(_currentChatId.toString());
-
-  //     // Request chat entry data via SignalR
-  //     await _signalRService.requestChatEntry(
-  //       _currentChatId.toString(),
-  //       userId.toString(),
-  //     );
-  //   } else {
-  //     // If SignalR is not connected, use cached data or fallback to API
-  //     if (isCacheValid) {
-  //       log('💾 Using cached data for chat $currentChatId (SignalR offline)');
-  //       emit(state.copyWith(
-  //         chatEntry: cachedData,
-  //         isChatEntry: ApiFetchStatus.success,
-  //       ));
-  //     } else {
-  //       log('🌐 SignalR offline, falling back to API for chat $currentChatId');
-  //       // await _fallbackToApi(currentChatId, userId ?? 0);
-  //     }
-  //   }
-  // }
   ///=-=-=-=-=-=-=-=-=  Method to refresh chat data (force refresh)
   Future<void> refreshChatEntry({int? chatId, int? userId}) async {
     final currentChatId = chatId ?? 0;
