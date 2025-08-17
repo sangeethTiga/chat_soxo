@@ -595,5 +595,6 @@ class ChatSignalRService {
     log('  - Current Chat: $_currentChatId');
     log('  - Connection ID: ${_hubConnection?.connectionId ?? "null"}');
     log('  - Connection State: ${_hubConnection?.state ?? "null"}');
+    log('');
   }
 }
