@@ -187,12 +187,27 @@ class ChatCubit extends Cubit<ChatState> {
 
     if (state.chatEntry == null) {
       log('⚠️ No chat entry state - requesting fresh data');
-      // If we don't have chat data, request it
       getChatEntry(chatId: _currentChatId);
       return;
     }
 
-    // ✅ FIXED: Better chat ID comparison
+    // ✅ Check for media entries first
+    final entriesWithMedia = newEntries
+        .where((entry) => entry.chatMedias?.isNotEmpty == true)
+        .toList();
+
+    if (entriesWithMedia.isNotEmpty) {
+      log('📎 Found ${entriesWithMedia.length} entries with media files');
+      for (var entry in entriesWithMedia) {
+        log('📎 Entry ${entry.id} has ${entry.chatMedias?.length} media files');
+        for (var media in entry.chatMedias ?? []) {
+          log(
+            '📎 Media: ID=${media.id}, URL=${media.mediaUrl}, Type=${media.mediaType}',
+          );
+        }
+      }
+    }
+
     final currentChatIdStr = _currentChatId.toString();
     final relevantEntries = newEntries.where((entry) {
       final entryChatId = entry.chatId?.toString() ?? '';
@@ -210,7 +225,6 @@ class ChatCubit extends Cubit<ChatState> {
       return;
     }
 
-    // ✅ FIXED: Better duplicate filtering
     final currentEntries = List<Entry>.from(state.chatEntry!.entries ?? []);
     final existingIds = currentEntries
         .map((e) => e.id?.toString())
@@ -233,7 +247,6 @@ class ChatCubit extends Cubit<ChatState> {
       return;
     }
 
-    // ✅ FIXED: Ensure UI update
     try {
       final updatedEntries = [...currentEntries, ...filteredNewEntries];
       final updatedChatEntry = state.chatEntry!.copyWith(
@@ -254,16 +267,16 @@ class ChatCubit extends Cubit<ChatState> {
         state.copyWith(
           chatEntry: updatedChatEntry,
           isChatEntry: ApiFetchStatus.success,
-          errorMessage: null, // Clear any errors
+          errorMessage: null,
         ),
       );
 
-      // Load media for new entries in background
-      _loadMediaInBackground(filteredNewEntries);
+      // ✅ IMMEDIATELY load media for new entries (this was missing!)
+      _loadMediaForNewEntries(filteredNewEntries);
 
       log('✅ STATE EMITTED SUCCESSFULLY');
 
-      // ✅ Debug: Verify state after emit
+      // Debug verification
       Future.delayed(Duration(milliseconds: 100), () {
         log('🔍 Post-emit verification:');
         log('  - State entries: ${state.chatEntry?.entries?.length}');
@@ -273,6 +286,156 @@ class ChatCubit extends Cubit<ChatState> {
       log('❌ Error updating state with new entries: $e');
       emit(state.copyWith(errorMessage: 'Failed to update chat: $e'));
     }
+  }
+
+  void _loadMediaForNewEntries(List<Entry> newEntries) {
+    log('📎 Loading media for ${newEntries.length} new SignalR entries...');
+
+    final entriesWithMedia = newEntries
+        .where((entry) => entry.chatMedias?.isNotEmpty == true)
+        .toList();
+
+    if (entriesWithMedia.isEmpty) {
+      log('📎 No media files in new entries');
+      return;
+    }
+
+    log('📎 Found ${entriesWithMedia.length} entries with media files');
+
+    // ✅ Load media files immediately and update UI
+    for (var entry in entriesWithMedia) {
+      if (entry.chatMedias?.isNotEmpty == true) {
+        log(
+          '📎 Loading ${entry.chatMedias!.length} media files for entry ${entry.id}',
+        );
+
+        for (var media in entry.chatMedias!) {
+          if (media.id != null && media.mediaUrl != null) {
+            final mediaId = media.id.toString();
+            log('📎 Starting immediate load for media: $mediaId');
+
+            // ✅ Load synchronously to ensure immediate availability
+            _loadSingleMediaFileImmediate(media)
+                .then((_) {
+                  log('📎 Completed loading media: $mediaId');
+                  // ✅ Trigger UI update after each media loads
+                  _scheduleMediaUpdate();
+                })
+                .catchError((e) {
+                  log('❌ Failed to load media $mediaId: $e');
+                });
+          }
+        }
+      }
+    }
+  }
+
+  Future<void> _loadSingleMediaFileImmediate(ChatMedias media) async {
+    if (_isDisposed || media.id == null || media.mediaUrl == null) return;
+
+    final String mediaId = media.id.toString();
+
+    // Skip if already loaded or currently loading
+    if (_loadingFiles[mediaId] == true || _isFileLoadedAndValid(mediaId)) {
+      log('📎 Media $mediaId already loaded/loading, skipping');
+      return;
+    }
+
+    if (_failedLoads.contains(mediaId)) {
+      log('📎 Media $mediaId previously failed, retrying...');
+      _failedLoads.remove(mediaId); // Give it another chance
+    }
+
+    _loadingFiles[mediaId] = true;
+    log('📎 🔄 Loading media file: $mediaId from ${media.mediaUrl}');
+
+    try {
+      final fileData = await _chatRepositories.getFileFromApi(media.mediaUrl!);
+
+      if (_isDisposed) return;
+
+      if (fileData['data'] != null && fileData['data'].toString().isNotEmpty) {
+        _fileUrls[mediaId] = fileData['data'] ?? '';
+        _fileTypes[mediaId] = fileData['type'] ?? 'unknown';
+        _fileCacheTimestamps[mediaId] = DateTime.now();
+        _failedLoads.remove(mediaId);
+
+        log('✅ Successfully loaded media: $mediaId, type: ${fileData['type']}');
+        log('📊 File URL length: ${(_fileUrls[mediaId] ?? '').length}');
+
+        // ✅ Immediately notify UI about the loaded media
+        emit(
+          state.copyWith(
+            fileUrls: Map<String, String>.from(_fileUrls),
+            fileTypes: Map<String, String>.from(_fileTypes),
+          ),
+        );
+      } else {
+        throw Exception('Empty or invalid file data received');
+      }
+    } catch (e) {
+      log('❌ Error loading media $mediaId: $e');
+      _failedLoads.add(mediaId);
+      _fileUrls.remove(mediaId);
+      _fileTypes.remove(mediaId);
+      _fileCacheTimestamps.remove(mediaId);
+    } finally {
+      _loadingFiles[mediaId] = false;
+    }
+  }
+
+  // ✅ ENHANCED: Better file checking with debug info
+  bool _isFileLoadedAndValid(String mediaId) {
+    final hasUrl = _fileUrls.containsKey(mediaId);
+    final timestamp = _fileCacheTimestamps[mediaId];
+    final isValid =
+        timestamp != null &&
+        DateTime.now().difference(timestamp) < _cacheExpiration;
+
+    log('📎 File $mediaId: hasUrl=$hasUrl, isValid=$isValid');
+
+    return hasUrl && isValid;
+  }
+
+  @override
+  void emit(ChatState state) {
+    log(
+      '🚀 EMITTING STATE: ${state.isChatEntry}, entries: ${state.chatEntry?.entries?.length}',
+    );
+    log('📎 Media URLs cached: ${_fileUrls.length}');
+    log('📎 Media types cached: ${_fileTypes.length}');
+    super.emit(state);
+  }
+
+  void debugMediaLoadingStatus() {
+    log('🔍 ===== Media Loading Debug =====');
+    log('📎 Total cached URLs: ${_fileUrls.length}');
+    log('📎 Total cached types: ${_fileTypes.length}');
+    log(
+      '📎 Currently loading: ${_loadingFiles.values.where((loading) => loading).length}',
+    );
+    log('📎 Failed loads: ${_failedLoads.length}');
+
+    if (state.chatEntry?.entries != null) {
+      final entriesWithMedia = state.chatEntry!.entries!
+          .where((entry) => entry.chatMedias?.isNotEmpty == true)
+          .toList();
+      log('📎 Entries with media: ${entriesWithMedia.length}');
+
+      for (var entry in entriesWithMedia) {
+        for (var media in entry.chatMedias ?? []) {
+          final mediaId = media.id?.toString() ?? 'unknown';
+          final isLoaded = _isFileLoadedAndValid(mediaId);
+          final isLoading = _loadingFiles[mediaId] == true;
+          final hasFailed = _failedLoads.contains(mediaId);
+
+          log(
+            '📎 Media $mediaId: loaded=$isLoaded, loading=$isLoading, failed=$hasFailed',
+          );
+        }
+      }
+    }
+    log('🔍 ==============================');
   }
 
   // ✅ FIXED: Enhanced event handlers with better chat ID matching
@@ -406,52 +569,12 @@ class ChatCubit extends Cubit<ChatState> {
     }
   }
 
-  // void _handleEntryDeletion(String entryId) {
-  //   log('🗑️ SignalR: Entry deleted - $entryId');
-
-  //   if (_currentChatId == null || state.chatEntry == null) {
-  //     log('⚠️ SignalR: No current chat context for entry deletion');
-  //     return;
-  //   }
-
-  //   final currentEntries = state.chatEntry!.entries ?? [];
-  //   final filteredEntries = currentEntries
-  //       .where((entry) => entry.id != entryId)
-  //       .toList();
-
-  //   // Only update if an entry was actually removed
-  //   if (filteredEntries.length < currentEntries.length) {
-  //     final updatedChatEntry = state.chatEntry!.copyWith(
-  //       entries: filteredEntries,
-  //     );
-
-  //     // Update cache
-  //     _chatCache[_currentChatId!] = updatedChatEntry;
-  //     _chatCacheTimestamps[_currentChatId!] = DateTime.now();
-
-  //     // Emit updated state
-  //     emit(
-  //       state.copyWith(
-  //         chatEntry: updatedChatEntry,
-  //         isChatEntry: ApiFetchStatus.success,
-  //       ),
-  //     );
-
-  //     log('✅ Entry $entryId deleted from chat');
-  //   } else {
-  //     log('ℹ️ Entry $entryId not found in current chat');
-  //   }
-  // }
-
   Future<void> getChatEntry({int? chatId, int? userId}) async {
     final currentChatId = chatId ?? 0;
     log('📱 Getting chat entry for chatId: $currentChatId');
 
-    // Set current chat ID BEFORE any operations
     final previousChatId = _currentChatId;
     _currentChatId = currentChatId;
-
-    // Always show loading first
     emit(
       state.copyWith(
         isChatEntry: ApiFetchStatus.loading,
@@ -462,27 +585,19 @@ class ChatCubit extends Cubit<ChatState> {
 
     if (_isDisposed) return;
 
-    // Handle chat switching
     if (previousChatId != null && previousChatId != currentChatId) {
       log('🔄 Switching chats: $previousChatId -> $currentChatId');
     }
 
-    // ✅ ALWAYS join SignalR group for this chat FIRST
     if (_signalRService.isConnected) {
       await _signalRService.joinChatGroup(currentChatId.toString());
       log('🔗 Joining SignalR group for chat $currentChatId');
 
-      // // ✅ IMPORTANT: Request chat entry via SignalR
-      // await _signalRService.requestChatEntry(
-      //   currentChatId.toString(),
-      //   (userId ?? 0).toString(),
-      // );
       log('📡 Requested SignalR updates for chat $currentChatId');
     } else {
       log('⚠️ SignalR not connected, cannot join group');
     }
 
-    // Check cache
     final cachedData = _chatCache[currentChatId];
     final cacheTimestamp = _chatCacheTimestamps[currentChatId];
     final isCacheValid =
@@ -490,7 +605,6 @@ class ChatCubit extends Cubit<ChatState> {
         cacheTimestamp != null &&
         DateTime.now().difference(cacheTimestamp) < _chatCacheExpiration;
 
-    // Use cached data if valid
     if (isCacheValid) {
       log('💾 Using cached data for chat $currentChatId');
       await Future.delayed(const Duration(milliseconds: 400));
@@ -510,7 +624,6 @@ class ChatCubit extends Cubit<ChatState> {
       return;
     }
 
-    // Make API call for fresh data
     try {
       log('🌐 Making API call for chat $currentChatId');
       final res = await _chatRepositories.chatEntry(currentChatId, userId ?? 0);
@@ -518,7 +631,6 @@ class ChatCubit extends Cubit<ChatState> {
       if (_isDisposed) return;
 
       if (res.data != null) {
-        // Store in cache
         _chatCache[currentChatId] = res.data!;
         _chatCacheTimestamps[currentChatId] = DateTime.now();
 
@@ -532,7 +644,6 @@ class ChatCubit extends Cubit<ChatState> {
           ),
         );
 
-        // Load media in background
         if (res.data?.entries != null && res.data!.entries!.isNotEmpty) {
           _loadMediaInBackground(res.data!.entries!);
         }
@@ -577,104 +688,6 @@ class ChatCubit extends Cubit<ChatState> {
       await _signalRService.testServerConnection();
     }
   }
-  // Future<void> getChatEntry({int? chatId, int? userId}) async {
-  //   final currentChatId = chatId ?? 0;
-  //   log('📱 Getting chat entry for chatId: $currentChatId');
-
-  //   // ✅ ALWAYS show loading first, regardless of cache
-  //   emit(
-  //     state.copyWith(
-  //       isChatEntry: ApiFetchStatus.loading,
-  //       chatEntry: null, // Clear previous data
-  //       errorMessage: null,
-  //     ),
-  //   );
-
-  //   // ✅ Add a small delay to ensure shimmer is visible
-
-  //   if (_isDisposed) return;
-
-  //   // Check if we already have valid cached data for this chat
-  //   final cachedData = _chatCache[currentChatId];
-  //   final cacheTimestamp = _chatCacheTimestamps[currentChatId];
-  //   final isCacheValid =
-  //       cachedData != null &&
-  //       cacheTimestamp != null &&
-  //       DateTime.now().difference(cacheTimestamp) < _chatCacheExpiration;
-
-  //   // If switching to a different chat, clear current state first
-  //   if (_currentChatId != null && _currentChatId != currentChatId) {
-  //     log('🔄 Switching chats: $_currentChatId -> $currentChatId');
-  //   }
-
-  //   _currentChatId = currentChatId;
-
-  //   // Use cached data if valid (but we already showed loading)
-  //   if (isCacheValid) {
-  //     log('💾 Using cached data for chat $currentChatId');
-
-  //     // ✅ Add delay even for cached data to show shimmer briefly
-  //     await Future.delayed(const Duration(milliseconds: 400));
-
-  //     if (_isDisposed) return;
-
-  //     emit(
-  //       state.copyWith(
-  //         chatEntry: cachedData,
-  //         isChatEntry: ApiFetchStatus.success,
-  //       ),
-  //     );
-
-  //     // Load media in background for cached data
-  //     if (cachedData.entries?.isNotEmpty == true) {
-  //       _loadMediaInBackground(cachedData.entries!);
-  //     }
-  //     return;
-  //   }
-
-  //   try {
-  //     log('🌐 Making API call for chat $currentChatId (no valid cache)');
-  //     final res = await _chatRepositories.chatEntry(currentChatId, userId ?? 0);
-
-  //     if (_isDisposed) return;
-
-  //     if (res.data != null) {
-  //       // Store in cache
-  //       _chatCache[currentChatId] = res.data!;
-  //       _chatCacheTimestamps[currentChatId] = DateTime.now();
-
-  //       log(
-  //         'Successfully loaded and cached chat entry for chat $currentChatId',
-  //       );
-  //       emit(
-  //         state.copyWith(
-  //           chatEntry: res.data,
-  //           isChatEntry: ApiFetchStatus.success,
-  //         ),
-  //       );
-
-  //       // Load media files in background
-  //       if (res.data?.entries != null && res.data!.entries!.isNotEmpty) {
-  //         _loadMediaInBackground(res.data!.entries!);
-  //       }
-  //     } else {
-  //       log('⚠️ No data received for chat $currentChatId');
-  //       emit(
-  //         state.copyWith(isChatEntry: ApiFetchStatus.success, chatEntry: null),
-  //       );
-  //     }
-  //   } catch (e) {
-  //     log('Error getting chat entry for chat $currentChatId: $e');
-  //     if (!_isDisposed) {
-  //       emit(
-  //         state.copyWith(
-  //           isChatEntry: ApiFetchStatus.failed,
-  //           errorMessage: e.toString(),
-  //         ),
-  //       );
-  //     }
-  //   }
-  // }
 
   ///=-=-=-=-=-=-=-=-=  Method to refresh chat data (force refresh)
   Future<void> refreshChatEntry({int? chatId, int? userId}) async {
@@ -1265,14 +1278,14 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   ///=-=-=-=-=-=-=-=-=  Cache Management
-  bool _isFileLoadedAndValid(String mediaId) {
-    if (!_fileUrls.containsKey(mediaId)) return false;
+  // bool _isFileLoadedAndValid(String mediaId) {
+  //   if (!_fileUrls.containsKey(mediaId)) return false;
 
-    final timestamp = _fileCacheTimestamps[mediaId];
-    if (timestamp == null) return false;
+  //   final timestamp = _fileCacheTimestamps[mediaId];
+  //   if (timestamp == null) return false;
 
-    return DateTime.now().difference(timestamp) < _cacheExpiration;
-  }
+  //   return DateTime.now().difference(timestamp) < _cacheExpiration;
+  // }
 
   ///=-=-=-=-=-=-=-=-=  Public getters for UI
   String? getFileUrl(String mediaId) => _fileUrls[mediaId];
