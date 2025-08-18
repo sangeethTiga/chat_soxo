@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 
@@ -13,7 +14,8 @@ class ChatSignalRService {
   static final ChatSignalRService _instance = ChatSignalRService._internal();
   factory ChatSignalRService() => _instance;
   ChatSignalRService._internal();
-
+  DateTime? _lastActivity;
+  Timer? _activityTimer;
   HubConnection? _hubConnection;
   bool _isConnected = false;
   String? _currentChatId;
@@ -95,10 +97,27 @@ class ChatSignalRService {
         _isConnected = false;
       }
     }
-
+    _lastActivity = DateTime.now();
+    _startActivityTracking();
     log('❌ SignalR: All transport methods failed');
     onError?.call(lastError ?? Exception('All connection attempts failed'));
     throw lastError ?? Exception('All connection attempts failed');
+  }
+
+  void _startActivityTracking() {
+    _activityTimer?.cancel();
+    _activityTimer = Timer.periodic(Duration(seconds: 30), (timer) {
+      if (_isConnected) {
+        _lastActivity = DateTime.now();
+        log('📊 SignalR activity tracked: $_lastActivity');
+      }
+    });
+  }
+
+  bool get isComingBackFromInactivity {
+    if (_lastActivity == null) return false;
+    final inactiveTime = DateTime.now().difference(_lastActivity!);
+    return inactiveTime.inMinutes > 2; // Consider 2+ minutes as "away"
   }
 
   Future<void> _attemptConnection(
@@ -381,7 +400,6 @@ class ChatSignalRService {
     return null;
   }
 
-  // ✅ Keep other handlers for completeness
   void _handleChatEntryResponse(dynamic arguments) {
     log('📨 Processing ChatEntry response...');
     if (arguments != null && arguments is List && arguments.isNotEmpty) {
@@ -499,22 +517,48 @@ class ChatSignalRService {
     }
 
     try {
+      // ✅ FIX: Always leave previous group first
       if (_currentChatId != null && _currentChatId != chatId) {
         log('🔄 SignalR: Leaving previous group: $_currentChatId');
-        await _hubConnection!.invoke(
-          'LeaveBranchGroup',
-          args: [_currentChatId!],
-        );
-        log('✅ SignalR: Left previous chat group: $_currentChatId');
+        try {
+          await _hubConnection!.invoke(
+            'LeaveBranchGroup',
+            args: [_currentChatId!],
+          );
+          log('✅ SignalR: Left previous chat group: $_currentChatId');
+        } catch (e) {
+          log('⚠️ Error leaving previous group: $e');
+        }
       }
 
-      log('🔄 SignalR: Joining new group: $chatId');
+      log('🔄 SignalR: Joining group: $chatId');
       await _hubConnection!.invoke('JoinBranchGroup', args: [chatId]);
       _currentChatId = chatId;
       log('✅ SignalR: Joined chat group: $chatId');
+
+      // ✅ NEW: For comeback scenarios, request recent messages
+      if (isComingBackFromInactivity) {
+        log(
+          '🔄 User coming back from inactivity, requesting recent messages...',
+        );
+        await _requestRecentMessages(chatId);
+      }
     } catch (error) {
       log('❌ SignalR: Error joining chat group: $error');
       onError?.call(error is Exception ? error : Exception(error.toString()));
+    }
+  }
+
+  Future<void> _requestRecentMessages(String chatId) async {
+    try {
+      // You might need to implement this on your server
+      await _hubConnection!.invoke(
+        'RequestRecentMessages',
+        args: [chatId, '10'],
+      );
+      log('✅ Requested recent messages for chat: $chatId');
+    } catch (e) {
+      log('⚠️ Could not request recent messages: $e');
     }
   }
 
@@ -538,6 +582,7 @@ class ChatSignalRService {
     _isConnected = false;
     _currentChatId = null;
     _hubConnection = null;
+    _activityTimer?.cancel();
   }
 
   Future<void> reconnect() async {

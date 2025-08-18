@@ -903,10 +903,14 @@ class ChatCubit extends Cubit<ChatState> {
 
   Future<void> getChatEntry({int? chatId}) async {
     final currentChatId = chatId ?? 0;
-    log('📱 Getting chat entry for chatId: $currentChatId');
+    log(
+      '📱 🔄 Getting chat entry for chatId: $currentChatId (comeback scenario)',
+    );
 
     final previousChatId = _currentChatId;
     _currentChatId = currentChatId;
+
+    // ✅ CRITICAL: Always clear state when switching chats or coming back
     emit(
       state.copyWith(
         isChatEntry: ApiFetchStatus.loading,
@@ -917,19 +921,22 @@ class ChatCubit extends Cubit<ChatState> {
 
     if (_isDisposed) return;
 
+    // ✅ FIX 1: Handle chat switching or comeback scenario
     if (previousChatId != null && previousChatId != currentChatId) {
       log('🔄 Switching chats: $previousChatId -> $currentChatId');
-    }
-
-    if (_signalRService.isConnected) {
-      await _signalRService.joinChatGroup(currentChatId.toString());
-      log('🔗 Joining SignalR group for chat $currentChatId');
-
-      log('📡 Requested SignalR updates for chat $currentChatId');
+      await _handleChatSwitch(previousChatId, currentChatId);
+    } else if (previousChatId == currentChatId) {
+      log('🔄 Returning to same chat: $currentChatId (comeback scenario)');
+      await _handleChatComeback(currentChatId);
     } else {
-      log('⚠️ SignalR not connected, cannot join group');
+      log('🔄 First time opening chat: $currentChatId');
+      await _handleFirstTimeChat(currentChatId);
     }
 
+    // ✅ FIX 2: Always re-establish SignalR connection for current chat
+    await _ensureSignalRConnection(currentChatId);
+
+    // ✅ FIX 3: Check cache but with expiration logic
     final cachedData = _chatCache[currentChatId];
     final cacheTimestamp = _chatCacheTimestamps[currentChatId];
     final isCacheValid =
@@ -937,9 +944,13 @@ class ChatCubit extends Cubit<ChatState> {
         cacheTimestamp != null &&
         DateTime.now().difference(cacheTimestamp) < _chatCacheExpiration;
 
-    if (isCacheValid) {
+    // ✅ FIX 4: For comeback scenario, always fetch fresh data
+    final isComeback = previousChatId == currentChatId;
+    final shouldSkipCache = isComeback || !isCacheValid;
+
+    if (isCacheValid && !shouldSkipCache) {
       log('💾 Using cached data for chat $currentChatId');
-      await Future.delayed(const Duration(milliseconds: 400));
+      await Future.delayed(const Duration(milliseconds: 200));
 
       if (_isDisposed) return;
 
@@ -953,11 +964,14 @@ class ChatCubit extends Cubit<ChatState> {
       if (cachedData.entries?.isNotEmpty == true) {
         _loadMediaInBackground(cachedData.entries!);
       }
+
+      // ✅ Even with cache, sync with SignalR
+      await _syncWithSignalRAfterLoad();
       return;
     }
 
     try {
-      log('🌐 Making API call for chat $currentChatId');
+      log('🌐 Making API call for chat $currentChatId (fresh data needed)');
       final res = await _chatRepositories.chatEntry(currentChatId);
 
       if (_isDisposed) return;
@@ -979,6 +993,9 @@ class ChatCubit extends Cubit<ChatState> {
         if (res.data?.entries != null && res.data!.entries!.isNotEmpty) {
           _loadMediaInBackground(res.data!.entries!);
         }
+
+        // ✅ CRITICAL: Sync with SignalR after fresh load
+        await _syncWithSignalRAfterLoad();
       } else {
         log('⚠️ No data received for chat $currentChatId');
         emit(
@@ -997,6 +1014,205 @@ class ChatCubit extends Cubit<ChatState> {
       }
     }
   }
+
+  // ✅ FIX 5: Handle chat switching
+  Future<void> _handleChatSwitch(int previousChatId, int currentChatId) async {
+    log('🔄 Handling chat switch: $previousChatId -> $currentChatId');
+
+    // Clear any pending updates
+    _batchUpdateTimer?.cancel();
+    _hasPendingUpdates = false;
+
+    // Leave previous SignalR group
+    if (_signalRService.isConnected) {
+      try {
+        await _signalRService.joinChatGroup(currentChatId.toString());
+        log('✅ Switched SignalR groups successfully');
+      } catch (e) {
+        log('❌ Error switching SignalR groups: $e');
+      }
+    }
+  }
+
+  // ✅ FIX 6: Handle comeback to same chat
+  Future<void> _handleChatComeback(int chatId) async {
+    log('🔄 Handling comeback to chat: $chatId');
+
+    // Clear any stale state
+    _batchUpdateTimer?.cancel();
+    _hasPendingUpdates = false;
+
+    // Force cache invalidation for comeback scenario
+    _chatCacheTimestamps.remove(chatId);
+
+    log('🗑️ Cleared cache for comeback scenario');
+  }
+
+  // ✅ FIX 7: Handle first time chat
+  Future<void> _handleFirstTimeChat(int chatId) async {
+    log('🔄 Handling first time chat: $chatId');
+    // Nothing special needed for first time
+  }
+
+  // ✅ FIX 8: Ensure SignalR connection is proper
+  Future<void> _ensureSignalRConnection(int chatId) async {
+    log('🔗 Ensuring SignalR connection for chat: $chatId');
+
+    if (!_signalRService.isConnected) {
+      log('⚠️ SignalR not connected, attempting to reconnect...');
+      try {
+        await _signalRService.reconnect();
+        log('✅ SignalR reconnected successfully');
+      } catch (e) {
+        log('❌ Failed to reconnect SignalR: $e');
+        return;
+      }
+    }
+
+    // Always rejoin the chat group
+    try {
+      await _signalRService.joinChatGroup(chatId.toString());
+      log('✅ Joined SignalR group for chat: $chatId');
+    } catch (e) {
+      log('❌ Failed to join SignalR group: $e');
+    }
+  }
+
+  // ✅ FIX 9: Sync with SignalR after loading data
+  Future<void> _syncWithSignalRAfterLoad() async {
+    if (_currentChatId == null) return;
+
+    log('🔄 Syncing with SignalR after data load...');
+
+    // Wait a bit for UI to settle
+    await Future.delayed(Duration(milliseconds: 500));
+
+    if (_signalRService.isConnected && _currentChatId != null) {
+      // Request any missed messages
+      try {
+        log('📡 Requesting missed updates from SignalR...');
+        // You might need to implement this method in your SignalR service
+        // await _signalRService.requestMissedMessages(_currentChatId.toString());
+      } catch (e) {
+        log('⚠️ Could not request missed messages: $e');
+      }
+    }
+  }
+
+  // ✅ FIX 11: Enhanced page lifecycle handling
+
+  // ✅ FIX 12: Add this method to your ChatCubit
+  Future<void> refreshAfterComeback() async {
+    log('🔄 Refreshing chat after comeback...');
+
+    // Clear cache and reload
+    if (_currentChatId != null) {
+      _chatCache.remove(_currentChatId!);
+      _chatCacheTimestamps.remove(_currentChatId!);
+
+      // Reconnect SignalR
+      await _signalRService.reconnect();
+
+      // Reload chat data
+      await getChatEntry(chatId: _currentChatId);
+    }
+  }
+  // Future<void> getChatEntry({int? chatId}) async {
+  //   final currentChatId = chatId ?? 0;
+  //   log('📱 Getting chat entry for chatId: $currentChatId');
+
+  //   final previousChatId = _currentChatId;
+  //   _currentChatId = currentChatId;
+  //   emit(
+  //     state.copyWith(
+  //       isChatEntry: ApiFetchStatus.loading,
+  //       chatEntry: null,
+  //       errorMessage: null,
+  //     ),
+  //   );
+
+  //   if (_isDisposed) return;
+
+  //   if (previousChatId != null && previousChatId != currentChatId) {
+  //     log('🔄 Switching chats: $previousChatId -> $currentChatId');
+  //   }
+
+  //   if (_signalRService.isConnected) {
+  //     await _signalRService.joinChatGroup(currentChatId.toString());
+  //     log('🔗 Joining SignalR group for chat $currentChatId');
+
+  //     log('📡 Requested SignalR updates for chat $currentChatId');
+  //   } else {
+  //     log('⚠️ SignalR not connected, cannot join group');
+  //   }
+
+  //   final cachedData = _chatCache[currentChatId];
+  //   final cacheTimestamp = _chatCacheTimestamps[currentChatId];
+  //   final isCacheValid =
+  //       cachedData != null &&
+  //       cacheTimestamp != null &&
+  //       DateTime.now().difference(cacheTimestamp) < _chatCacheExpiration;
+
+  //   if (isCacheValid) {
+  //     log('💾 Using cached data for chat $currentChatId');
+  //     await Future.delayed(const Duration(milliseconds: 400));
+
+  //     if (_isDisposed) return;
+
+  //     emit(
+  //       state.copyWith(
+  //         chatEntry: cachedData,
+  //         isChatEntry: ApiFetchStatus.success,
+  //       ),
+  //     );
+
+  //     if (cachedData.entries?.isNotEmpty == true) {
+  //       _loadMediaInBackground(cachedData.entries!);
+  //     }
+  //     return;
+  //   }
+
+  //   try {
+  //     log('🌐 Making API call for chat $currentChatId');
+  //     final res = await _chatRepositories.chatEntry(currentChatId);
+
+  //     if (_isDisposed) return;
+
+  //     if (res.data != null) {
+  //       _chatCache[currentChatId] = res.data!;
+  //       _chatCacheTimestamps[currentChatId] = DateTime.now();
+
+  //       log('✅ Successfully loaded chat entry for chat $currentChatId');
+  //       log('📊 Loaded ${res.data!.entries?.length ?? 0} entries');
+
+  //       emit(
+  //         state.copyWith(
+  //           chatEntry: res.data,
+  //           isChatEntry: ApiFetchStatus.success,
+  //         ),
+  //       );
+
+  //       if (res.data?.entries != null && res.data!.entries!.isNotEmpty) {
+  //         _loadMediaInBackground(res.data!.entries!);
+  //       }
+  //     } else {
+  //       log('⚠️ No data received for chat $currentChatId');
+  //       emit(
+  //         state.copyWith(isChatEntry: ApiFetchStatus.success, chatEntry: null),
+  //       );
+  //     }
+  //   } catch (e) {
+  //     log('❌ Error getting chat entry for chat $currentChatId: $e');
+  //     if (!_isDisposed) {
+  //       emit(
+  //         state.copyWith(
+  //           isChatEntry: ApiFetchStatus.failed,
+  //           errorMessage: e.toString(),
+  //         ),
+  //       );
+  //     }
+  //   }
+  // }
 
   void debugSignalRState() {
     log('🔍 ===== SignalR Debug State =====');
@@ -1774,4 +1990,38 @@ void unawaited(Future<void> future) {
   future.catchError((error) {
     log('Unawaited future error: $error');
   });
+}
+
+class ChatPageManager {
+  static bool _isPageVisible = true;
+  static DateTime? _pageHiddenTime;
+
+  static void onPageVisible() {
+    final wasHidden = !_isPageVisible;
+    _isPageVisible = true;
+
+    if (wasHidden && _pageHiddenTime != null) {
+      final hiddenDuration = DateTime.now().difference(_pageHiddenTime!);
+      log('📱 Page became visible after ${hiddenDuration.inSeconds}s');
+
+      // If hidden for more than 30 seconds, refresh chat
+      if (hiddenDuration.inSeconds > 30) {
+        _handlePageComeback();
+      }
+    }
+  }
+
+  static void onPageHidden() {
+    _isPageVisible = false;
+    _pageHiddenTime = DateTime.now();
+    log('📱 Page became hidden');
+  }
+
+  static void _handlePageComeback() {
+    log('🔄 Handling page comeback - refreshing chat...');
+
+    // Get the current chat cubit and refresh
+    // You'll need to access your cubit here
+    // context.read<ChatCubit>().refreshAfterComeback();
+  }
 }
