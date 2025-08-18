@@ -549,6 +549,59 @@ class ChatSignalRService {
     }
   }
 
+  Future<void> leaveChatGroup(String chatId) async {
+    if (!isConnected) {
+      log('⚠️ Cannot leave group - SignalR not connected');
+      return;
+    }
+
+    try {
+      log('🔄 Leaving chat group: $chatId');
+      await _hubConnection!.invoke('LeaveGroup', args: [chatId]);
+      log('✅ Successfully left chat group: $chatId');
+    } catch (e) {
+      log('❌ Failed to leave chat group $chatId: $e');
+      // Don't throw here as leaving might not be critical
+    }
+  }
+
+  Future<void> requestMissedMessages(
+    String chatId,
+    String lastTimestamp,
+  ) async {
+    if (!isConnected) {
+      throw Exception('SignalR not connected');
+    }
+
+    try {
+      log(
+        '📡 Requesting missed messages for chat $chatId since $lastTimestamp',
+      );
+      await _hubConnection!.invoke(
+        'RequestMissedMessages',
+        args: [chatId, lastTimestamp],
+      );
+      log('✅ Missed messages request sent');
+    } catch (e) {
+      log('❌ Failed to request missed messages: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> sendPing() async {
+    if (!isConnected) {
+      throw Exception('SignalR not connected');
+    }
+
+    try {
+      await _hubConnection!.invoke('Ping');
+      log('✅ SignalR ping successful');
+    } catch (e) {
+      log('❌ SignalR ping failed: $e');
+      rethrow;
+    }
+  }
+
   Future<void> _requestRecentMessages(String chatId) async {
     try {
       // You might need to implement this on your server

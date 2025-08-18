@@ -901,27 +901,25 @@ class ChatCubit extends Cubit<ChatState> {
     }
   }
 
-  Future<void> getChatEntry({int? chatId}) async {
-    final currentChatId = chatId ?? 0;
-    log(
-      '📱 🔄 Getting chat entry for chatId: $currentChatId (comeback scenario)',
-    );
+// Enhanced getChatEntry method with proper SignalR handling
+Future<void> getChatEntry({int? chatId}) async {
+  final currentChatId = chatId ?? 0;
+  log('📱 🔄 Getting chat entry for chatId: $currentChatId');
 
-    final previousChatId = _currentChatId;
-    _currentChatId = currentChatId;
+  final previousChatId = _currentChatId;
+  _currentChatId = currentChatId;
 
-    // ✅ CRITICAL: Always clear state when switching chats or coming back
-    emit(
-      state.copyWith(
-        isChatEntry: ApiFetchStatus.loading,
-        chatEntry: null,
-        errorMessage: null,
-      ),
-    );
+  // Always clear state when switching chats or coming back
+  emit(state.copyWith(
+    isChatEntry: ApiFetchStatus.loading,
+    chatEntry: null,
+    errorMessage: null,
+  ));
 
-    if (_isDisposed) return;
+  if (_isDisposed) return;
 
-    // ✅ FIX 1: Handle chat switching or comeback scenario
+  try {
+    // Handle different scenarios
     if (previousChatId != null && previousChatId != currentChatId) {
       log('🔄 Switching chats: $previousChatId -> $currentChatId');
       await _handleChatSwitch(previousChatId, currentChatId);
@@ -933,190 +931,354 @@ class ChatCubit extends Cubit<ChatState> {
       await _handleFirstTimeChat(currentChatId);
     }
 
-    // ✅ FIX 2: Always re-establish SignalR connection for current chat
-    await _ensureSignalRConnection(currentChatId);
+    // Establish proper SignalR connection BEFORE loading data
+    final signalRConnected = await _establishSignalRConnection(currentChatId);
+    if (!signalRConnected) {
+      log('⚠️ SignalR connection failed, but continuing with API call...');
+    }
 
-    // ✅ FIX 3: Check cache but with expiration logic
-    final cachedData = _chatCache[currentChatId];
-    final cacheTimestamp = _chatCacheTimestamps[currentChatId];
-    final isCacheValid =
-        cachedData != null &&
-        cacheTimestamp != null &&
-        DateTime.now().difference(cacheTimestamp) < _chatCacheExpiration;
+    // Check cache validity
+    final shouldUseCache = _shouldUseCachedData(currentChatId, previousChatId);
+    
+    if (shouldUseCache) {
+      await _loadFromCache(currentChatId);
+    } else {
+      await _loadFromAPI(currentChatId);
+    }
 
-    // ✅ FIX 4: For comeback scenario, always fetch fresh data
-    final isComeback = previousChatId == currentChatId;
-    final shouldSkipCache = isComeback || !isCacheValid;
+    // Final sync with SignalR
+    await _finalizeSignalRConnection(currentChatId);
 
-    if (isCacheValid && !shouldSkipCache) {
-      log('💾 Using cached data for chat $currentChatId');
-      await Future.delayed(const Duration(milliseconds: 200));
+  } catch (e) {
+    log('❌ Error in getChatEntry for chat $currentChatId: $e');
+    if (!_isDisposed) {
+      emit(state.copyWith(
+        isChatEntry: ApiFetchStatus.failed,
+        errorMessage: e.toString(),
+      ));
+    }
+  }
+}
 
-      if (_isDisposed) return;
+// Enhanced SignalR connection establishment
+Future<bool> _establishSignalRConnection(int chatId) async {
+  log('🔗 Establishing SignalR connection for chat: $chatId');
+  
+  try {
+    // Step 1: Check current connection status
+    bool isConnected = _signalRService.isConnected;
+    log('📡 Current SignalR status: ${isConnected ? "Connected" : "Disconnected"}');
 
-      emit(
-        state.copyWith(
-          chatEntry: cachedData,
-          isChatEntry: ApiFetchStatus.success,
-        ),
-      );
+    // Step 2: If not connected, attempt connection with retry logic
+    if (!isConnected) {
+      isConnected = await _connectSignalRWithRetry();
+    }
 
-      if (cachedData.entries?.isNotEmpty == true) {
-        _loadMediaInBackground(cachedData.entries!);
+    if (!isConnected) {
+      log('❌ Failed to establish SignalR connection after retries');
+      return false;
+    }
+
+    // Step 3: Leave previous group and join new group
+    await _switchSignalRGroups(chatId);
+    
+    return true;
+  } catch (e) {
+    log('❌ Error establishing SignalR connection: $e');
+    return false;
+  }
+}
+
+// SignalR connection with retry logic
+Future<bool> _connectSignalRWithRetry({int maxRetries = 3}) async {
+  for (int attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      log('🔄 SignalR connection attempt $attempt/$maxRetries');
+      
+      // Disconnect first if partially connected
+      if (_signalRService.isConnected) {
+        await _signalRService.disconnect();
+        await Future.delayed(Duration(milliseconds: 500));
       }
 
-      // ✅ Even with cache, sync with SignalR
-      await _syncWithSignalRAfterLoad();
+      // Attempt fresh connection
+      await _signalRService.initializeConnection();
+      
+      // Wait a bit and verify connection
+      await Future.delayed(Duration(milliseconds: 1000));
+      
+      if (_signalRService.isConnected) {
+        log('✅ SignalR connected successfully on attempt $attempt');
+        return true;
+      } else {
+        log('⚠️ SignalR connection attempt $attempt failed - not connected');
+      }
+    } catch (e) {
+      log('❌ SignalR connection attempt $attempt failed: $e');
+    }
+
+    // Wait before retry (exponential backoff)
+    if (attempt < maxRetries) {
+      final delayMs = 1000 * attempt; // 1s, 2s, 3s
+      log('⏳ Waiting ${delayMs}ms before retry...');
+      await Future.delayed(Duration(milliseconds: delayMs));
+    }
+  }
+
+  log('❌ All SignalR connection attempts failed');
+  return false;
+}
+
+// Enhanced group switching
+Future<void> _switchSignalRGroups(int newChatId) async {
+  try {
+    log('🔄 Switching to SignalR group for chat: $newChatId');
+
+    // Leave all previous groups (if any)
+    if (_previousSignalRChatId != null && _previousSignalRChatId != newChatId) {
+      try {
+        await _signalRService.leaveChatGroup(_previousSignalRChatId.toString());
+        log('✅ Left previous SignalR group: $_previousSignalRChatId');
+      } catch (e) {
+        log('⚠️ Error leaving previous group: $e');
+      }
+    }
+
+    // Join new group
+    await _signalRService.joinChatGroup(newChatId.toString());
+    log('✅ Joined SignalR group: $newChatId');
+    
+    _previousSignalRChatId = newChatId;
+    
+  } catch (e) {
+    log('❌ Error switching SignalR groups: $e');
+    throw e;
+  }
+}
+
+// Check if we should use cached data
+bool _shouldUseCachedData(int chatId, int? previousChatId) {
+  final cachedData = _chatCache[chatId];
+  final cacheTimestamp = _chatCacheTimestamps[chatId];
+  final isCacheValid = cachedData != null &&
+      cacheTimestamp != null &&
+      DateTime.now().difference(cacheTimestamp) < _chatCacheExpiration;
+
+  // For comeback scenario or fresh data needs, skip cache
+  final isComeback = previousChatId == chatId;
+  final shouldSkipCache = isComeback || !isCacheValid;
+
+  return isCacheValid && !shouldSkipCache;
+}
+
+// Load from cache
+Future<void> _loadFromCache(int chatId) async {
+  final cachedData = _chatCache[chatId]!;
+  log('💾 Using cached data for chat $chatId');
+  
+  await Future.delayed(const Duration(milliseconds: 200));
+
+  if (_isDisposed) return;
+
+  emit(state.copyWith(
+    chatEntry: cachedData,
+    isChatEntry: ApiFetchStatus.success,
+  ));
+
+  if (cachedData.entries?.isNotEmpty == true) {
+    _loadMediaInBackground(cachedData.entries!);
+  }
+}
+
+// Load from API
+Future<void> _loadFromAPI(int chatId) async {
+  log('🌐 Making API call for chat $chatId (fresh data needed)');
+  
+  final res = await _chatRepositories.chatEntry(chatId);
+
+  if (_isDisposed) return;
+
+  if (res.data != null) {
+    _chatCache[chatId] = res.data!;
+    _chatCacheTimestamps[chatId] = DateTime.now();
+
+    log('✅ Successfully loaded chat entry for chat $chatId');
+    log('📊 Loaded ${res.data!.entries?.length ?? 0} entries');
+
+    emit(state.copyWith(
+      chatEntry: res.data,
+      isChatEntry: ApiFetchStatus.success,
+    ));
+
+    if (res.data?.entries != null && res.data!.entries!.isNotEmpty) {
+      _loadMediaInBackground(res.data!.entries!);
+    }
+  } else {
+    log('⚠️ No data received for chat $chatId');
+    emit(state.copyWith(
+      isChatEntry: ApiFetchStatus.success, 
+      chatEntry: null
+    ));
+  }
+}
+
+// Finalize SignalR connection after loading data
+Future<void> _finalizeSignalRConnection(int chatId) async {
+  if (!_signalRService.isConnected) {
+    log('⚠️ SignalR not connected during finalization');
+    return;
+  }
+
+  try {
+    log('🔄 Finalizing SignalR connection for chat: $chatId');
+    
+    // Wait for UI to settle
+    await Future.delayed(Duration(milliseconds: 500));
+
+    // Send a ping to verify connection
+    await _signalRService.sendPing();
+    
+    // Request any missed messages
+    await _requestMissedMessages(chatId);
+    
+    log('✅ SignalR connection finalized for chat: $chatId');
+  } catch (e) {
+    log('⚠️ Error during SignalR finalization: $e');
+  }
+}
+
+// Request missed messages
+Future<void> _requestMissedMessages(int chatId) async {
+  try {
+    // Get timestamp of last message we have
+    final lastMessage = state.chatEntry?.entries?.lastOrNull;
+    final lastTimestamp = lastMessage?.createdAt;
+    
+    if (lastTimestamp != null) {
+      log('📡 Requesting missed messages since: $lastTimestamp');
+      // Implement this method in your SignalR service
+      await _signalRService.requestMissedMessages(
+        chatId.toString(), 
+        lastTimestamp
+      );
+    }
+  } catch (e) {
+    log('⚠️ Could not request missed messages: $e');
+  }
+}
+
+// Enhanced chat switch handling
+Future<void> _handleChatSwitch(int previousChatId, int currentChatId) async {
+  log('🔄 Handling chat switch: $previousChatId -> $currentChatId');
+
+  // Clear any pending updates
+  _batchUpdateTimer?.cancel();
+  _hasPendingUpdates = false;
+
+  // Reset state flags
+  _isFirstLoad = true;
+}
+
+// Enhanced comeback handling
+Future<void> _handleChatComeback(int chatId) async {
+  log('🔄 Handling comeback to chat: $chatId');
+
+  // Clear any stale state
+  _batchUpdateTimer?.cancel();
+  _hasPendingUpdates = false;
+
+  // Force cache invalidation for comeback scenario
+  _chatCacheTimestamps.remove(chatId);
+  
+  // Reset connection state
+  _isFirstLoad = true;
+
+  log('🗑️ Cleared cache and reset state for comeback scenario');
+}
+
+// First time chat handling
+Future<void> _handleFirstTimeChat(int chatId) async {
+  log('🔄 Handling first time chat: $chatId');
+  _isFirstLoad = true;
+}
+
+// Enhanced refresh method for comeback scenarios
+Future<void> refreshAfterComeback() async {
+  log('🔄 Refreshing chat after comeback...');
+
+  if (_currentChatId == null) {
+    log('⚠️ No current chat ID for refresh');
+    return;
+  }
+
+  try {
+    // Clear all cached data
+    _chatCache.clear();
+    _chatCacheTimestamps.clear();
+    
+    // Reset state
+    _isFirstLoad = true;
+    _hasPendingUpdates = false;
+    _batchUpdateTimer?.cancel();
+
+    // Force disconnect and reconnect SignalR
+    await _forceSignalRReconnection();
+
+    // Reload chat data
+    await getChatEntry(chatId: _currentChatId);
+    
+    log('✅ Successfully refreshed after comeback');
+  } catch (e) {
+    log('❌ Error during comeback refresh: $e');
+    emit(state.copyWith(
+      isChatEntry: ApiFetchStatus.failed,
+      errorMessage: 'Failed to refresh chat: $e',
+    ));
+  }
+}
+
+// Force SignalR reconnection
+Future<void> _forceSignalRReconnection() async {
+  try {
+    log('🔄 Forcing SignalR reconnection...');
+    
+    // Disconnect completely
+    if (_signalRService.isConnected) {
+      await _signalRService.disconnect();
+      await Future.delayed(Duration(milliseconds: 1000));
+    }
+
+    // Reconnect with retry logic
+    final connected = await _connectSignalRWithRetry();
+    
+    if (connected) {
+      log('✅ SignalR force reconnection successful');
+    } else {
+      log('❌ SignalR force reconnection failed');
+    }
+  } catch (e) {
+    log('❌ Error during SignalR force reconnection: $e');
+  }
+}
+
+// Add these properties to your ChatCubit class
+int? _previousSignalRChatId;
+bool _isFirstLoad = true;
+
+// Enhanced connection monitoring
+void _startConnectionMonitoring() {
+  Timer.periodic(Duration(seconds: 30), (timer) {
+    if (_isDisposed) {
+      timer.cancel();
       return;
     }
 
-    try {
-      log('🌐 Making API call for chat $currentChatId (fresh data needed)');
-      final res = await _chatRepositories.chatEntry(currentChatId);
-
-      if (_isDisposed) return;
-
-      if (res.data != null) {
-        _chatCache[currentChatId] = res.data!;
-        _chatCacheTimestamps[currentChatId] = DateTime.now();
-
-        log('✅ Successfully loaded chat entry for chat $currentChatId');
-        log('📊 Loaded ${res.data!.entries?.length ?? 0} entries');
-
-        emit(
-          state.copyWith(
-            chatEntry: res.data,
-            isChatEntry: ApiFetchStatus.success,
-          ),
-        );
-
-        if (res.data?.entries != null && res.data!.entries!.isNotEmpty) {
-          _loadMediaInBackground(res.data!.entries!);
-        }
-
-        // ✅ CRITICAL: Sync with SignalR after fresh load
-        await _syncWithSignalRAfterLoad();
-      } else {
-        log('⚠️ No data received for chat $currentChatId');
-        emit(
-          state.copyWith(isChatEntry: ApiFetchStatus.success, chatEntry: null),
-        );
-      }
-    } catch (e) {
-      log('❌ Error getting chat entry for chat $currentChatId: $e');
-      if (!_isDisposed) {
-        emit(
-          state.copyWith(
-            isChatEntry: ApiFetchStatus.failed,
-            errorMessage: e.toString(),
-          ),
-        );
-      }
+    if (!_signalRService.isConnected && _currentChatId != null) {
+      log('⚠️ SignalR connection lost, attempting reconnection...');
+      _establishSignalRConnection(_currentChatId!);
     }
-  }
-
-  // ✅ FIX 5: Handle chat switching
-  Future<void> _handleChatSwitch(int previousChatId, int currentChatId) async {
-    log('🔄 Handling chat switch: $previousChatId -> $currentChatId');
-
-    // Clear any pending updates
-    _batchUpdateTimer?.cancel();
-    _hasPendingUpdates = false;
-
-    // Leave previous SignalR group
-    if (_signalRService.isConnected) {
-      try {
-        await _signalRService.joinChatGroup(currentChatId.toString());
-        log('✅ Switched SignalR groups successfully');
-      } catch (e) {
-        log('❌ Error switching SignalR groups: $e');
-      }
-    }
-  }
-
-  // ✅ FIX 6: Handle comeback to same chat
-  Future<void> _handleChatComeback(int chatId) async {
-    log('🔄 Handling comeback to chat: $chatId');
-
-    // Clear any stale state
-    _batchUpdateTimer?.cancel();
-    _hasPendingUpdates = false;
-
-    // Force cache invalidation for comeback scenario
-    _chatCacheTimestamps.remove(chatId);
-
-    log('🗑️ Cleared cache for comeback scenario');
-  }
-
-  // ✅ FIX 7: Handle first time chat
-  Future<void> _handleFirstTimeChat(int chatId) async {
-    log('🔄 Handling first time chat: $chatId');
-    // Nothing special needed for first time
-  }
-
-  // ✅ FIX 8: Ensure SignalR connection is proper
-  Future<void> _ensureSignalRConnection(int chatId) async {
-    log('🔗 Ensuring SignalR connection for chat: $chatId');
-
-    if (!_signalRService.isConnected) {
-      log('⚠️ SignalR not connected, attempting to reconnect...');
-      try {
-        await _signalRService.reconnect();
-        log('✅ SignalR reconnected successfully');
-      } catch (e) {
-        log('❌ Failed to reconnect SignalR: $e');
-        return;
-      }
-    }
-
-    // Always rejoin the chat group
-    try {
-      await _signalRService.joinChatGroup(chatId.toString());
-      log('✅ Joined SignalR group for chat: $chatId');
-    } catch (e) {
-      log('❌ Failed to join SignalR group: $e');
-    }
-  }
-
-  // ✅ FIX 9: Sync with SignalR after loading data
-  Future<void> _syncWithSignalRAfterLoad() async {
-    if (_currentChatId == null) return;
-
-    log('🔄 Syncing with SignalR after data load...');
-
-    // Wait a bit for UI to settle
-    await Future.delayed(Duration(milliseconds: 500));
-
-    if (_signalRService.isConnected && _currentChatId != null) {
-      // Request any missed messages
-      try {
-        log('📡 Requesting missed updates from SignalR...');
-        // You might need to implement this method in your SignalR service
-        // await _signalRService.requestMissedMessages(_currentChatId.toString());
-      } catch (e) {
-        log('⚠️ Could not request missed messages: $e');
-      }
-    }
-  }
-
-  // ✅ FIX 11: Enhanced page lifecycle handling
-
-  // ✅ FIX 12: Add this method to your ChatCubit
-  Future<void> refreshAfterComeback() async {
-    log('🔄 Refreshing chat after comeback...');
-
-    // Clear cache and reload
-    if (_currentChatId != null) {
-      _chatCache.remove(_currentChatId!);
-      _chatCacheTimestamps.remove(_currentChatId!);
-
-      // Reconnect SignalR
-      await _signalRService.reconnect();
-
-      // Reload chat data
-      await getChatEntry(chatId: _currentChatId);
-    }
-  }
+  });
+}
   // Future<void> getChatEntry({int? chatId}) async {
   //   final currentChatId = chatId ?? 0;
   //   log('📱 Getting chat entry for chatId: $currentChatId');

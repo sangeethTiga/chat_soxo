@@ -152,7 +152,7 @@ class PersonListsScreen extends StatelessWidget {
                                                   mode: 'MIS',
                                                   type: 'personal',
                                                   code: generateRandomString(4),
-                                                  title: data?.name ?? '',
+                                                  title: null,
                                                   description: '',
                                                   status: 'Running',
                                                   createdBy: 1,
