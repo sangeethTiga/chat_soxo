@@ -353,7 +353,6 @@ class ChatHeader extends StatelessWidget {
 }
 
 // Replace your OptimizedChatMessagesList class with this fixed version
-
 class OptimizedChatMessagesList extends StatefulWidget {
   const OptimizedChatMessagesList({super.key});
 
@@ -366,12 +365,16 @@ class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
   late ScrollController _scrollController;
   List<Entry>? _previousEntries;
   int _previousEntriesHash = 0;
-  bool _isInitialLoad = true;
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
+
+    // Scroll to bottom when the widget first loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToBottom();
+    });
   }
 
   @override
@@ -382,45 +385,41 @@ class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
 
   void _scrollToBottom({bool animate = true}) {
     if (_scrollController.hasClients) {
-      // Use a small delay to ensure the ListView has been built
-      Future.delayed(const Duration(milliseconds: 50), () {
-        if (_scrollController.hasClients) {
-          if (animate) {
-            _scrollController.animateTo(
-              _scrollController.position.maxScrollExtent,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOut,
-            );
-          } else {
-            _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
-          }
-        }
-      });
+      if (animate) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      } else {
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      }
     }
   }
 
   void _checkAndScrollToBottom(List<Entry> currentEntries) {
+    // ✅ FIX: More robust change detection
     final currentHash = Object.hashAll(currentEntries.map((e) => e.id));
 
-    log('📱 Checking scroll: prev=${_previousEntries?.length ?? 0}, current=${currentEntries.length}');
+    log(
+      '📱 Checking scroll: prev=${_previousEntries?.length ?? 0}, current=${currentEntries.length}',
+    );
     log('📱 Hash change: prev=$_previousEntriesHash, current=$currentHash');
-    log('📱 Is initial load: $_isInitialLoad');
 
-    // Always scroll on initial load
-    if (_isInitialLoad) {
-      _isInitialLoad = false;
-      log('📱 Initial load - scrolling to bottom');
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToBottom(animate: false);
-      });
-    }
-    // Check for new messages
-    else if (_previousEntries != null &&
+    // Check if new messages were added or content changed
+    if (_previousEntries != null &&
         (currentEntries.length > _previousEntries!.length ||
             currentHash != _previousEntriesHash)) {
       log('📱 New messages detected, scrolling to bottom');
+      // New message added, scroll to bottom
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToBottom(animate: true);
+        _scrollToBottom();
+      });
+    } else if (_previousEntries == null) {
+      // First time loading, scroll to bottom
+      log('📱 Initial load, scrolling to bottom');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom(animate: false); // No animation for initial load
       });
     }
 
@@ -432,50 +431,69 @@ class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
   Widget build(BuildContext context) {
     log('🏗️ OptimizedChatMessagesList build() called');
 
+    // ✅ CRITICAL FIX: Use BlocConsumer with enhanced change detection
     return BlocConsumer<ChatCubit, ChatState>(
+      // ✅ Enhanced listener condition
       listenWhen: (previous, current) {
         final prevCount = previous.chatEntry?.entries?.length ?? 0;
         final currCount = current.chatEntry?.entries?.length ?? 0;
         final statusChanged = previous.isChatEntry != current.isChatEntry;
         final entriesChanged = prevCount != currCount;
-        final hashChanged = previous.chatEntry?.entries?.hashCode !=
+        final hashChanged =
+            previous.chatEntry?.entries?.hashCode !=
             current.chatEntry?.entries?.hashCode;
 
         final shouldListen = statusChanged || entriesChanged || hashChanged;
 
         if (shouldListen) {
-          log('🎧 Listen condition met: Status=$statusChanged, Entries=$entriesChanged, Hash=$hashChanged');
+          log('🎧 Listen condition met:');
+          log('  - Status changed: $statusChanged');
+          log('  - Entries changed: $entriesChanged ($prevCount → $currCount)');
+          log('  - Hash changed: $hashChanged');
         }
 
         return shouldListen;
       },
       listener: (context, state) {
-        log('🎧 Listener triggered: Status=${state.isChatEntry}, Entries=${state.chatEntry?.entries?.length ?? 0}');
+        log(
+          '🎧 Listener triggered: Entries = ${state.chatEntry?.entries?.length ?? 0}',
+        );
 
-        // Only process scroll logic when we have successfully loaded entries
-        if (state.isChatEntry == ApiFetchStatus.success && 
-            state.chatEntry?.entries != null && 
-            state.chatEntry!.entries!.isNotEmpty) {
+        if (state.chatEntry?.entries != null) {
           _checkAndScrollToBottom(state.chatEntry!.entries!);
         }
 
+        // ✅ Show error messages if any
         if (state.errorMessage != null) {
           log('❌ Error in state: ${state.errorMessage}');
+          // You might want to show a snackbar here
         }
       },
+      // ✅ Enhanced build condition with multiple checks
       buildWhen: (previous, current) {
         final statusChanged = previous.isChatEntry != current.isChatEntry;
-        final entriesCountChanged = previous.chatEntry?.entries?.length !=
+        final entriesCountChanged =
+            previous.chatEntry?.entries?.length !=
             current.chatEntry?.entries?.length;
-        final entriesHashChanged = previous.chatEntry?.entries?.hashCode !=
+        final entriesHashChanged =
+            previous.chatEntry?.entries?.hashCode !=
             current.chatEntry?.entries?.hashCode;
         final errorChanged = previous.errorMessage != current.errorMessage;
 
-        final shouldBuild = statusChanged || entriesCountChanged || 
-                           entriesHashChanged || errorChanged;
+        final shouldBuild =
+            statusChanged ||
+            entriesCountChanged ||
+            entriesHashChanged ||
+            errorChanged;
 
         if (shouldBuild) {
-          log('🏗️ Build condition met: Status=$statusChanged, Entries=$entriesCountChanged');
+          log('🏗️ Build condition met:');
+          log('  - Status: ${previous.isChatEntry} → ${current.isChatEntry}');
+          log(
+            '  - Entries: ${previous.chatEntry?.entries?.length ?? 0} → ${current.chatEntry?.entries?.length ?? 0}',
+          );
+          log('  - Hash changed: $entriesHashChanged');
+          log('  - Error changed: $errorChanged');
         }
 
         return shouldBuild;
@@ -484,27 +502,31 @@ class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
         log('🏗️ Building with status: ${state.isChatEntry}');
         log('📊 Entries count: ${state.chatEntry?.entries?.length ?? 0}');
 
-        // Show error state
-        if (state.errorMessage != null && state.isChatEntry == ApiFetchStatus.failed) {
+        // ✅ Show error state if there's an error
+        if (state.errorMessage != null &&
+            state.isChatEntry == ApiFetchStatus.failed) {
           return _buildErrorState(state.errorMessage!);
         }
 
-        // Show loading state
+        // ✅ Show shimmer for loading state
         if (state.isChatEntry == ApiFetchStatus.loading) {
           log('📱 Showing shimmer loading state');
           return _buildShimmerList();
         }
 
-        // Show empty state
+        // ✅ Show empty state if no entries
         if (state.chatEntry?.entries?.isEmpty ?? true) {
           log('📱 Showing empty state');
           return const AnimatedEmptyChatWidget();
         }
 
-        // Show messages list
+        // ✅ Show messages list
         final entries = state.chatEntry!.entries!;
         log('📱 Showing messages list with ${entries.length} entries');
-        
+        log(
+          '📱 Latest entry: ID=${entries.last.id}, Content="${entries.last.content}"',
+        );
+
         return _buildMessagesList(entries);
       },
     );
@@ -515,26 +537,25 @@ class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, size: 48, color: Colors.red),
-          const SizedBox(height: 16),
-          const Text(
+          Icon(Icons.error_outline, size: 48, color: Colors.red),
+          SizedBox(height: 16),
+          Text(
             'Error loading messages',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             errorMessage,
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.grey[600]),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           ElevatedButton(
             onPressed: () {
-              // Reset initial load flag when retrying
-              _isInitialLoad = true;
+              // Retry loading
               context.read<ChatCubit>().refreshChatEntry();
             },
-            child: const Text('Retry'),
+            child: Text('Retry'),
           ),
         ],
       ),
@@ -545,15 +566,16 @@ class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
     return ListView.builder(
       padding: EdgeInsets.symmetric(horizontal: 0.w),
       itemCount: 6,
-      itemBuilder: (context, index) => ChatMessageShimmer(isSent: index % 2 == 0),
+      itemBuilder: (context, index) =>
+          ChatMessageShimmer(isSent: index % 2 == 0),
     );
   }
 
   Widget _buildMessagesList(List<Entry> entries) {
-    // Filter out HTML messages and sort by timestamp
+    // ✅ Filter out HTML messages and sort by timestamp if needed
     final pinnedList = entries.where((e) => e.messageType != 'html').toList();
 
-    // Sort by created date to ensure proper order
+    // ✅ Sort by created date to ensure proper order
     pinnedList.sort((a, b) {
       final aTime = DateTime.tryParse(a.createdAt ?? '') ?? DateTime.now();
       final bTime = DateTime.tryParse(b.createdAt ?? '') ?? DateTime.now();
@@ -569,18 +591,19 @@ class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
           return _buildShimmerList();
         }
 
-        final int userId = int.tryParse(
-          asyncSnapshot.data?.result?.userId.toString() ?? '0',
-        ) ?? 0;
+        final int userId =
+            int.tryParse(
+              asyncSnapshot.data?.result?.userId.toString() ?? '0',
+            ) ??
+            0;
 
         return ListView.builder(
-          // Performance optimizations
+          // ✅ Performance optimizations
           cacheExtent: 2000,
           controller: _scrollController,
           padding: EdgeInsets.symmetric(horizontal: 12.w),
           itemCount: pinnedList.length,
-          // Reverse the list so newest messages are at the bottom
-          // reverse: false, // Keep this false since we're sorting chronologically
+          // ✅ Add key for better performance and state preservation
           itemBuilder: (context, index) {
             final messageData = pinnedList[index];
             final messageKey = ValueKey(
@@ -604,6 +627,7 @@ class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
     );
   }
 }
+
 // ✅ BONUS: Debug widget to monitor state changes
 class ChatStateDebugger extends StatelessWidget {
   const ChatStateDebugger({super.key});
