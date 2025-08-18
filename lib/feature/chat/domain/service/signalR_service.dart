@@ -7,6 +7,7 @@ import 'package:signalr_netcore/hub_connection_builder.dart';
 import 'package:signalr_netcore/itransport.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_entry/chat_entry_response.dart';
 import 'package:soxo_chat/shared/utils/auth/auth_utils.dart';
+// 🔧 OPTIMIZED SignalR Service for ReceiveMessage handling
 
 class ChatSignalRService {
   static final ChatSignalRService _instance = ChatSignalRService._internal();
@@ -55,12 +56,9 @@ class ChatSignalRService {
     final user = await AuthUtils.instance.readUserData();
     final token = await AuthUtils.instance.readAccessToken;
 
-    // ✅ FIX 1: Clean up the username parameter
     String username = user?.result?.userName?.trim() ?? '';
-    // Remove any special characters that might cause issues
     username = Uri.encodeComponent(username);
 
-    // ✅ FIX 2: Use HTTP (not HTTPS) to match server configuration
     String baseUrl = "http://20.244.37.96:5002/api/chatsHub";
     if (username.isNotEmpty) {
       baseUrl += "?userName=$username";
@@ -73,11 +71,9 @@ class ChatSignalRService {
       return;
     }
 
-    // ✅ FIX 3: Try different transport strategies - LongPolling first for HTTP servers
     final transportStrategies = [
-      HttpTransportType.LongPolling, // Most reliable for HTTP servers
-      HttpTransportType.ServerSentEvents, // Good fallback
-      // Skip WebSockets for HTTP servers as they often have TLS issues
+      HttpTransportType.LongPolling,
+      HttpTransportType.ServerSentEvents,
     ];
 
     Exception? lastError;
@@ -87,12 +83,11 @@ class ChatSignalRService {
         log('🔄 SignalR: Trying transport: $transport');
         await _attemptConnection(token ?? '', baseUrl, transport);
         log('✅ SignalR: Successfully connected with $transport');
-        return; // Success, exit the loop
+        return;
       } catch (e) {
         lastError = e is Exception ? e : Exception(e.toString());
         log('❌ SignalR: $transport failed: $e');
 
-        // Clean up failed connection
         try {
           await _hubConnection?.stop();
         } catch (_) {}
@@ -101,7 +96,6 @@ class ChatSignalRService {
       }
     }
 
-    // If all transports failed
     log('❌ SignalR: All transport methods failed');
     onError?.call(lastError ?? Exception('All connection attempts failed'));
     throw lastError ?? Exception('All connection attempts failed');
@@ -114,13 +108,7 @@ class ChatSignalRService {
   ) async {
     log('SignalR: Attempting connection with transport: $transport');
     log('SignalR: Using token: ${token.isNotEmpty ? "Present" : "Missing"}');
-    log('SignalR: Token length: ${token.length}');
 
-    if (token.isNotEmpty && token.length > 20) {
-      log('SignalR: Token starts with: ${token.substring(0, 20)}...');
-    }
-
-    // ✅ FIX 4: Improved connection options for HTTP server
     final connectionOptions = HttpConnectionOptions(
       accessTokenFactory: () async {
         log('SignalR: Providing access token...');
@@ -128,32 +116,18 @@ class ChatSignalRService {
       },
       transport: transport,
       skipNegotiation: transport == HttpTransportType.WebSockets,
-      // ✅ FIX 5: Add timeout and headers for HTTP
-
-      // ✅ FIX 6: Configure logging for better debugging
       logMessageContent: true,
     );
 
     _hubConnection = HubConnectionBuilder()
         .withUrl(baseUrl, options: connectionOptions)
-        .withAutomaticReconnect(
-          retryDelays: [
-            2000,
-            5000,
-            10000,
-            20000,
-            30000,
-          ], // Extended retry delays
-        )
-        // ✅ FIX 7: Add connection timeout
+        .withAutomaticReconnect(retryDelays: [2000, 5000, 10000, 20000, 30000])
         .build();
 
     _setupEventHandlers();
 
     try {
       log('SignalR: Starting connection...');
-
-      // ✅ FIX 8: Add connection timeout
       await _hubConnection?.start()?.timeout(
         const Duration(seconds: 30),
         onTimeout: () {
@@ -166,22 +140,10 @@ class ChatSignalRService {
       log('SignalR: Connection ID: ${_hubConnection?.connectionId}');
       onConnected?.call();
 
-      // ✅ FIX 9: Test connection after establishing
       await _testConnection();
     } catch (error) {
       _isConnected = false;
       log('SignalR: ❌ Connection failed with $transport: $error');
-
-      // ✅ FIX 10: Better error analysis
-      if (error.toString().contains('401')) {
-        log('SignalR: 🔒 Authentication failed - token issue detected');
-      } else if (error.toString().contains('400')) {
-        log('SignalR: 🔧 Bad Request - check URL format and parameters');
-      } else if (error.toString().contains('404')) {
-        log('SignalR: 🔍 Hub not found - check endpoint path');
-      } else if (error.toString().contains('timeout')) {
-        log('SignalR: ⏱️ Connection timeout - server may be slow');
-      }
 
       try {
         await _hubConnection?.stop();
@@ -205,7 +167,7 @@ class ChatSignalRService {
       if (_currentChatId != null) {
         joinChatGroup(_currentChatId!);
       }
-      onConnected?.call(); // ✅ FIX 11: Notify on reconnection
+      onConnected?.call();
     });
 
     _hubConnection?.onclose(({Exception? error}) {
@@ -218,15 +180,15 @@ class ChatSignalRService {
   }
 
   void _setupMessageHandlers() {
-    // ✅ Enhanced method list with common SignalR patterns
+    // ✅ FOCUSED: Since only ReceiveMessage is working, prioritize it
     final primaryMethods = [
-      'ReceiveMessage',
+      'ReceiveMessage', // 🎯 Primary method that works
+      'MessageReceived', // Alternative naming
       'ReceiveChatEntry',
       'ReceiveNewEntries',
       'ReceiveEntryUpdate',
       'ReceiveEntryDeletion',
       'ReceiveTypingStatus',
-      'MessageReceived', // Alternative naming
       'ChatEntryReceived',
       'NewEntriesReceived',
       'EntryUpdated',
@@ -252,7 +214,8 @@ class ChatSignalRService {
       switch (methodName) {
         case 'ReceiveMessage':
         case 'MessageReceived':
-          _handleMessageResponse(arguments);
+          // ✅ CRITICAL: Handle ReceiveMessage specifically
+          _handleReceiveMessage(arguments);
           break;
 
         case 'ReceiveChatEntry':
@@ -282,106 +245,153 @@ class ChatSignalRService {
 
         default:
           log('🤷‍♂️ SignalR: Unknown method "$methodName"');
-          if (arguments != null && arguments is List && arguments.isNotEmpty) {
-            final data = arguments[0];
-            if (data is Map &&
-                (data.containsKey('Id') ||
-                    data.containsKey('ChatId') ||
-                    data.containsKey('id') ||
-                    data.containsKey('chatId'))) {
-              log('📦 Treating unknown method as chat entry');
-              _handleChatEntryResponse(arguments);
-            } else {
-              log('📦 Treating unknown method as message');
-              _handleMessageResponse(arguments);
-            }
-          }
+          // Fallback to ReceiveMessage handler
+          _handleReceiveMessage(arguments);
           break;
       }
     } catch (e) {
       log('❌ SignalR: Error in response handler for $methodName: $e');
+      log('❌ Stack trace: ${StackTrace.current}');
     }
   }
 
-  void _handleMessageResponse(dynamic arguments) {
-    log('📨 Processing message response...');
+  // ✅ OPTIMIZED: Dedicated handler for ReceiveMessage
+  void _handleReceiveMessage(dynamic arguments) {
+    log('📨 🎯 Processing ReceiveMessage specifically...');
 
-    if (arguments != null && arguments is List && arguments.isNotEmpty) {
-      try {
-        final messageData = arguments[0];
-        log('📊 Message data type: ${messageData.runtimeType}');
-        log('📊 Message data: $messageData');
-
-        if (messageData is Map<String, dynamic>) {
-          log('🔄 Message contains chat entry structure, converting...');
-          _convertMessageToChatEntry(messageData);
-          return;
-        } else if (messageData is String) {
-          try {
-            final parsed = jsonDecode(messageData);
-            if (parsed is Map<String, dynamic>) {
-              _convertMessageToChatEntry(parsed);
-              log('🔄 String message contains chat entry JSON, converting...');
-              return;
-            }
-          } catch (e) {
-            log('📝 String message is not JSON: $messageData');
-          }
-        }
-
-        log('✅ Handling as regular message');
-        onMessageReceived?.call(messageData);
-      } catch (e) {
-        log('❌ Error processing message response: $e');
-      }
+    if (arguments == null || arguments is! List || arguments.isEmpty) {
+      log('❌ Invalid ReceiveMessage arguments: $arguments');
+      return;
     }
-  }
 
-  void _convertMessageToChatEntry(Map<String, dynamic> messageData) {
     try {
-      log('🔄 Converting message to chat entry...');
-
-      // ✅ FIX 12: Handle both camelCase and PascalCase properties
-      final newEntry = Entry(
-        id: messageData['id'] ?? messageData['Id'],
-        chatId: messageData['chatId'] ?? messageData['ChatId'],
-        senderId: messageData['senderId'] ?? messageData['SenderId'],
-        messageType: messageData['messageType'] ?? messageData['MessageType'],
-        content: messageData['content'] ?? messageData['Content'],
-        createdAt: messageData['createdAt'] ?? messageData['CreatedAt'],
-        type: messageData['type'] ?? messageData['Type'],
-        typeValue: messageData['typeValue'] ?? messageData['TypeValue'],
-        thread: messageData['thread'] ?? messageData['Thread'],
-        chatMedias:
-            (messageData['chatMedias'] ?? messageData['ChatMedias']) != null
-            ? ((messageData['chatMedias'] ?? messageData['ChatMedias']) as List)
-                  .map((m) => ChatMedias.fromJson(m))
-                  .toList()
-            : null,
+      final messageData = arguments[0];
+      log('📊 ReceiveMessage data type: ${messageData.runtimeType}');
+      log(
+        '📊 ReceiveMessage data keys: ${messageData is Map ? messageData.keys.toList() : 'Not a map'}',
       );
 
-      log('✅ Created Entry: ID=${newEntry.id}, ChatID=${newEntry.chatId}');
-      onNewEntriesReceived?.call([newEntry]);
+      Entry? newEntry;
+
+      if (messageData is Map<String, dynamic>) {
+        log('✅ Processing Map data as Entry');
+        newEntry = _createEntryFromMap(messageData);
+      } else if (messageData is String) {
+        try {
+          log('✅ Processing String data as JSON');
+          final parsed = jsonDecode(messageData) as Map<String, dynamic>;
+          newEntry = _createEntryFromMap(parsed);
+        } catch (e) {
+          log('❌ Failed to parse string as JSON: $e');
+          return;
+        }
+      } else {
+        log(
+          '❌ Unsupported ReceiveMessage data type: ${messageData.runtimeType}',
+        );
+        return;
+      }
+
+      if (newEntry != null) {
+        log('✅ 🎯 Successfully created Entry from ReceiveMessage:');
+        log('   - ID: ${newEntry.id}');
+        log('   - ChatID: ${newEntry.chatId}');
+        log('   - Content: "${newEntry.content}"');
+        log('   - Sender: ${newEntry.senderId}');
+        log('   - Type: ${newEntry.messageType}');
+        log('   - Created: ${newEntry.createdAt}');
+
+        // ✅ CRITICAL: Call the handler
+        log('🚀 Calling onNewEntriesReceived with new entry...');
+        onNewEntriesReceived?.call([newEntry]);
+        log('✅ onNewEntriesReceived called successfully');
+      } else {
+        log('❌ Failed to create Entry from ReceiveMessage data');
+      }
     } catch (e) {
-      log('❌ Error converting message to entry: $e');
+      log('❌ Error in _handleReceiveMessage: $e');
+      log('❌ Stack trace: ${StackTrace.current}');
     }
   }
 
+  // ✅ ROBUST: Enhanced entry creation from map
+  Entry? _createEntryFromMap(Map<String, dynamic> data) {
+    try {
+      log('🔨 Creating Entry from map with keys: ${data.keys.toList()}');
+
+      // ✅ Handle both camelCase and PascalCase with detailed logging
+      final id = data['id'] ?? data['Id'];
+      final chatId = data['chatId'] ?? data['ChatId'];
+      final senderId = data['senderId'] ?? data['SenderId'];
+      final messageType = data['messageType'] ?? data['MessageType'];
+      final content = data['content'] ?? data['Content'];
+      final createdAt = data['createdAt'] ?? data['CreatedAt'];
+      final type = data['type'] ?? data['Type'];
+      final typeValue = data['typeValue'] ?? data['TypeValue'];
+      final thread = data['thread'] ?? data['Thread'];
+
+      log('🔍 Extracted values:');
+      log('   - id: $id (${id.runtimeType})');
+      log('   - chatId: $chatId (${chatId.runtimeType})');
+      log('   - senderId: $senderId (${senderId.runtimeType})');
+      log('   - messageType: $messageType');
+      log('   - content: $content');
+
+      final entry = Entry(
+        id: id is int ? id : (id is String ? int.tryParse(id) : null),
+        chatId: chatId is int
+            ? chatId
+            : (chatId is String ? int.tryParse(chatId) : null),
+        senderId: senderId is int
+            ? senderId
+            : (senderId is String ? int.tryParse(senderId) : null),
+        messageType: messageType?.toString(),
+        content: content?.toString(),
+        createdAt: createdAt?.toString(),
+        type: type?.toString(),
+        typeValue: typeValue is int
+            ? typeValue
+            : (typeValue is String ? int.tryParse(typeValue) : null),
+        thread: thread?.toString(),
+        chatMedias: _parseChatMedias(data['chatMedias'] ?? data['ChatMedias']),
+      );
+
+      log('✅ Entry created successfully');
+      return entry;
+    } catch (e) {
+      log('❌ Error creating Entry from map: $e');
+      log('❌ Data: $data');
+      return null;
+    }
+  }
+
+  List<ChatMedias>? _parseChatMedias(dynamic mediasData) {
+    if (mediasData == null) return null;
+
+    try {
+      if (mediasData is List) {
+        return mediasData
+            .map((m) => ChatMedias.fromJson(m as Map<String, dynamic>))
+            .toList();
+      }
+    } catch (e) {
+      log('⚠️ Error parsing chat medias: $e');
+    }
+
+    return null;
+  }
+
+  // ✅ Keep other handlers for completeness
   void _handleChatEntryResponse(dynamic arguments) {
     log('📨 Processing ChatEntry response...');
-
     if (arguments != null && arguments is List && arguments.isNotEmpty) {
       try {
         final chatEntryData = arguments[0];
-        log('📊 ChatEntry data type: ${chatEntryData.runtimeType}');
-
         ChatEntryResponse? chatEntry;
 
         if (chatEntryData is Map<String, dynamic>) {
-          log('✅ Parsing Map as ChatEntryResponse');
           chatEntry = ChatEntryResponse.fromJson(chatEntryData);
         } else if (chatEntryData is String) {
-          log('✅ Parsing JSON string as ChatEntryResponse');
           final jsonData = jsonDecode(chatEntryData) as Map<String, dynamic>;
           chatEntry = ChatEntryResponse.fromJson(jsonData);
         }
@@ -391,12 +401,9 @@ class ChatSignalRService {
             '✅ ChatEntry parsed successfully with ${chatEntry.entries?.length ?? 0} entries',
           );
           onChatEntryReceived?.call(chatEntry);
-        } else {
-          log('❌ Failed to parse ChatEntry');
         }
       } catch (e) {
         log('❌ Error parsing chat entry: $e');
-        log('📊 Raw data: $arguments');
       }
     }
   }
@@ -406,7 +413,6 @@ class ChatSignalRService {
     if (arguments != null && arguments is List && arguments.isNotEmpty) {
       try {
         final entriesData = arguments[0];
-
         if (entriesData is List) {
           final entries = entriesData.map((e) {
             if (e is Map<String, dynamic>) {
@@ -420,10 +426,6 @@ class ChatSignalRService {
 
           log('✅ SignalR: Parsed ${entries.length} new entries');
           onNewEntriesReceived?.call(entries);
-        } else {
-          log(
-            '❌ SignalR: Entries data is not a list: ${entriesData.runtimeType}',
-          );
         }
       } catch (e) {
         log('❌ SignalR: Error parsing new entries: $e');
@@ -436,14 +438,11 @@ class ChatSignalRService {
     if (arguments != null && arguments is List && arguments.isNotEmpty) {
       try {
         final entryData = arguments[0];
-
         if (entryData is Map<String, dynamic>) {
           final entry = Entry.fromJson(entryData);
-          log('✅ SignalR: Entry update parsed');
           onEntryUpdated?.call(entry);
         } else if (entryData is String) {
           final entry = Entry.fromJson(jsonDecode(entryData));
-          log('✅ SignalR: Entry update parsed from JSON string');
           onEntryUpdated?.call(entry);
         }
       } catch (e) {
@@ -458,10 +457,7 @@ class ChatSignalRService {
       try {
         final entryId = arguments[0];
         if (entryId is String) {
-          log('✅ SignalR: Entry deletion ID: $entryId');
           onEntryDeleted?.call(entryId);
-        } else {
-          log('❌ SignalR: Entry ID is not a string: ${entryId.runtimeType}');
         }
       } catch (e) {
         log('❌ SignalR: Error parsing entry deletion: $e');
@@ -475,7 +471,6 @@ class ChatSignalRService {
       try {
         final isTyping = arguments[0] as bool;
         final userId = arguments[1] as String;
-        log('✅ SignalR: Typing status - User: $userId, Typing: $isTyping');
         onTypingStatusChanged?.call(isTyping, userId);
       } catch (e) {
         log('❌ SignalR: Error parsing typing status: $e');
@@ -483,27 +478,17 @@ class ChatSignalRService {
     }
   }
 
-  // ✅ FIX 13: Improved connection testing
   Future<void> _testConnection() async {
-    if (!_isConnected || _hubConnection == null) {
-      return;
-    }
+    if (!_isConnected || _hubConnection == null) return;
 
     try {
-      log('🧪 Testing connection with basic ping...');
-      // Try to invoke a simple method to test the connection
+      log('🧪 Testing connection...');
       await _hubConnection!
           .invoke('Ping')
-          .timeout(
-            const Duration(seconds: 5),
-            onTimeout: () {
-              log('⚠️ Ping timeout - connection might be unstable');
-              return null;
-            },
-          );
+          .timeout(const Duration(seconds: 5), onTimeout: () => null);
       log('✅ Connection test successful');
     } catch (e) {
-      log('⚠️ Connection test failed (this might be normal): $e');
+      log('⚠️ Connection test failed: $e');
     }
   }
 
@@ -539,10 +524,8 @@ class ChatSignalRService {
     log('  - Current Chat: $_currentChatId');
     log('  - Connection ID: ${_hubConnection?.connectionId ?? "null"}');
     log('  - Connection State: ${_hubConnection?.state ?? "null"}');
-    log('  - Hub URL: ${_hubConnection?.baseUrl ?? "null"}');
   }
 
-  // ✅ FIX 15: Add proper disconnect method
   Future<void> disconnect() async {
     if (_hubConnection != null) {
       try {
@@ -557,7 +540,6 @@ class ChatSignalRService {
     _hubConnection = null;
   }
 
-  // ✅ FIX 16: Add connection retry method
   Future<void> reconnect() async {
     await disconnect();
     await Future.delayed(const Duration(seconds: 2));

@@ -170,9 +170,12 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   // ✅ CRITICAL FIXES for UI updates
+  // 🔧 CRITICAL FIX: Enhanced _handleNewEntries in ChatCubit
 
   void _handleNewEntries(List<Entry> newEntries) {
-    log('📨 SignalR: Received ${newEntries.length} new entries');
+    log(
+      '📨 🎯 SignalR: Received ${newEntries.length} new entries from ReceiveMessage',
+    );
     log('📊 Current chat ID: $_currentChatId');
     log('📊 Current chat state: ${state.isChatEntry}');
     log('📊 Has chatEntry: ${state.chatEntry != null}');
@@ -185,6 +188,14 @@ class ChatCubit extends Cubit<ChatState> {
     if (_currentChatId == null) {
       log('⚠️ No current chat ID set');
       return;
+    }
+
+    // ✅ DEBUG: Log incoming entries in detail
+    for (var i = 0; i < newEntries.length; i++) {
+      final entry = newEntries[i];
+      log(
+        '🔍 Entry $i: ID=${entry.id}, ChatID=${entry.chatId}, Content="${entry.content}", Sender=${entry.senderId}',
+      );
     }
 
     if (state.chatEntry == null) {
@@ -210,17 +221,21 @@ class ChatCubit extends Cubit<ChatState> {
       return;
     }
 
-    // ✅ FIX 1: Create completely new list instances to ensure state change detection
+    // ✅ CRITICAL: Get current entries and check for duplicates
     final currentEntries = List<Entry>.from(state.chatEntry!.entries ?? []);
+    log('📊 Current entries count: ${currentEntries.length}');
+
     final existingIds = currentEntries
         .map((e) => e.id?.toString())
         .where((id) => id != null)
         .toSet();
 
+    log('📊 Existing entry IDs (last 5): ${existingIds.take(5).toList()}');
+
     final filteredNewEntries = relevantEntries.where((entry) {
       final entryId = entry.id?.toString();
       final isNew = entryId != null && !existingIds.contains(entryId);
-      log('🔍 Entry ${entry.id}: exists=${!isNew}');
+      log('🔍 Entry ${entry.id}: exists=${!isNew}, will add=$isNew');
       return isNew;
     }).toList();
 
@@ -234,15 +249,18 @@ class ChatCubit extends Cubit<ChatState> {
     }
 
     try {
-      // ✅ FIX 2: Create completely new list for Freezed
-      final updatedEntries = List<Entry>.from([
-        ...currentEntries,
-        ...filteredNewEntries,
-      ]);
+      // ✅ CRITICAL: Create completely new collections for immutability
+      final updatedEntries = <Entry>[...currentEntries, ...filteredNewEntries];
 
-      // ✅ FIX 3: Use Freezed copyWith properly
-      final updatedChatEntry = state.chatEntry!.copyWith(
-        entries: updatedEntries, // Freezed will create new object automatically
+      log('📊 Total entries after update: ${updatedEntries.length}');
+      log(
+        '📊 Last entry will be: ID=${filteredNewEntries.last.id}, Content="${filteredNewEntries.last.content}"',
+      );
+
+      // ✅ CRITICAL: Create completely new ChatEntryResponse instance
+      final updatedChatEntry = ChatEntryResponse(
+        entries: updatedEntries,
+        userChats: state.chatEntry!.userChats,
       );
 
       // Update cache
@@ -250,62 +268,248 @@ class ChatCubit extends Cubit<ChatState> {
       _chatCacheTimestamps[_currentChatId!] = DateTime.now();
 
       log(
-        '🚀 EMITTING STATE UPDATE with ${filteredNewEntries.length} new entries',
+        '🚀 🎯 EMITTING STATE UPDATE with ${filteredNewEntries.length} new entries',
       );
-      log('📊 Total entries now: ${updatedEntries.length}');
+      log('📊 Previous state hash: ${state.hashCode}');
+      log('📊 Previous entries hash: ${state.chatEntry?.entries?.hashCode}');
 
-      // ✅ FIX 4: Use regular emit with copyWith for Freezed compatibility
-      emit(
-        state.copyWith(
-          chatEntry: updatedChatEntry,
-          isChatEntry: ApiFetchStatus.success,
-          errorMessage: null, // Clear any errors
-        ),
+      // ✅ CRITICAL: Force complete state recreation
+      final newState = ChatState(
+        // Copy all existing properties
+        isArrow: state.isArrow,
+        isRecording: state.isRecording,
+        recordingDuration: state.recordingDuration,
+        recordingPath: state.recordingPath,
+        hasRecordingPermission: state.hasRecordingPermission,
+        chatList: state.chatList,
+        isChat: state.isChat,
+        selectedTab: state.selectedTab,
+        allChats: state.allChats,
+        selectedFiles: state.selectedFiles,
+        isUploadingFiles: state.isUploadingFiles,
+        uploadProgress: state.uploadProgress,
+        fileUrls: Map<String, String>.from(state.fileUrls ?? {}),
+        fileTypes: Map<String, String>.from(state.fileTypes ?? {}),
+        viewingFile: state.viewingFile,
+        isLoadingMedia: state.isLoadingMedia,
+        // ✅ Update critical properties with new instances
+        chatEntry: updatedChatEntry,
+        isChatEntry: ApiFetchStatus.success,
+        errorMessage: null,
       );
 
-      // ✅ FIX 6: Load media immediately for new entries
+      log('📊 New state hash: ${newState.hashCode}');
+      log('📊 New entries hash: ${newState.chatEntry?.entries?.hashCode}');
+
+      // ✅ EMIT the new state
+      emit(newState);
+
+      // ✅ Load media for new entries
       _loadMediaForNewEntries(filteredNewEntries);
 
-      log('✅ STATE EMITTED SUCCESSFULLY');
+      log('✅ 🎯 STATE EMITTED SUCCESSFULLY from ReceiveMessage');
 
-      // ✅ FIX 7: Remove the double emit for Freezed
-      // Freezed handles immutability properly, no need for double emission
+      // ✅ Debug verification with delay
+      Future.delayed(Duration(milliseconds: 200), () {
+        if (!_isDisposed) {
+          log('🔍 Post-emit verification:');
+          log('  - Current state entries: ${state.chatEntry?.entries?.length}');
+          log('  - Current state status: ${state.isChatEntry}');
+          log('  - Current state hash: ${state.hashCode}');
 
-      // Debug verification
-      Future.delayed(Duration(milliseconds: 100), () {
-        log('🔍 Post-emit verification:');
-        log('  - State entries: ${state.chatEntry?.entries?.length}');
-        log('  - State status: ${state.isChatEntry}');
-        log('  - State hash: ${state.hashCode}');
+          if (state.chatEntry?.entries?.isNotEmpty == true) {
+            final lastEntry = state.chatEntry!.entries!.last;
+            log(
+              '  - Last entry: ID=${lastEntry.id}, Content="${lastEntry.content}"',
+            );
+          }
+        }
       });
     } catch (e) {
-      log('❌ Error updating state with new entries: $e');
+      log('❌ Error updating state with new entries from ReceiveMessage: $e');
+      log('❌ Stack trace: ${StackTrace.current}');
       emit(state.copyWith(errorMessage: 'Failed to update chat: $e'));
     }
   }
 
-  // ✅ FIX 8: Override emit method to force logging and detection
+  // ✅ ENHANCED: Override emit method with better debugging
   @override
   void emit(ChatState state) {
+    if (_isDisposed) {
+      log('⚠️ Attempted to emit on disposed cubit');
+      return;
+    }
+
+    final previousEntriesCount = this.state.chatEntry?.entries?.length ?? 0;
+    final newEntriesCount = state.chatEntry?.entries?.length ?? 0;
+    final previousHash = this.state.hashCode;
+    final newHash = state.hashCode;
+
+    log('🚀 🎯 EMITTING STATE FROM RECEIVEMESSAGE:');
+    log('  - Status: ${this.state.isChatEntry} → ${state.isChatEntry}');
+    log('  - Entries: $previousEntriesCount → $newEntriesCount');
+    log('  - State hash: $previousHash → $newHash');
     log(
-      '🚀 EMITTING STATE: ${state.isChatEntry}, entries: ${state.chatEntry?.entries?.length}',
+      '  - Entries hash: ${this.state.chatEntry?.entries?.hashCode} → ${state.chatEntry?.entries?.hashCode}',
     );
-    log('📎 Media URLs cached: ${_fileUrls.length}');
-    log('📎 Media types cached: ${_fileTypes.length}');
-    log('🔢 State hash: ${state.hashCode}'); // ✅ Add hash for debugging
-    log(
-      '🔢 Entries hash: ${state.chatEntry?.entries?.hashCode}',
-    ); // ✅ Add entries hash
+    log('  - Hash changed: ${previousHash != newHash}');
 
     super.emit(state);
 
-    // ✅ FIX 9: Verify emit actually happened
-    Future.delayed(Duration(milliseconds: 10), () {
-      log(
-        '✅ Emit completed - Current state entries: ${this.state.chatEntry?.entries?.length}',
-      );
+    // ✅ Verify emit was successful
+    Future.delayed(Duration(milliseconds: 50), () {
+      if (!_isDisposed) {
+        final actualCount = this.state.chatEntry?.entries?.length ?? 0;
+        final actualHash = this.state.hashCode;
+
+        log('✅ 🎯 Emit verification:');
+        log('  - Expected entries: $newEntriesCount, Actual: $actualCount');
+        log('  - Expected hash: $newHash, Actual: $actualHash');
+
+        if (actualCount != newEntriesCount) {
+          log('❌ EMIT FAILED: Entry counts don\'t match!');
+        } else if (actualHash != newHash) {
+          log('❌ EMIT FAILED: State hashes don\'t match!');
+        } else {
+          log('✅ EMIT SUCCESS: State updated correctly');
+        }
+      }
     });
   }
+
+  // ✅ BONUS: Add a method to manually test ReceiveMessage
+  void testReceiveMessage() {
+    log('🧪 Testing ReceiveMessage simulation...');
+
+    final testEntry = Entry(
+      id: DateTime.now().millisecondsSinceEpoch,
+      chatId: _currentChatId,
+      senderId: 999,
+      messageType: 'text',
+      content: 'Test ReceiveMessage: ${DateTime.now().toIso8601String()}',
+      createdAt: DateTime.now().toIso8601String(),
+      type: 'N',
+      typeValue: 0,
+      thread: '47',
+    );
+
+    log('🧪 Simulating ReceiveMessage with test entry...');
+    _handleNewEntries([testEntry]);
+  }
+  // void _handleNewEntries(List<Entry> newEntries) {
+  //   log('📨 SignalR: Received ${newEntries.length} new entries');
+  //   log('📊 Current chat ID: $_currentChatId');
+  //   log('📊 Current chat state: ${state.isChatEntry}');
+  //   log('📊 Has chatEntry: ${state.chatEntry != null}');
+
+  //   if (_isDisposed) {
+  //     log('⚠️ Cubit is disposed, ignoring new entries');
+  //     return;
+  //   }
+
+  //   if (_currentChatId == null) {
+  //     log('⚠️ No current chat ID set');
+  //     return;
+  //   }
+
+  //   if (state.chatEntry == null) {
+  //     log('⚠️ No chat entry state - requesting fresh data');
+  //     getChatEntry(chatId: _currentChatId);
+  //     return;
+  //   }
+
+  //   final currentChatIdStr = _currentChatId.toString();
+  //   final relevantEntries = newEntries.where((entry) {
+  //     final entryChatId = entry.chatId?.toString() ?? '';
+  //     final isRelevant = entryChatId == currentChatIdStr;
+  //     log(
+  //       '🔍 Entry ${entry.id}: chatId="$entryChatId" vs current="$currentChatIdStr" -> $isRelevant',
+  //     );
+  //     return isRelevant;
+  //   }).toList();
+
+  //   log('📊 Relevant entries for current chat: ${relevantEntries.length}');
+
+  //   if (relevantEntries.isEmpty) {
+  //     log('ℹ️ No relevant entries for current chat $_currentChatId');
+  //     return;
+  //   }
+
+  //   // ✅ FIX 1: Create completely new list instances to ensure state change detection
+  //   final currentEntries = List<Entry>.from(state.chatEntry!.entries ?? []);
+  //   final existingIds = currentEntries
+  //       .map((e) => e.id?.toString())
+  //       .where((id) => id != null)
+  //       .toSet();
+
+  //   final filteredNewEntries = relevantEntries.where((entry) {
+  //     final entryId = entry.id?.toString();
+  //     final isNew = entryId != null && !existingIds.contains(entryId);
+  //     log('🔍 Entry ${entry.id}: exists=${!isNew}');
+  //     return isNew;
+  //   }).toList();
+
+  //   log(
+  //     '📊 New entries after filtering duplicates: ${filteredNewEntries.length}',
+  //   );
+
+  //   if (filteredNewEntries.isEmpty) {
+  //     log('ℹ️ No new entries to add (all already exist)');
+  //     return;
+  //   }
+
+  //   try {
+  //     // ✅ FIX 2: Create completely new list for Freezed
+  //     final updatedEntries = List<Entry>.from([
+  //       ...currentEntries,
+  //       ...filteredNewEntries,
+  //     ]);
+
+  //     // ✅ FIX 3: Use Freezed copyWith properly
+  //     final updatedChatEntry = state.chatEntry!.copyWith(
+  //       entries: updatedEntries, // Freezed will create new object automatically
+  //     );
+
+  //     // Update cache
+  //     _chatCache[_currentChatId!] = updatedChatEntry;
+  //     _chatCacheTimestamps[_currentChatId!] = DateTime.now();
+
+  //     log(
+  //       '🚀 EMITTING STATE UPDATE with ${filteredNewEntries.length} new entries',
+  //     );
+  //     log('📊 Total entries now: ${updatedEntries.length}');
+
+  //     // ✅ FIX 4: Use regular emit with copyWith for Freezed compatibility
+  //     emit(
+  //       state.copyWith(
+  //         chatEntry: updatedChatEntry,
+  //         isChatEntry: ApiFetchStatus.success,
+  //         errorMessage: null, // Clear any errors
+  //       ),
+  //     );
+
+  //     // ✅ FIX 6: Load media immediately for new entries
+  //     _loadMediaForNewEntries(filteredNewEntries);
+
+  //     log('✅ STATE EMITTED SUCCESSFULLY');
+
+  //     // ✅ FIX 7: Remove the double emit for Freezed
+  //     // Freezed handles immutability properly, no need for double emission
+
+  //     // Debug verification
+  //     Future.delayed(Duration(milliseconds: 100), () {
+  //       log('🔍 Post-emit verification:');
+  //       log('  - State entries: ${state.chatEntry?.entries?.length}');
+  //       log('  - State status: ${state.isChatEntry}');
+  //       log('  - State hash: ${state.hashCode}');
+  //     });
+  //   } catch (e) {
+  //     log('❌ Error updating state with new entries: $e');
+  //     emit(state.copyWith(errorMessage: 'Failed to update chat: $e'));
+  //   }
+  // }
+
+  // ✅ FIX 8: Override emit method to force logging and detection
 
   // void _handleNewEntries(List<Entry> newEntries) {
   //   log('📨 SignalR: Received ${newEntries.length} new entries');
