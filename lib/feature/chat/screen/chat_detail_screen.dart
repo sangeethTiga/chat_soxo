@@ -10,6 +10,7 @@ import 'package:soxo_chat/feature/chat/domain/models/add_chat/add_chatentry_requ
 import 'package:soxo_chat/feature/chat/domain/models/chat_entry/chat_entry_response.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/chat_bubble_widget.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/file_picker_widget.dart';
+import 'package:soxo_chat/feature/chat/screen/widgets/opmiized_card.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/record_dialog.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/user_data.dart';
 import 'package:soxo_chat/shared/animation/empty_chat.dart';
@@ -207,7 +208,8 @@ class ChatContent extends StatelessWidget {
               ),
             },
 
-            const Expanded(child: OptimizedChatMessagesList()),
+            const Expanded(child: OptimizedChatMessagesLists()),
+            14.verticalSpace,
             MessageInputSection(chatData: data),
           ],
         );
@@ -587,6 +589,12 @@ class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
     return FutureBuilder(
       future: AuthUtils.instance.readUserData(),
       builder: (context, asyncSnapshot) {
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          await Future.delayed(Duration(milliseconds: 45));
+          if (_scrollController.hasClients && pinnedList.isNotEmpty) {
+            _scrollToBottom(animate: false);
+          }
+        });
         if (!asyncSnapshot.hasData) {
           return _buildShimmerList();
         }
