@@ -42,13 +42,11 @@ class ChatService implements ChatRepositories {
   }
 
   @override
-  Future<ResponseResult<ChatEntryResponse>> chatEntry(
-    int chatId,
-    int userId,
-  ) async {
+  Future<ResponseResult<ChatEntryResponse>> chatEntry(int chatId) async {
     try {
+      final user = await AuthUtils.instance.readUserData();
       final res = await _networkProvider.get(
-        ApiEndpoints.chatEntry(chatId, userId),
+        ApiEndpoints.chatEntry(chatId, user?.result?.userId ?? 0),
       );
 
       if (res.statusCode == 200) {

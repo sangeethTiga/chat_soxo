@@ -135,7 +135,6 @@ class PersonListsScreen extends StatelessWidget {
                                               .read<ChatCubit>()
                                               .getChatEntry(
                                                 chatId: existingChatId!,
-                                                userId: myUserId,
                                               );
                                           context.push(
                                             routeChatDetail,

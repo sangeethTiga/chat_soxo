@@ -569,7 +569,7 @@ class ChatCubit extends Cubit<ChatState> {
     }
   }
 
-  Future<void> getChatEntry({int? chatId, int? userId}) async {
+  Future<void> getChatEntry({int? chatId}) async {
     final currentChatId = chatId ?? 0;
     log('📱 Getting chat entry for chatId: $currentChatId');
 
@@ -626,7 +626,7 @@ class ChatCubit extends Cubit<ChatState> {
 
     try {
       log('🌐 Making API call for chat $currentChatId');
-      final res = await _chatRepositories.chatEntry(currentChatId, userId ?? 0);
+      final res = await _chatRepositories.chatEntry(currentChatId);
 
       if (_isDisposed) return;
 
@@ -685,12 +685,11 @@ class ChatCubit extends Cubit<ChatState> {
     if (_currentChatId != null && _signalRService.isConnected) {
       log('🔄 Manually syncing with SignalR for chat $_currentChatId');
       await _signalRService.joinChatGroup(_currentChatId.toString());
-      await _signalRService.testServerConnection();
     }
   }
 
   ///=-=-=-=-=-=-=-=-=  Method to refresh chat data (force refresh)
-  Future<void> refreshChatEntry({int? chatId, int? userId}) async {
+  Future<void> refreshChatEntry({int? chatId}) async {
     final currentChatId = chatId ?? 0;
     log('🔄 Force refreshing chat entry for chatId: $currentChatId');
 
@@ -702,7 +701,7 @@ class ChatCubit extends Cubit<ChatState> {
     emit(state.copyWith(isChatEntry: ApiFetchStatus.loading));
 
     ///=-=-=-=-=-=-=-=-=  Fetch fresh data
-    await getChatEntry(chatId: chatId, userId: userId);
+    await getChatEntry(chatId: chatId);
   }
 
   ///=-=-=-=-=-=-=-=-=  Method to update chat cache when new message is added

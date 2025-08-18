@@ -12,7 +12,6 @@ import 'package:soxo_chat/feature/person_lists/cubit/person_lists_cubit.dart';
 import 'package:soxo_chat/shared/animation/empty_state.dart';
 import 'package:soxo_chat/shared/app/list/helper.dart';
 import 'package:soxo_chat/shared/routes/routes.dart';
-import 'package:soxo_chat/shared/utils/auth/auth_utils.dart';
 import 'package:soxo_chat/shared/widgets/appbar/appbar.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -292,11 +291,7 @@ void onChatItemTappedWithGo(
   BuildContext context,
 ) async {
   HapticFeedback.selectionClick();
-  final user = await AuthUtils.instance.readUserData();
-  context.read<ChatCubit>().getChatEntry(
-    chatId: state.chatList?[index].chatId,
-    userId: user?.result?.userId ?? 0,
-  );
+  context.read<ChatCubit>().getChatEntry(chatId: state.chatList?[index].chatId);
 
   context.read<ChatCubit>().initStateClear();
 
