@@ -19,6 +19,7 @@ _$AddChatEntryRequestImpl _$$AddChatEntryRequestImplFromJson(
   chatMedias: (json['chatMedias'] as List<dynamic>?)
       ?.map((e) => ChatMedia.fromJson(e as Map<String, dynamic>))
       .toList(),
+  otherDetails1: json['otherDetails1'] as String?,
 );
 
 Map<String, dynamic> _$$AddChatEntryRequestImplToJson(
@@ -32,6 +33,7 @@ Map<String, dynamic> _$$AddChatEntryRequestImplToJson(
   'content': instance.content,
   'source': instance.source,
   'chatMedias': instance.chatMedias,
+  'otherDetails1': instance.otherDetails1,
 };
 
 _$ChatMediaImpl _$$ChatMediaImplFromJson(Map<String, dynamic> json) =>

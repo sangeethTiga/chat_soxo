@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
@@ -13,7 +15,16 @@ import 'package:soxo_chat/shared/utils/auth/auth_utils.dart';
 import 'package:soxo_chat/shared/widgets/shimmer/shimmer_category.dart';
 
 class OptimizedChatMessagesLists extends StatefulWidget {
-  const OptimizedChatMessagesLists({super.key});
+  final Function(Entry)? onReplyMessage;
+  final Entry? currentReplyingTo; // ✅ NEW: Current reply target
+  final bool isReplying; // ✅ NEW: Reply state
+
+  const OptimizedChatMessagesLists({
+    super.key,
+    this.onReplyMessage,
+    this.currentReplyingTo,
+    this.isReplying = false,
+  });
 
   @override
   State<OptimizedChatMessagesLists> createState() =>
@@ -24,13 +35,20 @@ class _OptimizedChatMessagesListsState
     extends State<OptimizedChatMessagesLists> {
   late ScrollController _scrollController;
   List<Entry>? _previousEntries;
-  bool _hasScrolledToBottomOnce = false;
-  final bool _isInitialLoad = true;
+  int _previousEntriesHash = 0;
+
+  final Set<int> _pinnedMessageIds = {};
+  final Map<String, GlobalKey> _messageKeys = {};
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
+    _loadPinnedMessages();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToBottom();
+    });
   }
 
   @override
@@ -39,63 +57,166 @@ class _OptimizedChatMessagesListsState
     super.dispose();
   }
 
-  void _scrollToBottom({bool animate = false}) {
-    if (!_scrollController.hasClients) return;
+  void _loadPinnedMessages() async {}
 
-    // Use a more reliable method for scrolling to bottom
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        final maxExtent = _scrollController.position.maxScrollExtent;
-        if (maxExtent > 0) {
-          if (animate) {
-            _scrollController.animateTo(
-              maxExtent,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOut,
-            );
-          } else {
-            _scrollController.jumpTo(maxExtent);
-          }
-          log('📍 Scrolled to bottom: $maxExtent');
+  bool _isPinned(Entry message) {
+    return _pinnedMessageIds.contains(message.chatId);
+  }
+
+  // Enhanced reply detection with better error handling
+  bool _isReplyMessage(Entry message) {
+    final String? detailsStr = message.otherDetails1;
+    if (detailsStr != null && detailsStr.isNotEmpty) {
+      try {
+        List<dynamic> detailsList = jsonDecode(detailsStr);
+        if (detailsList.isNotEmpty) {
+          var details = detailsList[0];
+          final String? replayChatEntryId = details["ReplayChatEntryId"]
+              ?.toString();
+          return replayChatEntryId != null && replayChatEntryId.isNotEmpty;
         }
+      } catch (e) {
+        log("❌ JSON decode error in _isReplyMessage: $e");
+      }
+    }
+    return false;
+  }
+
+  // Enhanced original message finder
+  Entry? _getReplyMessage(Entry message, List<Entry> allEntries) {
+    final String? detailsStr = message.otherDetails1;
+    if (detailsStr != null && detailsStr.isNotEmpty) {
+      try {
+        List<dynamic> detailsList = jsonDecode(detailsStr);
+        if (detailsList.isNotEmpty) {
+          var details = detailsList[0];
+          final String? replayChatEntryId = details["ReplayChatEntryId"]
+              ?.toString();
+
+          if (replayChatEntryId != null && replayChatEntryId.isNotEmpty) {
+            try {
+              final originalMessage = allEntries.firstWhere(
+                (e) => e.id.toString() == replayChatEntryId,
+              );
+              return originalMessage;
+            } catch (e) {
+              log("❌ Original message not found for ID: $replayChatEntryId");
+            }
+          }
+        }
+      } catch (e) {
+        log("❌ Could not find original message: $e");
+      }
+    }
+    return null;
+  }
+
+  void _startReply(Entry message) {
+    widget.onReplyMessage?.call(message);
+    _scrollToBottom();
+  }
+
+  void _togglePin(Entry message) {
+    final messageId = message.chatId;
+    setState(() {
+      if (_pinnedMessageIds.contains(messageId)) {
+        _pinnedMessageIds.remove(messageId);
+      } else {
+        _pinnedMessageIds.add(messageId ?? 0);
       }
     });
+
+    _savePinnedMessages();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          _pinnedMessageIds.contains(messageId)
+              ? 'Message pinned'
+              : 'Message unpinned',
+        ),
+        duration: const Duration(seconds: 1),
+      ),
+    );
+  }
+
+  void _savePinnedMessages() async {}
+
+  void _scrollToReply(Entry message, List<Entry> allEntries) {
+    final replyMessage = _getReplyMessage(message, allEntries);
+    if (replyMessage != null) {
+      final key = _messageKeys[replyMessage.id.toString()];
+      if (key?.currentContext != null) {
+        Scrollable.ensureVisible(
+          key!.currentContext!,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+        _highlightMessage(replyMessage.id.toString());
+      }
+    }
+  }
+
+  void _highlightMessage(String messageId) {}
+
+  void _scrollToBottom({bool animate = true}) {
+    if (_scrollController.hasClients) {
+      if (animate) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      } else {
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      }
+    }
+  }
+
+  void _checkAndScrollToBottom(List<Entry> currentEntries) {
+    final currentHash = Object.hashAll(currentEntries.map((e) => e.id));
+
+    if (_previousEntries != null &&
+        (currentEntries.length > _previousEntries!.length ||
+            currentHash != _previousEntriesHash)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom();
+      });
+    } else if (_previousEntries == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom(animate: false);
+      });
+    }
+
+    _previousEntries = List.from(currentEntries);
+    _previousEntriesHash = currentHash;
   }
 
   @override
   Widget build(BuildContext context) {
-    log('🏗️ OptimizedChatMessagesList build() called');
-
     return BlocConsumer<ChatCubit, ChatState>(
       listenWhen: (previous, current) {
         final prevCount = previous.chatEntry?.entries?.length ?? 0;
         final currCount = current.chatEntry?.entries?.length ?? 0;
         final statusChanged = previous.isChatEntry != current.isChatEntry;
         final entriesChanged = prevCount != currCount;
+        final hashChanged =
+            previous.chatEntry?.entries?.hashCode !=
+            current.chatEntry?.entries?.hashCode;
 
-        return statusChanged || entriesChanged;
+        // ✅ Listen to reply state changes
+        final replyStateChanged =
+            previous.isReplying != current.isReplying ||
+            previous.replyingTo?.id != current.replyingTo?.id;
+
+        return statusChanged ||
+            entriesChanged ||
+            hashChanged ||
+            replyStateChanged;
       },
       listener: (context, state) {
-        log(
-          '🎧 Listener triggered: Entries = ${state.chatEntry?.entries?.length ?? 0}',
-        );
-
-        // Handle new messages - scroll to bottom
-        if (state.chatEntry?.entries?.isNotEmpty == true) {
-          final currentEntries = state.chatEntry!.entries!;
-          final currentCount = currentEntries.length;
-          final previousCount = _previousEntries?.length ?? 0;
-
-          if (currentCount > previousCount) {
-            log('📝 New message detected, scrolling to bottom');
-            _scrollToBottom(animate: !_isInitialLoad);
-          }
-
-          _previousEntries = currentEntries.toList();
-        }
-
-        if (state.errorMessage != null) {
-          log('❌ Error in state: ${state.errorMessage}');
+        if (state.chatEntry?.entries != null) {
+          _checkAndScrollToBottom(state.chatEntry!.entries!);
         }
       },
       buildWhen: (previous, current) {
@@ -103,76 +224,44 @@ class _OptimizedChatMessagesListsState
         final entriesCountChanged =
             previous.chatEntry?.entries?.length !=
             current.chatEntry?.entries?.length;
+        final entriesHashChanged =
+            previous.chatEntry?.entries?.hashCode !=
+            current.chatEntry?.entries?.hashCode;
         final errorChanged = previous.errorMessage != current.errorMessage;
 
-        return statusChanged || entriesCountChanged || errorChanged;
+        // ✅ Rebuild when reply state changes
+        final replyStateChanged =
+            previous.isReplying != current.isReplying ||
+            previous.replyingTo?.id != current.replyingTo?.id;
+
+        return statusChanged ||
+            entriesCountChanged ||
+            entriesHashChanged ||
+            errorChanged ||
+            replyStateChanged;
       },
       builder: (context, state) {
-        log('🏗️ Building with status: ${state.isChatEntry}');
-        log('📊 Entries count: ${state.chatEntry?.entries?.length ?? 0}');
-
         if (state.errorMessage != null &&
             state.isChatEntry == ApiFetchStatus.failed) {
           return _buildErrorState(state.errorMessage!);
         }
 
         if (state.isChatEntry == ApiFetchStatus.loading) {
-          log('📱 Showing shimmer loading state');
           return _buildShimmerList();
         }
 
         if (state.chatEntry?.entries?.isEmpty ?? true) {
-          log('📱 Showing empty state');
           return const AnimatedEmptyChatWidget();
         }
 
         final entries = state.chatEntry!.entries!;
-        log('📱 Showing messages list with ${entries.length} entries');
-
-        return _buildMessagesList(entries);
+        return _buildMessagesList(entries, state);
       },
     );
   }
 
-  Widget _buildErrorState(String errorMessage) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, size: 48, color: Colors.red),
-          const SizedBox(height: 16),
-          const Text(
-            'Error loading messages',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            errorMessage,
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey[600]),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              context.read<ChatCubit>().refreshChatEntry();
-            },
-            child: const Text('Retry'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildShimmerList() {
-    return ListView.builder(
-      padding: EdgeInsets.symmetric(horizontal: 0.w),
-      itemCount: 6,
-      itemBuilder: (context, index) =>
-          ChatMessageShimmer(isSent: index % 2 == 0),
-    );
-  }
-
-  Widget _buildMessagesList(List<Entry> entries) {
+  // ✅ Enhanced message builder with reply state
+  Widget _buildMessagesList(List<Entry> entries, ChatState chatState) {
     final pinnedList = entries.where((e) => e.messageType != 'html').toList();
 
     pinnedList.sort((a, b) {
@@ -181,11 +270,16 @@ class _OptimizedChatMessagesListsState
       return aTime.compareTo(bTime);
     });
 
-    log('📱 Building ListView with ${pinnedList.length} filtered messages');
-
     return FutureBuilder(
       future: AuthUtils.instance.readUserData(),
       builder: (context, asyncSnapshot) {
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          await Future.delayed(Duration(milliseconds: 45));
+          if (_scrollController.hasClients && pinnedList.isNotEmpty) {
+            _scrollToBottom(animate: false);
+          }
+        });
+
         if (!asyncSnapshot.hasData) {
           return _buildShimmerList();
         }
@@ -196,178 +290,75 @@ class _OptimizedChatMessagesListsState
             ) ??
             0;
 
-        // ✅ KEY FIX: Ensure scroll to bottom happens after ListView is fully built
-        Future.delayed(const Duration(milliseconds: 100), () {
-          if (mounted && _scrollController.hasClients) {
-            _scrollToBottom(animate: false);
-            // Double check with another delay
-            Future.delayed(const Duration(milliseconds: 200), () {
-              if (mounted && _scrollController.hasClients) {
-                _scrollToBottom(animate: false);
-                _hasScrolledToBottomOnce = true;
-              }
-            });
-          }
-        });
+        return ListView.builder(
+          cacheExtent: 2000,
+          controller: _scrollController,
+          padding: EdgeInsets.symmetric(horizontal: 12.w),
+          itemCount: pinnedList.length,
+          itemBuilder: (context, index) {
+            final messageData = pinnedList[index];
+            final messageKey = GlobalKey();
+            _messageKeys[messageData.id.toString()] = messageKey;
 
-        return NotificationListener<ScrollNotification>(
-          onNotification: (ScrollNotification scrollInfo) {
-            // Optional: Handle scroll notifications if needed
-            return false;
+            // Enhanced reply detection
+            final originalMessage = _getReplyMessage(messageData, pinnedList);
+            // final isReply = _isReplyMessage(messageData);
+
+            // ✅ Check if this message is being replied to
+            final isBeingRepliedTo =
+                (chatState.isReplying ?? false) &&
+                chatState.replyingTo?.id == messageData.id;
+
+            return ChatBubbleMessage(
+              key: messageKey,
+              type: messageData.messageType,
+              message: messageData.content ?? '',
+              timestamp: getFormattedDate(messageData.createdAt ?? ''),
+              isSent: messageData.senderId == userId,
+              chatMedias: messageData.chatMedias,
+              messageData: messageData,
+              replyToMessage: originalMessage,
+              isPinned: _isPinned(messageData),
+
+              // ✅ Pass reply state for instant visual feedback
+              isBeingRepliedTo: isBeingRepliedTo,
+
+              onReply: () => _startReply(messageData),
+              onPin: () => _togglePin(messageData),
+              onScrollToReply: () => _scrollToReply(messageData, pinnedList),
+            );
           },
-          child: ListView.builder(
-            cacheExtent: 2000,
-            controller: _scrollController,
-            padding: EdgeInsets.symmetric(horizontal: 12.w),
-            itemCount: pinnedList.length,
-            physics: const ClampingScrollPhysics(), // Better scroll behavior
-            itemBuilder: (context, index) {
-              final messageData = pinnedList[index];
-              final messageKey = ValueKey(
-                'message_${messageData.id}_${messageData.createdAt}',
-              );
-
-              return Padding(
-                key: messageKey,
-                padding: EdgeInsets.only(top: 15.h),
-                child: ChatBubbleMessage(
-                  type: messageData.messageType,
-                  message: messageData.content ?? '',
-                  timestamp: getFormattedDate(messageData.createdAt ?? ''),
-                  isSent: messageData.senderId == userId,
-                  chatMedias: messageData.chatMedias,
-                ),
-              );
-            },
-          ),
         );
       },
     );
   }
-}
 
-class AlternativeChatMessagesLists extends StatefulWidget {
-  const AlternativeChatMessagesLists({super.key});
-
-  @override
-  State<AlternativeChatMessagesLists> createState() =>
-      _AlternativeChatMessagesListsState();
-}
-
-class _AlternativeChatMessagesListsState
-    extends State<AlternativeChatMessagesLists> {
-  late ScrollController _scrollController;
-  bool _hasScrolledToBottom = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController = ScrollController();
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _scrollToBottom({bool animate = true}) {
-    if (_scrollController.hasClients) {
-      final position = _scrollController.position.maxScrollExtent;
-      if (animate) {
-        _scrollController.animateTo(
-          position,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      } else {
-        _scrollController.jumpTo(position);
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<ChatCubit, ChatState>(
-      builder: (context, state) {
-        if (state.isChatEntry == ApiFetchStatus.loading) {
-          return _buildShimmerList();
-        }
-
-        if (state.chatEntry?.entries?.isEmpty ?? true) {
-          return const AnimatedEmptyChatWidget();
-        }
-
-        final entries = state.chatEntry!.entries!
-            .where((e) => e.messageType != 'html')
-            .toList();
-
-        // Sort messages
-        entries.sort((a, b) {
-          final aTime = DateTime.tryParse(a.createdAt ?? '') ?? DateTime.now();
-          final bTime = DateTime.tryParse(b.createdAt ?? '') ?? DateTime.now();
-          return aTime.compareTo(bTime);
-        });
-
-        return NotificationListener<ScrollMetricsNotification>(
-          onNotification: (notification) {
-            // When the list metrics change (items added), scroll to bottom
-            if (!_hasScrolledToBottom && entries.isNotEmpty) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _scrollToBottom(animate: false);
-                _hasScrolledToBottom = true;
-              });
-            }
-            return false;
-          },
-          child: FutureBuilder(
-            future: AuthUtils.instance.readUserData(),
-            builder: (context, asyncSnapshot) {
-              if (!asyncSnapshot.hasData) {
-                return _buildShimmerList();
-              }
-
-              final int userId =
-                  int.tryParse(
-                    asyncSnapshot.data?.result?.userId.toString() ?? '0',
-                  ) ??
-                  0;
-
-              return ListView.builder(
-                controller: _scrollController,
-                padding: EdgeInsets.symmetric(horizontal: 12.w),
-                itemCount: entries.length,
-                itemBuilder: (context, index) {
-                  final messageData = entries[index];
-
-                  // Schedule scroll on last item render
-                  if (index == entries.length - 1 && !_hasScrolledToBottom) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      Future.delayed(const Duration(milliseconds: 100), () {
-                        if (mounted) {
-                          _scrollToBottom(animate: false);
-                          _hasScrolledToBottom = true;
-                        }
-                      });
-                    });
-                  }
-
-                  return Padding(
-                    padding: EdgeInsets.only(top: 15.h),
-                    child: ChatBubbleMessage(
-                      type: messageData.messageType,
-                      message: messageData.content ?? '',
-                      timestamp: getFormattedDate(messageData.createdAt ?? ''),
-                      isSent: messageData.senderId == userId,
-                      chatMedias: messageData.chatMedias,
-                    ),
-                  );
-                },
-              );
-            },
+  Widget _buildErrorState(String errorMessage) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, size: 48, color: Colors.red),
+          SizedBox(height: 16),
+          Text(
+            'Error loading messages',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-        );
-      },
+          SizedBox(height: 8),
+          Text(
+            errorMessage,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey[600]),
+          ),
+          SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () {
+              context.read<ChatCubit>().refreshChatEntry();
+            },
+            child: Text('Retry'),
+          ),
+        ],
+      ),
     );
   }
 

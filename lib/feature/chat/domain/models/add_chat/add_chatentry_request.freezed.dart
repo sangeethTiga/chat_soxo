@@ -39,6 +39,8 @@ mixin _$AddChatEntryRequest {
   List<ChatMedia>? get chatMedias => throw _privateConstructorUsedError;
   @JsonKey(includeFromJson: false, includeToJson: false)
   List<File>? get attachedFiles => throw _privateConstructorUsedError;
+  @JsonKey(name: "otherDetails1")
+  String? get otherDetails1 => throw _privateConstructorUsedError;
 
   /// Serializes this AddChatEntryRequest to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -68,6 +70,7 @@ abstract class $AddChatEntryRequestCopyWith<$Res> {
     @JsonKey(name: "chatMedias") List<ChatMedia>? chatMedias,
     @JsonKey(includeFromJson: false, includeToJson: false)
     List<File>? attachedFiles,
+    @JsonKey(name: "otherDetails1") String? otherDetails1,
   });
 }
 
@@ -95,6 +98,7 @@ class _$AddChatEntryRequestCopyWithImpl<$Res, $Val extends AddChatEntryRequest>
     Object? source = freezed,
     Object? chatMedias = freezed,
     Object? attachedFiles = freezed,
+    Object? otherDetails1 = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -134,6 +138,10 @@ class _$AddChatEntryRequestCopyWithImpl<$Res, $Val extends AddChatEntryRequest>
                 ? _value.attachedFiles
                 : attachedFiles // ignore: cast_nullable_to_non_nullable
                       as List<File>?,
+            otherDetails1: freezed == otherDetails1
+                ? _value.otherDetails1
+                : otherDetails1 // ignore: cast_nullable_to_non_nullable
+                      as String?,
           )
           as $Val,
     );
@@ -160,6 +168,7 @@ abstract class _$$AddChatEntryRequestImplCopyWith<$Res>
     @JsonKey(name: "chatMedias") List<ChatMedia>? chatMedias,
     @JsonKey(includeFromJson: false, includeToJson: false)
     List<File>? attachedFiles,
+    @JsonKey(name: "otherDetails1") String? otherDetails1,
   });
 }
 
@@ -186,6 +195,7 @@ class __$$AddChatEntryRequestImplCopyWithImpl<$Res>
     Object? source = freezed,
     Object? chatMedias = freezed,
     Object? attachedFiles = freezed,
+    Object? otherDetails1 = freezed,
   }) {
     return _then(
       _$AddChatEntryRequestImpl(
@@ -225,6 +235,10 @@ class __$$AddChatEntryRequestImplCopyWithImpl<$Res>
             ? _value._attachedFiles
             : attachedFiles // ignore: cast_nullable_to_non_nullable
                   as List<File>?,
+        otherDetails1: freezed == otherDetails1
+            ? _value.otherDetails1
+            : otherDetails1 // ignore: cast_nullable_to_non_nullable
+                  as String?,
       ),
     );
   }
@@ -244,6 +258,7 @@ class _$AddChatEntryRequestImpl implements _AddChatEntryRequest {
     @JsonKey(name: "chatMedias") final List<ChatMedia>? chatMedias,
     @JsonKey(includeFromJson: false, includeToJson: false)
     final List<File>? attachedFiles,
+    @JsonKey(name: "otherDetails1") this.otherDetails1,
   }) : _chatMedias = chatMedias,
        _attachedFiles = attachedFiles;
 
@@ -294,8 +309,12 @@ class _$AddChatEntryRequestImpl implements _AddChatEntryRequest {
   }
 
   @override
+  @JsonKey(name: "otherDetails1")
+  final String? otherDetails1;
+
+  @override
   String toString() {
-    return 'AddChatEntryRequest(chatId: $chatId, senderId: $senderId, type: $type, typeValue: $typeValue, messageType: $messageType, content: $content, source: $source, chatMedias: $chatMedias, attachedFiles: $attachedFiles)';
+    return 'AddChatEntryRequest(chatId: $chatId, senderId: $senderId, type: $type, typeValue: $typeValue, messageType: $messageType, content: $content, source: $source, chatMedias: $chatMedias, attachedFiles: $attachedFiles, otherDetails1: $otherDetails1)';
   }
 
   @override
@@ -320,7 +339,9 @@ class _$AddChatEntryRequestImpl implements _AddChatEntryRequest {
             const DeepCollectionEquality().equals(
               other._attachedFiles,
               _attachedFiles,
-            ));
+            ) &&
+            (identical(other.otherDetails1, otherDetails1) ||
+                other.otherDetails1 == otherDetails1));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -336,6 +357,7 @@ class _$AddChatEntryRequestImpl implements _AddChatEntryRequest {
     source,
     const DeepCollectionEquality().hash(_chatMedias),
     const DeepCollectionEquality().hash(_attachedFiles),
+    otherDetails1,
   );
 
   /// Create a copy of AddChatEntryRequest
@@ -367,6 +389,7 @@ abstract class _AddChatEntryRequest implements AddChatEntryRequest {
     @JsonKey(name: "chatMedias") final List<ChatMedia>? chatMedias,
     @JsonKey(includeFromJson: false, includeToJson: false)
     final List<File>? attachedFiles,
+    @JsonKey(name: "otherDetails1") final String? otherDetails1,
   }) = _$AddChatEntryRequestImpl;
 
   factory _AddChatEntryRequest.fromJson(Map<String, dynamic> json) =
@@ -399,6 +422,9 @@ abstract class _AddChatEntryRequest implements AddChatEntryRequest {
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   List<File>? get attachedFiles;
+  @override
+  @JsonKey(name: "otherDetails1")
+  String? get otherDetails1;
 
   /// Create a copy of AddChatEntryRequest
   /// with the given fields replaced by the non-null parameter values.

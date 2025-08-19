@@ -256,6 +256,8 @@ mixin _$Entry {
   String? get userStatus => throw _privateConstructorUsedError;
   @JsonKey(name: "direction")
   String? get direction => throw _privateConstructorUsedError;
+  @JsonKey(name: "otherDetails1")
+  String? get otherDetails1 => throw _privateConstructorUsedError;
   @JsonKey(name: "sender")
   Sender? get sender => throw _privateConstructorUsedError;
   @JsonKey(name: "chatMedias")
@@ -291,6 +293,7 @@ abstract class $EntryCopyWith<$Res> {
     @JsonKey(name: "pinned") String? pinned,
     @JsonKey(name: "userStatus") String? userStatus,
     @JsonKey(name: "direction") String? direction,
+    @JsonKey(name: "otherDetails1") String? otherDetails1,
     @JsonKey(name: "sender") Sender? sender,
     @JsonKey(name: "chatMedias") List<ChatMedias>? chatMedias,
     @JsonKey(name: "userChats") List<UserChat>? userChats,
@@ -327,6 +330,7 @@ class _$EntryCopyWithImpl<$Res, $Val extends Entry>
     Object? pinned = freezed,
     Object? userStatus = freezed,
     Object? direction = freezed,
+    Object? otherDetails1 = freezed,
     Object? sender = freezed,
     Object? chatMedias = freezed,
     Object? userChats = freezed,
@@ -385,6 +389,10 @@ class _$EntryCopyWithImpl<$Res, $Val extends Entry>
                 ? _value.direction
                 : direction // ignore: cast_nullable_to_non_nullable
                       as String?,
+            otherDetails1: freezed == otherDetails1
+                ? _value.otherDetails1
+                : otherDetails1 // ignore: cast_nullable_to_non_nullable
+                      as String?,
             sender: freezed == sender
                 ? _value.sender
                 : sender // ignore: cast_nullable_to_non_nullable
@@ -439,6 +447,7 @@ abstract class _$$EntryImplCopyWith<$Res> implements $EntryCopyWith<$Res> {
     @JsonKey(name: "pinned") String? pinned,
     @JsonKey(name: "userStatus") String? userStatus,
     @JsonKey(name: "direction") String? direction,
+    @JsonKey(name: "otherDetails1") String? otherDetails1,
     @JsonKey(name: "sender") Sender? sender,
     @JsonKey(name: "chatMedias") List<ChatMedias>? chatMedias,
     @JsonKey(name: "userChats") List<UserChat>? userChats,
@@ -475,6 +484,7 @@ class __$$EntryImplCopyWithImpl<$Res>
     Object? pinned = freezed,
     Object? userStatus = freezed,
     Object? direction = freezed,
+    Object? otherDetails1 = freezed,
     Object? sender = freezed,
     Object? chatMedias = freezed,
     Object? userChats = freezed,
@@ -533,6 +543,10 @@ class __$$EntryImplCopyWithImpl<$Res>
             ? _value.direction
             : direction // ignore: cast_nullable_to_non_nullable
                   as String?,
+        otherDetails1: freezed == otherDetails1
+            ? _value.otherDetails1
+            : otherDetails1 // ignore: cast_nullable_to_non_nullable
+                  as String?,
         sender: freezed == sender
             ? _value.sender
             : sender // ignore: cast_nullable_to_non_nullable
@@ -567,6 +581,7 @@ class _$EntryImpl implements _Entry {
     @JsonKey(name: "pinned") this.pinned,
     @JsonKey(name: "userStatus") this.userStatus,
     @JsonKey(name: "direction") this.direction,
+    @JsonKey(name: "otherDetails1") this.otherDetails1,
     @JsonKey(name: "sender") this.sender,
     @JsonKey(name: "chatMedias") final List<ChatMedias>? chatMedias,
     @JsonKey(name: "userChats") final List<UserChat>? userChats,
@@ -616,6 +631,9 @@ class _$EntryImpl implements _Entry {
   @JsonKey(name: "direction")
   final String? direction;
   @override
+  @JsonKey(name: "otherDetails1")
+  final String? otherDetails1;
+  @override
   @JsonKey(name: "sender")
   final Sender? sender;
   final List<ChatMedias>? _chatMedias;
@@ -642,7 +660,7 @@ class _$EntryImpl implements _Entry {
 
   @override
   String toString() {
-    return 'Entry(id: $id, type: $type, typeValue: $typeValue, chatId: $chatId, senderId: $senderId, messageType: $messageType, thread: $thread, content: $content, mediaIds: $mediaIds, createdAt: $createdAt, pinned: $pinned, userStatus: $userStatus, direction: $direction, sender: $sender, chatMedias: $chatMedias, userChats: $userChats)';
+    return 'Entry(id: $id, type: $type, typeValue: $typeValue, chatId: $chatId, senderId: $senderId, messageType: $messageType, thread: $thread, content: $content, mediaIds: $mediaIds, createdAt: $createdAt, pinned: $pinned, userStatus: $userStatus, direction: $direction, otherDetails1: $otherDetails1, sender: $sender, chatMedias: $chatMedias, userChats: $userChats)';
   }
 
   @override
@@ -670,6 +688,8 @@ class _$EntryImpl implements _Entry {
                 other.userStatus == userStatus) &&
             (identical(other.direction, direction) ||
                 other.direction == direction) &&
+            (identical(other.otherDetails1, otherDetails1) ||
+                other.otherDetails1 == otherDetails1) &&
             (identical(other.sender, sender) || other.sender == sender) &&
             const DeepCollectionEquality().equals(
               other._chatMedias,
@@ -698,6 +718,7 @@ class _$EntryImpl implements _Entry {
     pinned,
     userStatus,
     direction,
+    otherDetails1,
     sender,
     const DeepCollectionEquality().hash(_chatMedias),
     const DeepCollectionEquality().hash(_userChats),
@@ -732,6 +753,7 @@ abstract class _Entry implements Entry {
     @JsonKey(name: "pinned") final String? pinned,
     @JsonKey(name: "userStatus") final String? userStatus,
     @JsonKey(name: "direction") final String? direction,
+    @JsonKey(name: "otherDetails1") final String? otherDetails1,
     @JsonKey(name: "sender") final Sender? sender,
     @JsonKey(name: "chatMedias") final List<ChatMedias>? chatMedias,
     @JsonKey(name: "userChats") final List<UserChat>? userChats,
@@ -778,6 +800,9 @@ abstract class _Entry implements Entry {
   @override
   @JsonKey(name: "direction")
   String? get direction;
+  @override
+  @JsonKey(name: "otherDetails1")
+  String? get otherDetails1;
   @override
   @JsonKey(name: "sender")
   Sender? get sender;

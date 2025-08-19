@@ -18,6 +18,7 @@ class AddChatEntryRequest with _$AddChatEntryRequest {
     @JsonKey(name: "chatMedias") List<ChatMedia>? chatMedias,
     @JsonKey(includeFromJson: false, includeToJson: false)
     List<File>? attachedFiles,
+    @JsonKey(name: "otherDetails1") String? otherDetails1,
   }) = _AddChatEntryRequest;
 
   factory AddChatEntryRequest.fromJson(Map<String, dynamic> json) =>

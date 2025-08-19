@@ -30,6 +30,7 @@ class Entry with _$Entry {
     @JsonKey(name: "pinned") String? pinned,
     @JsonKey(name: "userStatus") String? userStatus,
     @JsonKey(name: "direction") String? direction,
+    @JsonKey(name: "otherDetails1") String? otherDetails1,
 
     @JsonKey(name: "sender") Sender? sender,
     @JsonKey(name: "chatMedias") List<ChatMedias>? chatMedias,

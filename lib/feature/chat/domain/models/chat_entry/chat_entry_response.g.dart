@@ -38,6 +38,7 @@ _$EntryImpl _$$EntryImplFromJson(Map<String, dynamic> json) => _$EntryImpl(
   pinned: json['pinned'] as String?,
   userStatus: json['userStatus'] as String?,
   direction: json['direction'] as String?,
+  otherDetails1: json['otherDetails1'] as String?,
   sender: json['sender'] == null
       ? null
       : Sender.fromJson(json['sender'] as Map<String, dynamic>),
@@ -64,6 +65,7 @@ Map<String, dynamic> _$$EntryImplToJson(_$EntryImpl instance) =>
       'pinned': instance.pinned,
       'userStatus': instance.userStatus,
       'direction': instance.direction,
+      'otherDetails1': instance.otherDetails1,
       'sender': instance.sender,
       'chatMedias': instance.chatMedias,
       'userChats': instance.userChats,

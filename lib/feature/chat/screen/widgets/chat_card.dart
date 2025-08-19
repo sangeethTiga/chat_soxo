@@ -46,7 +46,7 @@ class MediaPreviewWidget extends StatelessWidget {
 
         return _InstantMediaBuilder(
           key: ValueKey('media_$mediaId'),
-          media: media!,
+          media: media ?? ChatMedias(),
           fileUrl: fileUrl,
           fileType: fileType,
           isLoading: isLoading,
@@ -188,7 +188,7 @@ class _InstantMediaBuilder extends StatelessWidget {
   }
 
   String _inferTypeFromMedia(ChatMedias media) {
-    if (media.mediaUrl != null && media.mediaType!.isNotEmpty) {
+    if (media.mediaUrl != null && (media.mediaType?.isNotEmpty ?? false)) {
       return media.mediaType!.toLowerCase();
     }
 

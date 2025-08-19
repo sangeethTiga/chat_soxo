@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -8,14 +10,11 @@ import 'package:go_router/go_router.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/domain/models/add_chat/add_chatentry_request.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_entry/chat_entry_response.dart';
-import 'package:soxo_chat/feature/chat/screen/widgets/chat_bubble_widget.dart';
+import 'package:soxo_chat/feature/chat/screen/widgets/enhanced_widget.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/file_picker_widget.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/opmiized_card.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/record_dialog.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/user_data.dart';
-import 'package:soxo_chat/shared/animation/empty_chat.dart';
-import 'package:soxo_chat/shared/app/enums/api_fetch_status.dart';
-import 'package:soxo_chat/shared/app/list/helper.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
 import 'package:soxo_chat/shared/routes/routes.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
@@ -23,7 +22,6 @@ import 'package:soxo_chat/shared/utils/auth/auth_utils.dart';
 import 'package:soxo_chat/shared/widgets/alert/alert_dialog_custom.dart';
 import 'package:soxo_chat/shared/widgets/appbar/appbar.dart';
 import 'package:soxo_chat/shared/widgets/padding/main_padding.dart';
-import 'package:soxo_chat/shared/widgets/shimmer/shimmer_category.dart';
 import 'package:soxo_chat/shared/widgets/text_fields/text_field_widget.dart';
 
 class ChatDetailScreen extends StatefulWidget {
@@ -169,7 +167,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   }
 }
 
-class ChatContent extends StatelessWidget {
+class ChatContent extends StatefulWidget {
   final Map<String, dynamic>? data;
   final VoidCallback onToggleTap;
   final Animation<double> arrowAnimation;
@@ -182,38 +180,341 @@ class ChatContent extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return BlocSelector<ChatCubit, ChatState, List<Entry>>(
-      selector: (state) {
-        return state.chatEntry?.entries ?? [];
-      },
-      builder: (context, state) {
-        final pinnedEntries = state
-            .where((e) => (e.pinned ?? '').trim().toUpperCase() == 'Y')
-            .toList();
-        return Column(
-          children: [
-            if ((pinnedEntries.isNotEmpty)) ...{
-              GroupCardWidget(
-                title: (pinnedEntries.isNotEmpty)
-                    ? pinnedEntries[0].sender?.name
-                    : '',
-                imageUrl: (pinnedEntries.isNotEmpty)
-                    ? pinnedEntries[0].sender?.imageUrl
-                    : '',
-              ),
-              AnimatedDividerCard(
-                onArrowTap: onToggleTap,
-                arrowAnimation: arrowAnimation,
-              ),
-            },
+  State<ChatContent> createState() => _ChatContentState();
+}
 
-            const Expanded(child: OptimizedChatMessagesLists()),
-            14.verticalSpace,
-            MessageInputSection(chatData: data),
+class _ChatContentState extends State<ChatContent>
+    with TickerProviderStateMixin {
+  late AnimationController _replyAnimationController;
+  late Animation<double> _replyScaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeAnimations();
+  }
+
+  void _initializeAnimations() {
+    _replyAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+
+    _replyScaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _replyAnimationController,
+        curve: Curves.elasticOut,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _replyAnimationController.dispose();
+    super.dispose();
+  }
+
+  // ✅ Enhanced start reply with ChatCubit integration
+  void _startReply(Entry message) {
+    // 1. Update ChatCubit state for global reply management
+    context.read<ChatCubit>().startReply(message);
+
+    // 2. Trigger animation
+    _replyAnimationController.forward();
+
+    // 3. Haptic feedback
+    HapticFeedback.lightImpact();
+
+    // 4. Show toast notification
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.reply_rounded, size: 16, color: Colors.white),
+            SizedBox(width: 8.w),
+            Text('Replying to ${message.sender?.name ?? 'message'}'),
           ],
+        ),
+        duration: const Duration(milliseconds: 1000),
+        backgroundColor: Colors.blue,
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.only(
+          bottom: MediaQuery.of(context).size.height * 0.15,
+          left: 16.w,
+          right: 16.w,
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
+      ),
+    );
+
+    log('🔄 Started reply to message: ${message.id}');
+  }
+
+  // ✅ Enhanced cancel reply
+  void _cancelReply() {
+    context.read<ChatCubit>().cancelReply();
+    _replyAnimationController.reverse();
+    log('❌ Cancelled reply');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<ChatCubit, ChatState>(
+      builder: (context, chatState) {
+        final pinnedEntries =
+            chatState.chatEntry?.entries
+                ?.where((e) => (e.pinned ?? '').trim().toUpperCase() == 'Y')
+                .toList() ??
+            [];
+
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          decoration: BoxDecoration(
+            color: chatState.isReplying ?? false
+                ? Colors.blue.withOpacity(0.02)
+                : Colors.white,
+          ),
+          child: Column(
+            children: [
+              // Group header (if pinned entries exist)
+              if (pinnedEntries.isNotEmpty) ...{
+                GroupCardWidget(
+                  title: pinnedEntries[0].sender?.name,
+                  imageUrl: pinnedEntries[0].sender?.imageUrl,
+                ),
+                AnimatedDividerCard(
+                  onArrowTap: widget.onToggleTap,
+                  arrowAnimation: widget.arrowAnimation,
+                ),
+              },
+
+              // ✅ Enhanced chat messages with reply state
+              Expanded(
+                child: OptimizedChatMessagesLists(
+                  onReplyMessage: _startReply,
+                  // Pass current reply state to messages
+                  currentReplyingTo: chatState.replyingTo,
+                  isReplying: chatState.isReplying ?? false,
+                ),
+              ),
+
+              14.verticalSpace,
+
+              // ✅ Enhanced unified input with reply support
+              AnimatedBuilder(
+                animation: _replyScaleAnimation,
+                builder: (context, child) {
+                  return Transform.scale(
+                    scale: chatState.isReplying ?? false
+                        ? _replyScaleAnimation.value
+                        : 1.0,
+                    child: EnhancedUnifiedMessageInput(
+                      chatData: widget.data,
+                      onCancelReply: _cancelReply,
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
         );
       },
+    );
+  }
+}
+
+class EnhancedChatDetailScreen extends StatefulWidget {
+  final Map<String, dynamic>? data;
+
+  const EnhancedChatDetailScreen({super.key, this.data});
+
+  @override
+  State<EnhancedChatDetailScreen> createState() =>
+      _EnhancedChatDetailScreenState();
+}
+
+class _EnhancedChatDetailScreenState extends State<EnhancedChatDetailScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _arrowRotationAnimation;
+  late Animation<double> _contentFadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeAnimations();
+  }
+
+  void _initializeAnimations() {
+    context.read<ChatCubit>().resetChatState();
+    _loadChatData();
+
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+
+    _arrowRotationAnimation = Tween<double>(begin: 0.0, end: 0.5).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+
+    _contentFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _handleViewToggle() {
+    final chatCubit = context.read<ChatCubit>();
+    chatCubit.arrowSelected();
+
+    if (_animationController.isCompleted) {
+      _animationController.reverse();
+    } else {
+      _animationController.forward();
+    }
+  }
+
+  void _loadChatData() {
+    final chatId = widget.data?['chat_id'];
+    if (chatId != null) {
+      context.read<ChatCubit>().getChatEntry(chatId: chatId);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: _buildEnhancedAppBar(),
+      body: _buildBody(),
+    );
+  }
+
+  // ✅ Enhanced app bar with reply status
+  PreferredSizeWidget _buildEnhancedAppBar() {
+    return AppBar(
+      backgroundColor: Colors.white,
+      elevation: 1,
+      leading: IconButton(
+        onPressed: () => Navigator.pop(context),
+        icon: const Icon(Icons.arrow_back, color: Colors.black87),
+      ),
+      title: BlocBuilder<ChatCubit, ChatState>(
+        builder: (context, state) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.data?['title'] ?? 'Chat',
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              // ✅ Show reply status in app bar
+              if (state.isReplying ?? false)
+                Text(
+                  'Replying to ${state.replyingTo?.sender?.name ?? 'message'}...',
+                  style: TextStyle(
+                    color: Colors.blue,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
+      actions: [
+        // ✅ Quick cancel reply button in app bar
+        BlocBuilder<ChatCubit, ChatState>(
+          builder: (context, state) {
+            if (state.isReplying ?? false) {
+              return IconButton(
+                onPressed: () {
+                  context.read<ChatCubit>().cancelReply();
+                },
+                icon: Icon(Icons.close, color: Colors.blue),
+                tooltip: 'Cancel Reply',
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
+      ],
+    );
+  }
+
+  // void _handleErrorMessage(BuildContext context, ChatState state) {
+  //   if (state.errorMessage != null) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text(state.errorMessage!),
+  //         backgroundColor: Colors.red,
+  //         action: SnackBarAction(
+  //           label: 'Dismiss',
+  //           textColor: Colors.white,
+  //           onPressed: () => context.read<ChatCubit>().clearError(),
+  //         ),
+  //       ),
+  //     );
+  //   }
+  // }
+
+  Widget _buildBody() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFF2F2F2), Color(0xFFB7E8CA)],
+        ),
+      ),
+      child: Column(
+        children: [
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(24.r),
+                  topRight: Radius.circular(24.r),
+                ),
+              ),
+              child: BlocSelector<ChatCubit, ChatState, bool>(
+                selector: (state) => state.isArrow,
+                builder: (context, isArrow) {
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    transitionBuilder: (child, animation) =>
+                        FadeTransition(opacity: animation, child: child),
+                    child: isArrow
+                        ? GroupContent(
+                            key: const ValueKey('group'),
+                            onToggleTap: _handleViewToggle,
+                            arrowAnimation: _arrowRotationAnimation,
+                            contentAnimation: _contentFadeAnimation,
+                          )
+                        : ChatContent(
+                            key: const ValueKey('chat'),
+                            data: widget.data,
+                            onToggleTap: _handleViewToggle,
+                            arrowAnimation: _arrowRotationAnimation,
+                          ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -354,503 +655,19 @@ class ChatHeader extends StatelessWidget {
   }
 }
 
-// Replace your OptimizedChatMessagesList class with this fixed version
-class OptimizedChatMessagesList extends StatefulWidget {
-  const OptimizedChatMessagesList({super.key});
-
-  @override
-  State<OptimizedChatMessagesList> createState() =>
-      _OptimizedChatMessagesListState();
-}
-
-class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
-  late ScrollController _scrollController;
-  List<Entry>? _previousEntries;
-  int _previousEntriesHash = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController = ScrollController();
-
-    // Scroll to bottom when the widget first loads
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToBottom();
-    });
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _scrollToBottom({bool animate = true}) {
-    if (_scrollController.hasClients) {
-      if (animate) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      } else {
-        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
-      }
-    }
-  }
-
-  void _checkAndScrollToBottom(List<Entry> currentEntries) {
-    // ✅ FIX: More robust change detection
-    final currentHash = Object.hashAll(currentEntries.map((e) => e.id));
-
-    log(
-      '📱 Checking scroll: prev=${_previousEntries?.length ?? 0}, current=${currentEntries.length}',
-    );
-    log('📱 Hash change: prev=$_previousEntriesHash, current=$currentHash');
-
-    // Check if new messages were added or content changed
-    if (_previousEntries != null &&
-        (currentEntries.length > _previousEntries!.length ||
-            currentHash != _previousEntriesHash)) {
-      log('📱 New messages detected, scrolling to bottom');
-      // New message added, scroll to bottom
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToBottom();
-      });
-    } else if (_previousEntries == null) {
-      // First time loading, scroll to bottom
-      log('📱 Initial load, scrolling to bottom');
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToBottom(animate: false); // No animation for initial load
-      });
-    }
-
-    _previousEntries = List.from(currentEntries);
-    _previousEntriesHash = currentHash;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    log('🏗️ OptimizedChatMessagesList build() called');
-
-    // ✅ CRITICAL FIX: Use BlocConsumer with enhanced change detection
-    return BlocConsumer<ChatCubit, ChatState>(
-      // ✅ Enhanced listener condition
-      listenWhen: (previous, current) {
-        final prevCount = previous.chatEntry?.entries?.length ?? 0;
-        final currCount = current.chatEntry?.entries?.length ?? 0;
-        final statusChanged = previous.isChatEntry != current.isChatEntry;
-        final entriesChanged = prevCount != currCount;
-        final hashChanged =
-            previous.chatEntry?.entries?.hashCode !=
-            current.chatEntry?.entries?.hashCode;
-
-        final shouldListen = statusChanged || entriesChanged || hashChanged;
-
-        if (shouldListen) {
-          log('🎧 Listen condition met:');
-          log('  - Status changed: $statusChanged');
-          log('  - Entries changed: $entriesChanged ($prevCount → $currCount)');
-          log('  - Hash changed: $hashChanged');
-        }
-
-        return shouldListen;
-      },
-      listener: (context, state) {
-        log(
-          '🎧 Listener triggered: Entries = ${state.chatEntry?.entries?.length ?? 0}',
-        );
-
-        if (state.chatEntry?.entries != null) {
-          _checkAndScrollToBottom(state.chatEntry!.entries!);
-        }
-
-        // ✅ Show error messages if any
-        if (state.errorMessage != null) {
-          log('❌ Error in state: ${state.errorMessage}');
-          // You might want to show a snackbar here
-        }
-      },
-      // ✅ Enhanced build condition with multiple checks
-      buildWhen: (previous, current) {
-        final statusChanged = previous.isChatEntry != current.isChatEntry;
-        final entriesCountChanged =
-            previous.chatEntry?.entries?.length !=
-            current.chatEntry?.entries?.length;
-        final entriesHashChanged =
-            previous.chatEntry?.entries?.hashCode !=
-            current.chatEntry?.entries?.hashCode;
-        final errorChanged = previous.errorMessage != current.errorMessage;
-
-        final shouldBuild =
-            statusChanged ||
-            entriesCountChanged ||
-            entriesHashChanged ||
-            errorChanged;
-
-        if (shouldBuild) {
-          log('🏗️ Build condition met:');
-          log('  - Status: ${previous.isChatEntry} → ${current.isChatEntry}');
-          log(
-            '  - Entries: ${previous.chatEntry?.entries?.length ?? 0} → ${current.chatEntry?.entries?.length ?? 0}',
-          );
-          log('  - Hash changed: $entriesHashChanged');
-          log('  - Error changed: $errorChanged');
-        }
-
-        return shouldBuild;
-      },
-      builder: (context, state) {
-        log('🏗️ Building with status: ${state.isChatEntry}');
-        log('📊 Entries count: ${state.chatEntry?.entries?.length ?? 0}');
-
-        // ✅ Show error state if there's an error
-        if (state.errorMessage != null &&
-            state.isChatEntry == ApiFetchStatus.failed) {
-          return _buildErrorState(state.errorMessage!);
-        }
-
-        // ✅ Show shimmer for loading state
-        if (state.isChatEntry == ApiFetchStatus.loading) {
-          log('📱 Showing shimmer loading state');
-          return _buildShimmerList();
-        }
-
-        // ✅ Show empty state if no entries
-        if (state.chatEntry?.entries?.isEmpty ?? true) {
-          log('📱 Showing empty state');
-          return const AnimatedEmptyChatWidget();
-        }
-
-        // ✅ Show messages list
-        final entries = state.chatEntry!.entries!;
-        log('📱 Showing messages list with ${entries.length} entries');
-        log(
-          '📱 Latest entry: ID=${entries.last.id}, Content="${entries.last.content}"',
-        );
-
-        return _buildMessagesList(entries);
-      },
-    );
-  }
-
-  Widget _buildErrorState(String errorMessage) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 48, color: Colors.red),
-          SizedBox(height: 16),
-          Text(
-            'Error loading messages',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 8),
-          Text(
-            errorMessage,
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey[600]),
-          ),
-          SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              // Retry loading
-              context.read<ChatCubit>().refreshChatEntry();
-            },
-            child: Text('Retry'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildShimmerList() {
-    return ListView.builder(
-      padding: EdgeInsets.symmetric(horizontal: 0.w),
-      itemCount: 6,
-      itemBuilder: (context, index) =>
-          ChatMessageShimmer(isSent: index % 2 == 0),
-    );
-  }
-
-  Widget _buildMessagesList(List<Entry> entries) {
-    // ✅ Filter out HTML messages and sort by timestamp if needed
-    final pinnedList = entries.where((e) => e.messageType != 'html').toList();
-
-    // ✅ Sort by created date to ensure proper order
-    pinnedList.sort((a, b) {
-      final aTime = DateTime.tryParse(a.createdAt ?? '') ?? DateTime.now();
-      final bTime = DateTime.tryParse(b.createdAt ?? '') ?? DateTime.now();
-      return aTime.compareTo(bTime);
-    });
-
-    log('📱 Building ListView with ${pinnedList.length} filtered messages');
-
-    return FutureBuilder(
-      future: AuthUtils.instance.readUserData(),
-      builder: (context, asyncSnapshot) {
-        WidgetsBinding.instance.addPostFrameCallback((_) async {
-          await Future.delayed(Duration(milliseconds: 45));
-          if (_scrollController.hasClients && pinnedList.isNotEmpty) {
-            _scrollToBottom(animate: false);
-          }
-        });
-        if (!asyncSnapshot.hasData) {
-          return _buildShimmerList();
-        }
-
-        final int userId =
-            int.tryParse(
-              asyncSnapshot.data?.result?.userId.toString() ?? '0',
-            ) ??
-            0;
-
-        return ListView.builder(
-          // ✅ Performance optimizations
-          cacheExtent: 2000,
-          controller: _scrollController,
-          padding: EdgeInsets.symmetric(horizontal: 12.w),
-          itemCount: pinnedList.length,
-          // ✅ Add key for better performance and state preservation
-          itemBuilder: (context, index) {
-            final messageData = pinnedList[index];
-            final messageKey = ValueKey(
-              'message_${messageData.id}_${messageData.createdAt}',
-            );
-
-            return Padding(
-              key: messageKey,
-              padding: EdgeInsets.only(top: 15.h),
-              child: ChatBubbleMessage(
-                type: messageData.messageType,
-                message: messageData.content ?? '',
-                timestamp: getFormattedDate(messageData.createdAt ?? ''),
-                isSent: messageData.senderId == userId,
-                chatMedias: messageData.chatMedias,
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-}
-
-// ✅ BONUS: Debug widget to monitor state changes
-class ChatStateDebugger extends StatelessWidget {
-  const ChatStateDebugger({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<ChatCubit, ChatState>(
-      builder: (context, state) {
-        return Container(
-          padding: EdgeInsets.all(8),
-          margin: EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.black87,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'DEBUG INFO',
-                style: TextStyle(
-                  color: Colors.yellow,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                'Status: ${state.isChatEntry}',
-                style: TextStyle(color: Colors.white),
-              ),
-              Text(
-                'Entries: ${state.chatEntry?.entries?.length ?? 0}',
-                style: TextStyle(color: Colors.white),
-              ),
-              Text(
-                'Hash: ${state.chatEntry?.entries?.hashCode ?? 0}',
-                style: TextStyle(color: Colors.white),
-              ),
-              if (state.errorMessage != null)
-                Text(
-                  'Error: ${state.errorMessage}',
-                  style: TextStyle(color: Colors.red),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-// class OptimizedChatMessagesList extends StatefulWidget {
-//   const OptimizedChatMessagesList({super.key});
-
-//   @override
-//   State<OptimizedChatMessagesList> createState() =>
-//       _OptimizedChatMessagesListState();
-// }
-
-// class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
-//   late ScrollController _scrollController;
-//   List<Entry>? _previousEntries;
-
-//   @override
-//   void initState() {
-//     super.initState();
-//     _scrollController = ScrollController();
-
-//     // Scroll to bottom when the widget first loads
-//     WidgetsBinding.instance.addPostFrameCallback((_) {
-//       _scrollToBottom();
-//     });
-//   }
-
-//   @override
-//   void dispose() {
-//     _scrollController.dispose();
-//     super.dispose();
-//   }
-
-//   void _scrollToBottom({bool animate = true}) {
-//     if (_scrollController.hasClients) {
-//       if (animate) {
-//         _scrollController.animateTo(
-//           _scrollController.position.maxScrollExtent,
-//           duration: const Duration(milliseconds: 300),
-//           curve: Curves.easeOut,
-//         );
-//       } else {
-//         _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
-//       }
-//     }
-//   }
-
-//   void _checkAndScrollToBottom(List<Entry> currentEntries) {
-//     // Check if new messages were added
-//     if (_previousEntries != null &&
-//         currentEntries.length > _previousEntries!.length) {
-//       log('📱 New messages detected, scrolling to bottom');
-//       // New message added, scroll to bottom
-//       WidgetsBinding.instance.addPostFrameCallback((_) {
-//         _scrollToBottom();
-//       });
-//     } else if (_previousEntries == null) {
-//       // First time loading, scroll to bottom
-//       WidgetsBinding.instance.addPostFrameCallback((_) {
-//         _scrollToBottom(animate: false); // No animation for initial load
-//       });
-//     }
-
-//     _previousEntries = List.from(currentEntries);
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     // ✅ Use BlocConsumer to listen for changes AND build UI
-//     return BlocConsumer<ChatCubit, ChatState>(
-//       // ✅ Listen for state changes
-//       listenWhen: (previous, current) {
-//         return previous.chatEntry?.entries?.length !=
-//             current.chatEntry?.entries?.length;
-//       },
-//       listener: (context, state) {
-//         log(
-//           '🎧 Listener: Entries changed to ${state.chatEntry?.entries?.length ?? 0}',
-//         );
-//         if (state.chatEntry?.entries != null) {
-//           _checkAndScrollToBottom(state.chatEntry!.entries!);
-//         }
-//       },
-//       // ✅ Build when state changes
-//       buildWhen: (previous, current) {
-//         final shouldBuild =
-//             previous.isChatEntry != current.isChatEntry ||
-//             previous.chatEntry?.entries?.length !=
-//                 current.chatEntry?.entries?.length;
-
-//         if (shouldBuild) {
-//           log('🏗️ Building with status: ${current.isChatEntry}');
-//           log('📊 Entries count: ${current.chatEntry?.entries?.length ?? 0}');
-//         }
-
-//         return shouldBuild;
-//       },
-//       builder: (context, state) {
-//         // ✅ Show shimmer for loading state
-//         if (state.isChatEntry == ApiFetchStatus.loading) {
-//           log('📱 Showing shimmer');
-//           return _buildShimmerList();
-//         }
-
-//         // ✅ Show empty state if no entries
-//         if (state.chatEntry?.entries?.isEmpty ?? true) {
-//           log('📱 Showing empty state');
-//           return const AnimatedEmptyChatWidget();
-//         }
-
-//         // ✅ Show messages list
-//         log(
-//           '📱 Showing messages list with ${state.chatEntry!.entries!.length} entries',
-//         );
-//         return _buildMessagesList(state.chatEntry!.entries!);
-//       },
-//     );
-//   }
-
-//   Widget _buildShimmerList() {
-//     return ListView.builder(
-//       padding: EdgeInsets.symmetric(horizontal: 0.w),
-//       itemCount: 6,
-//       itemBuilder: (context, index) =>
-//           ChatMessageShimmer(isSent: index % 2 == 0),
-//     );
-//   }
-
-//   Widget _buildMessagesList(List<Entry> entries) {
-//     final pinnedList = entries.where((e) => (e.messageType != 'html')).toList();
-
-//     return FutureBuilder(
-//       future: AuthUtils.instance.readUserData(),
-//       builder: (context, asyncSnapshot) {
-//         return ListView.builder(
-//           cacheExtent: 2000,
-//           controller: _scrollController,
-//           padding: EdgeInsets.symmetric(horizontal: 12.w),
-//           itemCount: pinnedList.length,
-//           itemBuilder: (context, index) {
-//             final messageData = pinnedList[index];
-//             final int userId =
-//                 int.tryParse(
-//                   asyncSnapshot.data?.result?.userId.toString() ?? '0',
-//                 ) ??
-//                 0;
-
-//             return Padding(
-//               padding: EdgeInsets.only(top: 15.h),
-//               child: ChatBubbleMessage(
-//                 type: messageData.messageType,
-//                 message: messageData.content ?? '',
-//                 timestamp: getFormattedDate(messageData.createdAt ?? ''),
-//                 isSent: messageData.senderId == userId,
-//                 chatMedias: messageData.chatMedias,
-//               ),
-//             );
-//           },
-//         );
-//       },
-//     );
-//   }
-// }
-
 class UnifiedMessageInput extends StatefulWidget {
   final Map<String, dynamic>? chatData;
   final bool isGroup;
+  final Entry? replyingTo; // 🔑 NEW: Reply support
+  final VoidCallback? onCancelReply; // 🔑 NEW: Cancel reply
 
-  const UnifiedMessageInput({super.key, this.chatData, this.isGroup = false});
+  const UnifiedMessageInput({
+    super.key,
+    this.chatData,
+    this.isGroup = false,
+    this.replyingTo,
+    this.onCancelReply,
+  });
 
   @override
   State<UnifiedMessageInput> createState() => _UnifiedMessageInputState();
@@ -902,48 +719,10 @@ class _UnifiedMessageInputState extends State<UnifiedMessageInput>
     }
   }
 
-  void _startRecording() {
-    final chatCubit = context.read<ChatCubit>();
-    chatCubit.startRecording();
-    _recordingAnimationController.repeat(reverse: true);
-
-    showRecordingDialog(
-      context,
-      _pulseAnimation,
-      _cancelRecording,
-      _stopRecording,
-    );
-  }
-
-  void _stopRecording() async {
-    final user = await AuthUtils.instance.readUserData();
-    if (!widget.isGroup) {
-      context.read<ChatCubit>().stopRecordingAndSend(
-        AddChatEntryRequest(
-          chatId: widget.chatData?['chat_id'],
-          senderId: int.tryParse(user?.result?.userId.toString() ?? '1'),
-          type: 'N',
-          typeValue: 0,
-          messageType: 'voice',
-          content: 'Voice message',
-          source: 'Mobile',
-        ),
-      );
-    }
-
-    _recordingAnimationController.stop();
-    Navigator.pop(context);
-  }
-
-  void _cancelRecording() {
-    context.read<ChatCubit>().cancelRecording();
-    _recordingAnimationController.stop();
-    Navigator.pop(context);
-  }
-
   Future<void> _sendMessage() async {
     final messageText = _messageController.text.trim();
     final user = await AuthUtils.instance.readUserData();
+    final bool isReply = widget.replyingTo != null;
 
     if (widget.isGroup) {
       _handleGroupMessage(messageText);
@@ -954,20 +733,33 @@ class _UnifiedMessageInputState extends State<UnifiedMessageInput>
     if (messageText.isEmpty && selectedFiles.isEmpty) return;
 
     _messageController.clear();
+    String? otherDetails1;
+    if (isReply) {
+      final replyDetails = [
+        {"ReplayChatEntryId": widget.replyingTo!.id.toString()},
+      ];
+      otherDetails1 = jsonEncode(replyDetails);
+    }
 
+    log("Stringfied -=- =- =- =- =- =- =- =-= -=- = $otherDetails1");
+    // 🔑 Include reply information if replying
     await context.read<ChatCubit>().createChat(
       AddChatEntryRequest(
         chatId: widget.chatData?['chat_id'],
         senderId: int.tryParse(user?.result?.userId.toString() ?? '1'),
-        type: 'N',
+        type: isReply ? 'CR' : 'N',
         typeValue: 0,
         messageType: 'text',
         content: messageText.isNotEmpty ? messageText : 'File attachment',
         source: 'Website',
         attachedFiles: selectedFiles,
+        otherDetails1: otherDetails1, // 🔑 Pass the reply information
       ),
       files: selectedFiles,
     );
+
+    // Clear reply after sending
+    widget.onCancelReply?.call();
 
     log('Message sent: $messageText');
   }
@@ -977,8 +769,32 @@ class _UnifiedMessageInputState extends State<UnifiedMessageInput>
 
     _messageController.clear();
     FocusScope.of(context).unfocus();
+
+    // Clear reply after sending
+    widget.onCancelReply?.call();
+
     log('Group message sent: $messageText');
   }
+
+  // ... rest of your existing methods remain the same
+
+  Widget _buildTextInput() {
+    return TextFeildWidget(
+      hintText: widget.replyingTo != null
+          ? 'Reply to ${widget.replyingTo!.sender?.name ?? 'User'}...'
+          : 'Type a message',
+      controller: _messageController,
+      inputBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10.r),
+        borderSide: const BorderSide(color: Color(0xffCACACA), width: 1),
+      ),
+      suffixIcon: _buildVoiceButton(),
+      miniLength: 1,
+      maxLines: 5,
+    );
+  }
+
+  // ... include all your other existing methods like _buildVoiceButton, _buildSendButton, etc.
 
   @override
   Widget build(BuildContext context) {
@@ -1009,20 +825,6 @@ class _UnifiedMessageInputState extends State<UnifiedMessageInput>
               child: SvgPicture.asset('assets/icons/Vector.svg'),
             )
           : SvgPicture.asset('assets/icons/Vector.svg'),
-    );
-  }
-
-  Widget _buildTextInput() {
-    return TextFeildWidget(
-      hintText: 'Type a message',
-      controller: _messageController,
-      inputBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10.r),
-        borderSide: const BorderSide(color: Color(0xffCACACA), width: 1),
-      ),
-      suffixIcon: _buildVoiceButton(),
-      miniLength: 1,
-      maxLines: 5,
     );
   }
 
@@ -1068,18 +870,60 @@ class _UnifiedMessageInputState extends State<UnifiedMessageInput>
           : const SizedBox.shrink(),
     );
   }
-}
 
-class MessageInputSection extends StatelessWidget {
-  final Map<String, dynamic>? chatData;
+  void _startRecording() {
+    final chatCubit = context.read<ChatCubit>();
+    chatCubit.startRecording();
+    _recordingAnimationController.repeat(reverse: true);
 
-  const MessageInputSection({super.key, this.chatData});
+    showRecordingDialog(
+      context,
+      _pulseAnimation,
+      _cancelRecording,
+      _stopRecording,
+    );
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    return UnifiedMessageInput(chatData: chatData);
+  void _stopRecording() async {
+    final user = await AuthUtils.instance.readUserData();
+    if (!widget.isGroup) {
+      context.read<ChatCubit>().stopRecordingAndSend(
+        AddChatEntryRequest(
+          chatId: widget.chatData?['chat_id'],
+          senderId: int.tryParse(user?.result?.userId.toString() ?? '1'),
+          type: 'N',
+          typeValue: 0,
+          messageType: 'voice',
+          content: 'Voice message',
+          source: 'Mobile',
+        ),
+      );
+    }
+
+    _recordingAnimationController.stop();
+    Navigator.pop(context);
+
+    // Clear reply after sending voice message
+    widget.onCancelReply?.call();
+  }
+
+  void _cancelRecording() {
+    context.read<ChatCubit>().cancelRecording();
+    _recordingAnimationController.stop();
+    Navigator.pop(context);
   }
 }
+
+// class MessageInputSection extends StatelessWidget {
+//   final Map<String, dynamic>? chatData;
+
+//   const MessageInputSection({super.key, this.chatData});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return UnifiedMessageInput(chatData: chatData);
+//   }
+// }
 
 class AnimatedDividerCard extends StatelessWidget {
   final VoidCallback onArrowTap;

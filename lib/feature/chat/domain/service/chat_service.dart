@@ -144,6 +144,7 @@ class ChatService implements ChatRepositories {
           "visitNo": "DCRT030725R1BAH1", // Use required format
           "templateCode": "ABNTMP", // Use required template
           "chatMedias": chatMedias, // Always include array (empty if no files)
+          "otherDetails1": req.otherDetails1,
         };
 
         final jsonString = jsonEncode(requestMap);
