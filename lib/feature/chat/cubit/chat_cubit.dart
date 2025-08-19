@@ -333,304 +333,6 @@ class ChatCubit extends Cubit<ChatState> {
     }
   }
 
-  // ✅ ENHANCED: Override emit method with better debugging
-  @override
-  void emit(ChatState state) {
-    if (_isDisposed) {
-      log('⚠️ Attempted to emit on disposed cubit');
-      return;
-    }
-
-    final previousEntriesCount = this.state.chatEntry?.entries?.length ?? 0;
-    final newEntriesCount = state.chatEntry?.entries?.length ?? 0;
-    final previousHash = this.state.hashCode;
-    final newHash = state.hashCode;
-
-    log('🚀 🎯 EMITTING STATE FROM RECEIVEMESSAGE:');
-    log('  - Status: ${this.state.isChatEntry} → ${state.isChatEntry}');
-    log('  - Entries: $previousEntriesCount → $newEntriesCount');
-    log('  - State hash: $previousHash → $newHash');
-    log(
-      '  - Entries hash: ${this.state.chatEntry?.entries?.hashCode} → ${state.chatEntry?.entries?.hashCode}',
-    );
-    log('  - Hash changed: ${previousHash != newHash}');
-
-    super.emit(state);
-
-    // ✅ Verify emit was successful
-    Future.delayed(Duration(milliseconds: 50), () {
-      if (!_isDisposed) {
-        final actualCount = this.state.chatEntry?.entries?.length ?? 0;
-        final actualHash = this.state.hashCode;
-
-        log('✅ 🎯 Emit verification:');
-        log('  - Expected entries: $newEntriesCount, Actual: $actualCount');
-        log('  - Expected hash: $newHash, Actual: $actualHash');
-
-        if (actualCount != newEntriesCount) {
-          log('❌ EMIT FAILED: Entry counts don\'t match!');
-        } else if (actualHash != newHash) {
-          log('❌ EMIT FAILED: State hashes don\'t match!');
-        } else {
-          log('✅ EMIT SUCCESS: State updated correctly');
-        }
-      }
-    });
-  }
-
-  // ✅ BONUS: Add a method to manually test ReceiveMessage
-  void testReceiveMessage() {
-    log('🧪 Testing ReceiveMessage simulation...');
-
-    final testEntry = Entry(
-      id: DateTime.now().millisecondsSinceEpoch,
-      chatId: _currentChatId,
-      senderId: 999,
-      messageType: 'text',
-      content: 'Test ReceiveMessage: ${DateTime.now().toIso8601String()}',
-      createdAt: DateTime.now().toIso8601String(),
-      type: 'N',
-      typeValue: 0,
-      thread: '47',
-    );
-
-    log('🧪 Simulating ReceiveMessage with test entry...');
-    _handleNewEntries([testEntry]);
-  }
-  // void _handleNewEntries(List<Entry> newEntries) {
-  //   log('📨 SignalR: Received ${newEntries.length} new entries');
-  //   log('📊 Current chat ID: $_currentChatId');
-  //   log('📊 Current chat state: ${state.isChatEntry}');
-  //   log('📊 Has chatEntry: ${state.chatEntry != null}');
-
-  //   if (_isDisposed) {
-  //     log('⚠️ Cubit is disposed, ignoring new entries');
-  //     return;
-  //   }
-
-  //   if (_currentChatId == null) {
-  //     log('⚠️ No current chat ID set');
-  //     return;
-  //   }
-
-  //   if (state.chatEntry == null) {
-  //     log('⚠️ No chat entry state - requesting fresh data');
-  //     getChatEntry(chatId: _currentChatId);
-  //     return;
-  //   }
-
-  //   final currentChatIdStr = _currentChatId.toString();
-  //   final relevantEntries = newEntries.where((entry) {
-  //     final entryChatId = entry.chatId?.toString() ?? '';
-  //     final isRelevant = entryChatId == currentChatIdStr;
-  //     log(
-  //       '🔍 Entry ${entry.id}: chatId="$entryChatId" vs current="$currentChatIdStr" -> $isRelevant',
-  //     );
-  //     return isRelevant;
-  //   }).toList();
-
-  //   log('📊 Relevant entries for current chat: ${relevantEntries.length}');
-
-  //   if (relevantEntries.isEmpty) {
-  //     log('ℹ️ No relevant entries for current chat $_currentChatId');
-  //     return;
-  //   }
-
-  //   // ✅ FIX 1: Create completely new list instances to ensure state change detection
-  //   final currentEntries = List<Entry>.from(state.chatEntry!.entries ?? []);
-  //   final existingIds = currentEntries
-  //       .map((e) => e.id?.toString())
-  //       .where((id) => id != null)
-  //       .toSet();
-
-  //   final filteredNewEntries = relevantEntries.where((entry) {
-  //     final entryId = entry.id?.toString();
-  //     final isNew = entryId != null && !existingIds.contains(entryId);
-  //     log('🔍 Entry ${entry.id}: exists=${!isNew}');
-  //     return isNew;
-  //   }).toList();
-
-  //   log(
-  //     '📊 New entries after filtering duplicates: ${filteredNewEntries.length}',
-  //   );
-
-  //   if (filteredNewEntries.isEmpty) {
-  //     log('ℹ️ No new entries to add (all already exist)');
-  //     return;
-  //   }
-
-  //   try {
-  //     // ✅ FIX 2: Create completely new list for Freezed
-  //     final updatedEntries = List<Entry>.from([
-  //       ...currentEntries,
-  //       ...filteredNewEntries,
-  //     ]);
-
-  //     // ✅ FIX 3: Use Freezed copyWith properly
-  //     final updatedChatEntry = state.chatEntry!.copyWith(
-  //       entries: updatedEntries, // Freezed will create new object automatically
-  //     );
-
-  //     // Update cache
-  //     _chatCache[_currentChatId!] = updatedChatEntry;
-  //     _chatCacheTimestamps[_currentChatId!] = DateTime.now();
-
-  //     log(
-  //       '🚀 EMITTING STATE UPDATE with ${filteredNewEntries.length} new entries',
-  //     );
-  //     log('📊 Total entries now: ${updatedEntries.length}');
-
-  //     // ✅ FIX 4: Use regular emit with copyWith for Freezed compatibility
-  //     emit(
-  //       state.copyWith(
-  //         chatEntry: updatedChatEntry,
-  //         isChatEntry: ApiFetchStatus.success,
-  //         errorMessage: null, // Clear any errors
-  //       ),
-  //     );
-
-  //     // ✅ FIX 6: Load media immediately for new entries
-  //     _loadMediaForNewEntries(filteredNewEntries);
-
-  //     log('✅ STATE EMITTED SUCCESSFULLY');
-
-  //     // ✅ FIX 7: Remove the double emit for Freezed
-  //     // Freezed handles immutability properly, no need for double emission
-
-  //     // Debug verification
-  //     Future.delayed(Duration(milliseconds: 100), () {
-  //       log('🔍 Post-emit verification:');
-  //       log('  - State entries: ${state.chatEntry?.entries?.length}');
-  //       log('  - State status: ${state.isChatEntry}');
-  //       log('  - State hash: ${state.hashCode}');
-  //     });
-  //   } catch (e) {
-  //     log('❌ Error updating state with new entries: $e');
-  //     emit(state.copyWith(errorMessage: 'Failed to update chat: $e'));
-  //   }
-  // }
-
-  // ✅ FIX 8: Override emit method to force logging and detection
-
-  // void _handleNewEntries(List<Entry> newEntries) {
-  //   log('📨 SignalR: Received ${newEntries.length} new entries');
-  //   log('📊 Current chat ID: $_currentChatId');
-  //   log('📊 Current chat state: ${state.isChatEntry}');
-  //   log('📊 Has chatEntry: ${state.chatEntry != null}');
-
-  //   if (_isDisposed) {
-  //     log('⚠️ Cubit is disposed, ignoring new entries');
-  //     return;
-  //   }
-
-  //   if (_currentChatId == null) {
-  //     log('⚠️ No current chat ID set');
-  //     return;
-  //   }
-
-  //   if (state.chatEntry == null) {
-  //     log('⚠️ No chat entry state - requesting fresh data');
-  //     getChatEntry(chatId: _currentChatId);
-  //     return;
-  //   }
-
-  //   // ✅ Check for media entries first
-  //   final entriesWithMedia = newEntries
-  //       .where((entry) => entry.chatMedias?.isNotEmpty == true)
-  //       .toList();
-
-  //   if (entriesWithMedia.isNotEmpty) {
-  //     log('📎 Found ${entriesWithMedia.length} entries with media files');
-  //     for (var entry in entriesWithMedia) {
-  //       log('📎 Entry ${entry.id} has ${entry.chatMedias?.length} media files');
-  //       for (var media in entry.chatMedias ?? []) {
-  //         log(
-  //           '📎 Media: ID=${media.id}, URL=${media.mediaUrl}, Type=${media.mediaType}',
-  //         );
-  //       }
-  //     }
-  //   }
-
-  //   final currentChatIdStr = _currentChatId.toString();
-  //   final relevantEntries = newEntries.where((entry) {
-  //     final entryChatId = entry.chatId?.toString() ?? '';
-  //     final isRelevant = entryChatId == currentChatIdStr;
-  //     log(
-  //       '🔍 Entry ${entry.id}: chatId="$entryChatId" vs current="$currentChatIdStr" -> $isRelevant',
-  //     );
-  //     return isRelevant;
-  //   }).toList();
-
-  //   log('📊 Relevant entries for current chat: ${relevantEntries.length}');
-
-  //   if (relevantEntries.isEmpty) {
-  //     log('ℹ️ No relevant entries for current chat $_currentChatId');
-  //     return;
-  //   }
-
-  //   final currentEntries = List<Entry>.from(state.chatEntry!.entries ?? []);
-  //   final existingIds = currentEntries
-  //       .map((e) => e.id?.toString())
-  //       .where((id) => id != null)
-  //       .toSet();
-
-  //   final filteredNewEntries = relevantEntries.where((entry) {
-  //     final entryId = entry.id?.toString();
-  //     final isNew = entryId != null && !existingIds.contains(entryId);
-  //     log('🔍 Entry ${entry.id}: exists=${!isNew}');
-  //     return isNew;
-  //   }).toList();
-
-  //   log(
-  //     '📊 New entries after filtering duplicates: ${filteredNewEntries.length}',
-  //   );
-
-  //   if (filteredNewEntries.isEmpty) {
-  //     log('ℹ️ No new entries to add (all already exist)');
-  //     return;
-  //   }
-
-  //   try {
-  //     final updatedEntries = [...currentEntries, ...filteredNewEntries];
-  //     final updatedChatEntry = state.chatEntry!.copyWith(
-  //       entries: updatedEntries,
-  //     );
-
-  //     // Update cache
-  //     _chatCache[_currentChatId!] = updatedChatEntry;
-  //     _chatCacheTimestamps[_currentChatId!] = DateTime.now();
-
-  //     log(
-  //       '🚀 EMITTING STATE UPDATE with ${filteredNewEntries.length} new entries',
-  //     );
-  //     log('📊 Total entries now: ${updatedEntries.length}');
-
-  //     // ✅ CRITICAL: Emit the new state
-  //     emit(
-  //       state.copyWith(
-  //         chatEntry: updatedChatEntry,
-  //         isChatEntry: ApiFetchStatus.success,
-  //         errorMessage: null,
-  //       ),
-  //     );
-
-  //     // ✅ IMMEDIATELY load media for new entries (this was missing!)
-  //     _loadMediaForNewEntries(filteredNewEntries);
-
-  //     log('✅ STATE EMITTED SUCCESSFULLY');
-
-  //     // Debug verification
-  //     Future.delayed(Duration(milliseconds: 100), () {
-  //       log('🔍 Post-emit verification:');
-  //       log('  - State entries: ${state.chatEntry?.entries?.length}');
-  //       log('  - State status: ${state.isChatEntry}');
-  //     });
-  //   } catch (e) {
-  //     log('❌ Error updating state with new entries: $e');
-  //     emit(state.copyWith(errorMessage: 'Failed to update chat: $e'));
-  //   }
-  // }
-
   void _loadMediaForNewEntries(List<Entry> newEntries) {
     log('📎 Loading media for ${newEntries.length} new SignalR entries...');
 
@@ -1151,7 +853,7 @@ class ChatCubit extends Cubit<ChatState> {
       await Future.delayed(Duration(milliseconds: 500));
 
       // Send a ping to verify connection
-      await _signalRService.sendPing();
+      // await _signalRService.sendPing();
 
       // Request any missed messages
       await _requestMissedMessages(chatId);
@@ -2017,16 +1719,6 @@ class ChatCubit extends Cubit<ChatState> {
         ),
       );
 
-      final optimisticEntry = Entry(
-        id: tempId,
-        chatId: request.chatId,
-        senderId: request.senderId,
-        messageType: request.messageType,
-        content: request.content,
-        createdAt: DateTime.now().toIso8601String(),
-        otherDetails1: request.otherDetails1 ?? '',
-        pinned: request.pinned,
-      );
       final res = await _chatRepositories.addChatEntry(
         req: request,
         files: filesToSend,
@@ -2035,8 +1727,6 @@ class ChatCubit extends Cubit<ChatState> {
       if (_isDisposed) return;
 
       if (res.data != null) {
-        addOptimisticMessage(optimisticEntry);
-
         final serverEntry = Entry(
           id: res.data!.id,
           content: res.data!.content,
@@ -2117,39 +1807,39 @@ class ChatCubit extends Cubit<ChatState> {
     }
   }
 
-  void addOptimisticMessage(Entry optimisticEntry) {
-    final currentEntries = List<Entry>.from(state.chatEntry?.entries ?? []);
-    currentEntries.add(optimisticEntry);
+  // void addOptimisticMessage(Entry optimisticEntry) {
+  //   final currentEntries = List<Entry>.from(state.chatEntry?.entries ?? []);
+  //   currentEntries.add(optimisticEntry);
 
-    emit(
-      state.copyWith(
-        chatEntry: state.chatEntry?.copyWith(entries: currentEntries),
-      ),
-    );
-  }
+  //   emit(
+  //     state.copyWith(
+  //       chatEntry: state.chatEntry?.copyWith(entries: currentEntries),
+  //     ),
+  //   );
+  // }
 
-  void updateOptimisticMessage({
-    required String tempId,
-    Entry? realEntry,
-    bool remove = false,
-  }) {
-    final currentEntries = List<Entry>.from(state.chatEntry?.entries ?? []);
-    final index = currentEntries.indexWhere((e) => e.id.toString() == tempId);
+  // void updateOptimisticMessage({
+  //   required String tempId,
+  //   Entry? realEntry,
+  //   bool remove = false,
+  // }) {
+  //   final currentEntries = List<Entry>.from(state.chatEntry?.entries ?? []);
+  //   final index = currentEntries.indexWhere((e) => e.id.toString() == tempId);
 
-    if (index != -1) {
-      if (remove) {
-        currentEntries.removeAt(index);
-      } else if (realEntry != null) {
-        currentEntries[index] = realEntry;
-      }
+  //   if (index != -1) {
+  //     if (remove) {
+  //       currentEntries.removeAt(index);
+  //     } else if (realEntry != null) {
+  //       currentEntries[index] = realEntry;
+  //     }
 
-      emit(
-        state.copyWith(
-          chatEntry: state.chatEntry?.copyWith(entries: currentEntries),
-        ),
-      );
-    }
-  }
+  //     emit(
+  //       state.copyWith(
+  //         chatEntry: state.chatEntry?.copyWith(entries: currentEntries),
+  //       ),
+  //     );
+  //   }
+  // }
 
   Future<void> selectImageFromGallery(BuildContext context) async {
     if (_isDisposed) return;

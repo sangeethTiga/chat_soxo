@@ -56,9 +56,10 @@ class ChatSignalRService {
 
   Future<void> initializeConnection() async {
     final user = await AuthUtils.instance.readUserData();
-    final token = await AuthUtils.instance.readAccessToken;
+    // final token = await AuthUtils.instance.readAccessToken;
 
     String username = user?.result?.userName?.trim() ?? '';
+    final String token = user?.result?.jwtToken ?? '';
     username = Uri.encodeComponent(username);
 
     String baseUrl = "http://20.244.37.96:5002/api/chatsHub";
@@ -76,6 +77,7 @@ class ChatSignalRService {
     final transportStrategies = [
       HttpTransportType.LongPolling,
       HttpTransportType.ServerSentEvents,
+      HttpTransportType.WebSockets,
     ];
 
     Exception? lastError;
@@ -510,6 +512,18 @@ class ChatSignalRService {
     }
   }
 
+  Future<void> _safeInvoke(String method, {List<Object>? args}) async {
+    if (_hubConnection == null) {
+      log('⚠️ Cannot invoke "$method" — hubConnection is null');
+      return;
+    }
+    try {
+      await _hubConnection!.invoke(method, args: args);
+    } catch (e) {
+      log('❌ Error invoking "$method": $e');
+    }
+  }
+
   Future<void> joinChatGroup(String chatId) async {
     if (!_isConnected || _hubConnection == null) {
       log('SignalR: Cannot join group - not connected');
@@ -536,7 +550,6 @@ class ChatSignalRService {
       _currentChatId = chatId;
       log('✅ SignalR: Joined chat group: $chatId');
 
-      // ✅ NEW: For comeback scenarios, request recent messages
       if (isComingBackFromInactivity) {
         log(
           '🔄 User coming back from inactivity, requesting recent messages...',
@@ -565,26 +578,44 @@ class ChatSignalRService {
     }
   }
 
+  // Future<void> requestMissedMessages(
+  //   String chatId,
+  //   String lastTimestamp,
+  // ) async {
+  //   if (!isConnected) {
+  //     throw Exception('SignalR not connected');
+  //   }
+
+  //   try {
+  //     log(
+  //       '📡 Requesting missed messages for chat $chatId since $lastTimestamp',
+  //     );
+  //     await _hubConnection!.invoke(
+  //       'RequestMissedMessages',
+  //       args: [chatId, lastTimestamp],
+  //     );
+  //     log('✅ Missed messages request sent');
+  //   } catch (e) {
+  //     log('❌ Failed to request missed messages: $e');
+  //     rethrow;
+  //   }
+  // }
+
   Future<void> requestMissedMessages(
     String chatId,
     String lastTimestamp,
   ) async {
     if (!isConnected) {
-      throw Exception('SignalR not connected');
+      log('⚠️ Not connected, skipping missed messages request');
+      return;
     }
-
     try {
-      log(
-        '📡 Requesting missed messages for chat $chatId since $lastTimestamp',
-      );
       await _hubConnection!.invoke(
-        'RequestMissedMessages',
+        'ReceiveMessage',
         args: [chatId, lastTimestamp],
       );
-      log('✅ Missed messages request sent');
     } catch (e) {
-      log('❌ Failed to request missed messages: $e');
-      rethrow;
+      log('⚠️ Server does not support RequestMissedMessages: $e');
     }
   }
 
@@ -594,7 +625,7 @@ class ChatSignalRService {
     }
 
     try {
-      await _hubConnection!.invoke('Ping');
+      await _safeInvoke('Ping');
       log('✅ SignalR ping successful');
     } catch (e) {
       log('❌ SignalR ping failed: $e');
@@ -605,10 +636,7 @@ class ChatSignalRService {
   Future<void> _requestRecentMessages(String chatId) async {
     try {
       // You might need to implement this on your server
-      await _hubConnection!.invoke(
-        'RequestRecentMessages',
-        args: [chatId, '10'],
-      );
+      await _hubConnection!.invoke('ReceiveMessage', args: [chatId, '10']);
       log('✅ Requested recent messages for chat: $chatId');
     } catch (e) {
       log('⚠️ Could not request recent messages: $e');

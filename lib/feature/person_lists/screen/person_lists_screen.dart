@@ -178,7 +178,8 @@ class PersonListsScreen extends StatelessWidget {
                                               routeChatDetail,
                                               extra: {
                                                 "title": data?.name,
-                                                "chat_id": chatResponse!.chatId,
+                                                "chat_id":
+                                                    chatResponse!.chatId ?? 0,
                                               },
                                             );
                                           }
