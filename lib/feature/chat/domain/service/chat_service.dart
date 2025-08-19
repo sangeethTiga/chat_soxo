@@ -141,10 +141,11 @@ class ChatService implements ChatRepositories {
           "messageType": req.messageType ?? "text",
           "content": req.content ?? "",
           "source": req.source ?? "Mobile",
-          "visitNo": "DCRT030725R1BAH1", // Use required format
+          "visitNo": "DCRT030725R1BAH1",
           "templateCode": "ABNTMP", // Use required template
           "chatMedias": chatMedias, // Always include array (empty if no files)
           "otherDetails1": req.otherDetails1,
+          "pinned": req.pinned,
         };
 
         final jsonString = jsonEncode(requestMap);

@@ -125,6 +125,7 @@ class _EnhancedUnifiedMessageInputState
         content: messageText,
         source: 'Mobile',
         attachedFiles: selectedFiles,
+        pinned: chatCubit.state.isPinned,
       );
 
       await chatCubit.sendReplyMessage(
@@ -142,6 +143,7 @@ class _EnhancedUnifiedMessageInputState
         content: messageText.isNotEmpty ? messageText : 'File attachment',
         source: 'Mobile',
         attachedFiles: selectedFiles,
+        pinned: chatCubit.state.isPinned,
       );
 
       await chatCubit.createChat(request, files: selectedFiles);

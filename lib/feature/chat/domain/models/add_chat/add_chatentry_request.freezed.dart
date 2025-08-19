@@ -27,6 +27,8 @@ mixin _$AddChatEntryRequest {
   int? get senderId => throw _privateConstructorUsedError;
   @JsonKey(name: "type")
   String? get type => throw _privateConstructorUsedError;
+  @JsonKey(name: "pinned")
+  String? get pinned => throw _privateConstructorUsedError;
   @JsonKey(name: "typeValue")
   int? get typeValue => throw _privateConstructorUsedError;
   @JsonKey(name: "messageType")
@@ -63,6 +65,7 @@ abstract class $AddChatEntryRequestCopyWith<$Res> {
     @JsonKey(name: "chatId") int? chatId,
     @JsonKey(name: "senderId") int? senderId,
     @JsonKey(name: "type") String? type,
+    @JsonKey(name: "pinned") String? pinned,
     @JsonKey(name: "typeValue") int? typeValue,
     @JsonKey(name: "messageType") String? messageType,
     @JsonKey(name: "content") String? content,
@@ -92,6 +95,7 @@ class _$AddChatEntryRequestCopyWithImpl<$Res, $Val extends AddChatEntryRequest>
     Object? chatId = freezed,
     Object? senderId = freezed,
     Object? type = freezed,
+    Object? pinned = freezed,
     Object? typeValue = freezed,
     Object? messageType = freezed,
     Object? content = freezed,
@@ -113,6 +117,10 @@ class _$AddChatEntryRequestCopyWithImpl<$Res, $Val extends AddChatEntryRequest>
             type: freezed == type
                 ? _value.type
                 : type // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            pinned: freezed == pinned
+                ? _value.pinned
+                : pinned // ignore: cast_nullable_to_non_nullable
                       as String?,
             typeValue: freezed == typeValue
                 ? _value.typeValue
@@ -161,6 +169,7 @@ abstract class _$$AddChatEntryRequestImplCopyWith<$Res>
     @JsonKey(name: "chatId") int? chatId,
     @JsonKey(name: "senderId") int? senderId,
     @JsonKey(name: "type") String? type,
+    @JsonKey(name: "pinned") String? pinned,
     @JsonKey(name: "typeValue") int? typeValue,
     @JsonKey(name: "messageType") String? messageType,
     @JsonKey(name: "content") String? content,
@@ -189,6 +198,7 @@ class __$$AddChatEntryRequestImplCopyWithImpl<$Res>
     Object? chatId = freezed,
     Object? senderId = freezed,
     Object? type = freezed,
+    Object? pinned = freezed,
     Object? typeValue = freezed,
     Object? messageType = freezed,
     Object? content = freezed,
@@ -210,6 +220,10 @@ class __$$AddChatEntryRequestImplCopyWithImpl<$Res>
         type: freezed == type
             ? _value.type
             : type // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        pinned: freezed == pinned
+            ? _value.pinned
+            : pinned // ignore: cast_nullable_to_non_nullable
                   as String?,
         typeValue: freezed == typeValue
             ? _value.typeValue
@@ -251,6 +265,7 @@ class _$AddChatEntryRequestImpl implements _AddChatEntryRequest {
     @JsonKey(name: "chatId") this.chatId,
     @JsonKey(name: "senderId") this.senderId,
     @JsonKey(name: "type") this.type,
+    @JsonKey(name: "pinned") this.pinned,
     @JsonKey(name: "typeValue") this.typeValue,
     @JsonKey(name: "messageType") this.messageType,
     @JsonKey(name: "content") this.content,
@@ -274,6 +289,9 @@ class _$AddChatEntryRequestImpl implements _AddChatEntryRequest {
   @override
   @JsonKey(name: "type")
   final String? type;
+  @override
+  @JsonKey(name: "pinned")
+  final String? pinned;
   @override
   @JsonKey(name: "typeValue")
   final int? typeValue;
@@ -314,7 +332,7 @@ class _$AddChatEntryRequestImpl implements _AddChatEntryRequest {
 
   @override
   String toString() {
-    return 'AddChatEntryRequest(chatId: $chatId, senderId: $senderId, type: $type, typeValue: $typeValue, messageType: $messageType, content: $content, source: $source, chatMedias: $chatMedias, attachedFiles: $attachedFiles, otherDetails1: $otherDetails1)';
+    return 'AddChatEntryRequest(chatId: $chatId, senderId: $senderId, type: $type, pinned: $pinned, typeValue: $typeValue, messageType: $messageType, content: $content, source: $source, chatMedias: $chatMedias, attachedFiles: $attachedFiles, otherDetails1: $otherDetails1)';
   }
 
   @override
@@ -326,6 +344,7 @@ class _$AddChatEntryRequestImpl implements _AddChatEntryRequest {
             (identical(other.senderId, senderId) ||
                 other.senderId == senderId) &&
             (identical(other.type, type) || other.type == type) &&
+            (identical(other.pinned, pinned) || other.pinned == pinned) &&
             (identical(other.typeValue, typeValue) ||
                 other.typeValue == typeValue) &&
             (identical(other.messageType, messageType) ||
@@ -351,6 +370,7 @@ class _$AddChatEntryRequestImpl implements _AddChatEntryRequest {
     chatId,
     senderId,
     type,
+    pinned,
     typeValue,
     messageType,
     content,
@@ -382,6 +402,7 @@ abstract class _AddChatEntryRequest implements AddChatEntryRequest {
     @JsonKey(name: "chatId") final int? chatId,
     @JsonKey(name: "senderId") final int? senderId,
     @JsonKey(name: "type") final String? type,
+    @JsonKey(name: "pinned") final String? pinned,
     @JsonKey(name: "typeValue") final int? typeValue,
     @JsonKey(name: "messageType") final String? messageType,
     @JsonKey(name: "content") final String? content,
@@ -404,6 +425,9 @@ abstract class _AddChatEntryRequest implements AddChatEntryRequest {
   @override
   @JsonKey(name: "type")
   String? get type;
+  @override
+  @JsonKey(name: "pinned")
+  String? get pinned;
   @override
   @JsonKey(name: "typeValue")
   int? get typeValue;

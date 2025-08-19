@@ -1634,7 +1634,6 @@ class ChatCubit extends Cubit<ChatState> {
     final user = await AuthUtils.instance.readUserData();
     final userId = int.tryParse(user?.result?.userId.toString() ?? '') ?? 0;
 
-    // 1️⃣ Create temporary reply message with optimistic ID
     final tempId = DateTime.now().millisecondsSinceEpoch;
     final tempReplyMessage = Entry(
       id: tempId,
@@ -1645,7 +1644,6 @@ class ChatCubit extends Cubit<ChatState> {
       typeValue: 0,
       createdAt: DateTime.now().toIso8601String(),
       chatId: baseRequest.chatId,
-      // ✅ INSTANT: Add reply details immediately
       otherDetails1: jsonEncode([
         {
           "InitialChatEntryId": originalMessage.id.toString(),
@@ -1654,19 +1652,15 @@ class ChatCubit extends Cubit<ChatState> {
       ]),
     );
 
-    // 2️⃣ INSTANT UI UPDATE: Add reply to current entries
     final currentEntries = state.chatEntry?.entries ?? <Entry>[];
     final updatedEntries = List<Entry>.from(currentEntries)
       ..add(tempReplyMessage);
-
-    // 3️⃣ Emit state immediately for instant UI
     emit(
       state.copyWith(
         chatEntry:
             state.chatEntry?.copyWith(entries: updatedEntries) ??
             ChatEntryResponse(entries: updatedEntries),
         selectedFiles: [],
-        // ✅ Clear reply state instantly
         replyingTo: null,
         isReplying: false,
       ),
@@ -1761,6 +1755,31 @@ class ChatCubit extends Cubit<ChatState> {
   //=============== Cancel Reply (Instant UI State)
   void cancelReply() {
     emit(state.copyWith(isReplying: false, replyingTo: null));
+  }
+
+  void pinnedTongle(Entry message) {
+    final messageId = message.id;
+    if (messageId == null) {
+      emit(state.copyWith(errorMessage: 'Cannot pin message: Invalid ID'));
+      return;
+    }
+
+    final isPinned = message.pinned?.toLowerCase() == 'y';
+    final newPinStatus = isPinned ? 'N' : 'Y';
+
+    final currentEntries = List<Entry>.from(state.chatEntry?.entries ?? []);
+    final updatedEntries = currentEntries.map((entry) {
+      if (entry.id == messageId) {
+        return entry.copyWith(pinned: newPinStatus);
+      }
+      return entry;
+    }).toList();
+    emit(
+      state.copyWith(
+        chatEntry: state.chatEntry?.copyWith(entries: updatedEntries),
+        isPinned: newPinStatus,
+      ),
+    );
   }
 
   void sendTextMessage(String message, AddChatEntryRequest req) async {
@@ -1919,6 +1938,44 @@ class ChatCubit extends Cubit<ChatState> {
     }
   }
 
+  void pinnedToggle(Entry message) {
+    // Create a copy of the current entries
+    final currentEntries = List<Entry>.from(state.chatEntry?.entries ?? []);
+
+    // Find and update the specific message
+    final messageIndex = currentEntries.indexWhere((e) => e.id == message.id);
+    if (messageIndex != -1) {
+      final currentMessage = currentEntries[messageIndex];
+      final newPinnedStatus =
+          (currentMessage.pinned ?? '').trim().toUpperCase() == 'Y' ? 'N' : 'Y';
+
+      // Create updated message
+      final updatedMessage = Entry(
+        id: currentMessage.id,
+        chatId: currentMessage.chatId,
+        senderId: currentMessage.senderId,
+        content: currentMessage.content,
+        messageType: currentMessage.messageType,
+        createdAt: currentMessage.createdAt,
+        // updatedAt: currentMessage.updatedAt,
+        sender: currentMessage.sender,
+        chatMedias: currentMessage.chatMedias,
+        otherDetails1: currentMessage.otherDetails1,
+        pinned: newPinnedStatus, // Update pinned status
+      );
+
+      // Replace the message in the list
+      currentEntries[messageIndex] = updatedMessage;
+
+      // Update the state
+      emit(
+        state.copyWith(
+          chatEntry: state.chatEntry?.copyWith(entries: currentEntries),
+        ),
+      );
+    }
+  }
+
   //=============== Enhanced createChat with INSTANT optimistic updates
   Future<void> createChat(
     AddChatEntryRequest request, {
@@ -1944,6 +2001,7 @@ class ChatCubit extends Cubit<ChatState> {
         typeValue: request.typeValue,
         createdAt: DateTime.now().toIso8601String(),
         chatId: request.chatId,
+        pinned: request.pinned,
       );
 
       final currentEntries = state.chatEntry?.entries ?? <Entry>[];
@@ -1966,9 +2024,8 @@ class ChatCubit extends Cubit<ChatState> {
         messageType: request.messageType,
         content: request.content,
         createdAt: DateTime.now().toIso8601String(),
-        otherDetails1: request.otherDetails1,
-        // Mark as pending
-        // status: 'sending', // Add this field to your Entry model if not exists
+        otherDetails1: request.otherDetails1 ?? '',
+        pinned: request.pinned,
       );
       final res = await _chatRepositories.addChatEntry(
         req: request,

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
+import 'package:soxo_chat/feature/chat/domain/models/add_chat/add_chatentry_request.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_entry/chat_entry_response.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/chat_bubble_widget.dart';
 import 'package:soxo_chat/shared/animation/empty_chat.dart';
@@ -16,6 +17,8 @@ import 'package:soxo_chat/shared/widgets/shimmer/shimmer_category.dart';
 
 class OptimizedChatMessagesLists extends StatefulWidget {
   final Function(Entry)? onReplyMessage;
+  final Map<String, dynamic>? chatData; // Add this line
+
   final Entry? currentReplyingTo; // ✅ NEW: Current reply target
   final bool isReplying; // ✅ NEW: Reply state
 
@@ -24,6 +27,7 @@ class OptimizedChatMessagesLists extends StatefulWidget {
     this.onReplyMessage,
     this.currentReplyingTo,
     this.isReplying = false,
+    this.chatData,
   });
 
   @override
@@ -44,7 +48,6 @@ class _OptimizedChatMessagesListsState
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    _loadPinnedMessages();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
@@ -57,32 +60,56 @@ class _OptimizedChatMessagesListsState
     super.dispose();
   }
 
-  void _loadPinnedMessages() async {}
+  void _togglePin(Entry message) async {
+    try {
+      // Get user data
+      final user = await AuthUtils.instance.readUserData();
 
-  bool _isPinned(Entry message) {
-    return _pinnedMessageIds.contains(message.chatId);
+      // Toggle pin status locally first for immediate UI feedback
+      context.read<ChatCubit>().pinnedTongle(message);
+
+      // Determine new pinned status
+      String newPinnedStatus = _isPinned(message) ? 'N' : 'Y';
+
+      // Create the updated message request
+      await context.read<ChatCubit>().createChat(
+        AddChatEntryRequest(
+          chatId: widget
+              .chatData?['chat_id'], // You need to pass chatData to this widget
+          senderId: int.tryParse(user?.result?.userId.toString() ?? '1'),
+          type: 'N', // Normal message type
+          typeValue: 0,
+          messageType: message.messageType ?? 'text',
+          content: message.content ?? '',
+          source: 'mobile',
+          attachedFiles: [],
+          otherDetails1: message.otherDetails1??'', // Preserve existing details
+          pinned: newPinnedStatus,
+        ),
+        files: [],
+      );
+
+      log(
+        '📌 Message ${_isPinned(message) ? 'unpinned' : 'pinned'}: ${message.id}',
+      );
+    } catch (e) {
+      log('❌ Error toggling pin: $e');
+      // Optionally show error message to user
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Failed to ${_isPinned(message) ? 'unpin' : 'pin'} message',
+          ),
+        ),
+      );
+    }
   }
 
+  bool _isPinned(Entry message) {
+    return message.pinned?.toLowerCase() == 'y';
+  }
   // // Enhanced reply detection with better error handling
-  // bool _isReplyMessage(Entry message) {
-  //   final String? detailsStr = message.otherDetails1;
-  //   if (detailsStr != null && detailsStr.isNotEmpty) {
-  //     try {
-  //       List<dynamic> detailsList = jsonDecode(detailsStr);
-  //       if (detailsList.isNotEmpty) {
-  //         var details = detailsList[0];
-  //         final String? replayChatEntryId = details["ReplayChatEntryId"]
-  //             ?.toString();
-  //         return replayChatEntryId != null && replayChatEntryId.isNotEmpty;
-  //       }
-  //     } catch (e) {
-  //       log("❌ JSON decode error in _isReplyMessage: $e");
-  //     }
-  //   }
-  //   return false;
-  // }
 
-  // Enhanced original message finder
   Entry? _getReplyMessage(Entry message, List<Entry> allEntries) {
     final String? detailsStr = message.otherDetails1;
     if (detailsStr != null && detailsStr.isNotEmpty) {
@@ -115,32 +142,6 @@ class _OptimizedChatMessagesListsState
     widget.onReplyMessage?.call(message);
     _scrollToBottom();
   }
-
-  void _togglePin(Entry message) {
-    final messageId = message.chatId;
-    setState(() {
-      if (_pinnedMessageIds.contains(messageId)) {
-        _pinnedMessageIds.remove(messageId);
-      } else {
-        _pinnedMessageIds.add(messageId ?? 0);
-      }
-    });
-
-    _savePinnedMessages();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          _pinnedMessageIds.contains(messageId)
-              ? 'Message pinned'
-              : 'Message unpinned',
-        ),
-        duration: const Duration(seconds: 1),
-      ),
-    );
-  }
-
-  void _savePinnedMessages() async {}
 
   void _scrollToReply(Entry message, List<Entry> allEntries) {
     final replyMessage = _getReplyMessage(message, allEntries);
@@ -302,9 +303,6 @@ class _OptimizedChatMessagesListsState
 
             // Enhanced reply detection
             final originalMessage = _getReplyMessage(messageData, pinnedList);
-            // final isReply = _isReplyMessage(messageData);
-
-            // ✅ Check if this message is being replied to
             final isBeingRepliedTo =
                 (chatState.isReplying ?? false) &&
                 chatState.replyingTo?.id == messageData.id;

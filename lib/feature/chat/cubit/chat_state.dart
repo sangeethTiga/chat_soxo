@@ -23,6 +23,7 @@ class ChatState extends Equatable {
   final bool? isLoadingMedia;
   final Entry? replyingTo;
   final bool? isReplying;
+  final String? isPinned;
 
   const ChatState({
     this.isArrow = false,
@@ -46,6 +47,7 @@ class ChatState extends Equatable {
     this.isLoadingMedia,
     this.isReplying,
     this.replyingTo,
+    this.isPinned,
   });
 
   ChatState copyWith({
@@ -71,6 +73,7 @@ class ChatState extends Equatable {
     List<Entry>? instantMessages,
     Entry? replyingTo,
     bool? isReplying,
+    String? isPinned,
   }) {
     return ChatState(
       isArrow: isArrow ?? this.isArrow,
@@ -95,6 +98,7 @@ class ChatState extends Equatable {
       isLoadingMedia: isLoadingMedia ?? this.isLoadingMedia,
       replyingTo: replyingTo ?? this.replyingTo,
       isReplying: isReplying ?? this.isReplying,
+      isPinned: isPinned ?? this.isPinned,
     );
   }
 
@@ -121,6 +125,7 @@ class ChatState extends Equatable {
     isLoadingMedia,
     isReplying,
     replyingTo,
+    isPinned,
   ];
 }
 

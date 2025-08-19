@@ -261,6 +261,7 @@ class _ChatContentState extends State<ChatContent>
                   onReplyMessage: _startReply,
                   currentReplyingTo: chatState.replyingTo,
                   isReplying: chatState.isReplying ?? false,
+                  chatData: widget.data,
                 ),
               ),
 
