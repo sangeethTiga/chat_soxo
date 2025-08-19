@@ -40,16 +40,46 @@ class ChatBubbleMessage extends StatefulWidget {
   State<ChatBubbleMessage> createState() => _ChatBubbleMessageState();
 }
 
-class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
-  final bool _isLongPressed = false;
+class _ChatBubbleMessageState extends State<ChatBubbleMessage>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _swipeAnimationController;
+  late Animation<double> _slideAnimation;
+  late Animation<double> _replyIconAnimation;
+
+  double _dragDistance = 0.0;
+  bool _isDragging = false;
+  bool _hasTriggeredReply = false;
+
+  static const double _replyThreshold = 60.0;
+  static const double _maxDragDistance = 100.0;
 
   @override
   void initState() {
     super.initState();
+    _initializeAnimations();
+  }
+
+  void _initializeAnimations() {
+    _swipeAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+
+    _slideAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _swipeAnimationController, curve: Curves.easeOut),
+    );
+
+    _replyIconAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _swipeAnimationController,
+        curve: Curves.elasticOut,
+      ),
+    );
   }
 
   @override
   void dispose() {
+    _swipeAnimationController.dispose();
     super.dispose();
   }
 
@@ -58,66 +88,120 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
     _showMessageOptions();
   }
 
-  void _showMessageOptions() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => MessageOptionsBottomSheet(
-        message: widget.message,
-        isSent: widget.isSent,
-        isPinned: widget.isPinned,
-        isBeingRepliedTo: widget.isBeingRepliedTo,
-        onReply: () {
-          Navigator.pop(context);
-          widget.onReply?.call();
-        },
-        onPin: () {
-          Navigator.pop(context);
-          widget.onPin?.call();
-        },
-        onCopy: () {
-          Navigator.pop(context);
-          Clipboard.setData(ClipboardData(text: widget.message));
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Message copied')));
-        },
-        onDelete: widget.isSent
-            ? () {
-                Navigator.pop(context);
-                _showDeleteDialog();
-              }
-            : null,
-      ),
-    );
+  void _onHorizontalDragStart(DragStartDetails details) {
+    _isDragging = true;
+    _hasTriggeredReply = false;
+    _swipeAnimationController.reset();
   }
 
-  void _showDeleteDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Message'),
-        content: const Text('Are you sure you want to delete this message?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
+  void _onHorizontalDragUpdate(DragUpdateDetails details) {
+    if (!_isDragging) return;
+
+    double delta = widget.isSent ? -details.delta.dx : details.delta.dx;
+
+    if (delta > 0) {
+      setState(() {
+        _dragDistance = (_dragDistance + delta).clamp(0.0, _maxDragDistance);
+      });
+
+      if (_dragDistance >= _replyThreshold && !_hasTriggeredReply) {
+        _hasTriggeredReply = true;
+        HapticFeedback.mediumImpact();
+        _swipeAnimationController.forward();
+      } else if (_dragDistance < _replyThreshold && _hasTriggeredReply) {
+        _hasTriggeredReply = false;
+        _swipeAnimationController.reverse();
+      }
+    }
+  }
+
+  void _onHorizontalDragEnd(DragEndDetails details) {
+    _isDragging = false;
+
+    if (_dragDistance >= _replyThreshold) {
+      // Trigger reply
+      HapticFeedback.lightImpact();
+      widget.onReply?.call();
+    }
+
+    // Reset to original position
+    _resetSwipe();
+  }
+
+  void _resetSwipe() {
+    setState(() {
+      _dragDistance = 0.0;
+      _hasTriggeredReply = false;
+    });
+    _swipeAnimationController.reset();
   }
 
   @override
   Widget build(BuildContext context) {
+    return GestureDetector(
+      onHorizontalDragStart: _onHorizontalDragStart,
+      onHorizontalDragUpdate: _onHorizontalDragUpdate,
+      onHorizontalDragEnd: _onHorizontalDragEnd,
+      onLongPress: _onLongPress,
+      onTap: widget.replyToMessage != null ? widget.onScrollToReply : null,
+      child: Container(
+        margin: EdgeInsets.symmetric(vertical: 2.h, horizontal: 4.w),
+        child: Stack(
+          children: [
+            // Reply icon that appears during swipe
+            if (_dragDistance > 0) _buildReplyIcon(),
+
+            // Main message container with slide animation
+            AnimatedContainer(
+              duration: _isDragging
+                  ? Duration.zero
+                  : const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+              transform: Matrix4.identity()
+                ..translate(
+                  widget.isSent ? -_dragDistance : _dragDistance,
+                  0.0,
+                ),
+              child: _buildMessageContainer(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReplyIcon() {
+    return Positioned(
+      right: widget.isSent ? 20.w : null,
+      left: widget.isSent ? null : 20.w,
+      top: 0,
+      bottom: 0,
+      child: AnimatedBuilder(
+        animation: _replyIconAnimation,
+        builder: (context, child) {
+          return Center(
+            child: Transform.scale(
+              scale: 0.5 + (_replyIconAnimation.value * 0.5),
+              child: Container(
+                width: 40.w,
+                height: 40.w,
+                decoration: BoxDecoration(
+                  color: _hasTriggeredReply
+                      ? Colors.blue
+                      : Colors.grey.withOpacity(0.6),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.reply, color: Colors.white, size: 20),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildMessageContainer() {
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 2.h, horizontal: 4.w),
       padding: widget.isBeingRepliedTo ? EdgeInsets.all(6.w) : EdgeInsets.zero,
       decoration: BoxDecoration(
         color: widget.isBeingRepliedTo
@@ -137,18 +221,14 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
               ]
             : null,
       ),
-      child: GestureDetector(
-        onLongPress: _onLongPress,
-        onTap: widget.replyToMessage != null ? widget.onScrollToReply : null,
-        child: Column(
-          crossAxisAlignment: widget.isSent
-              ? CrossAxisAlignment.end
-              : CrossAxisAlignment.start,
-          children: [
-            if (widget.isBeingRepliedTo) _buildReplyStatusIndicator(),
-            _buildMainBubbleWithReply(),
-          ],
-        ),
+      child: Column(
+        crossAxisAlignment: widget.isSent
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
+        children: [
+          if (widget.isBeingRepliedTo) _buildReplyStatusIndicator(),
+          _buildMainBubbleWithReply(),
+        ],
       ),
     );
   }
@@ -185,9 +265,11 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
   Widget _buildMainBubbleWithReply() {
     Color bubbleColor;
     if (widget.isBeingRepliedTo) {
-      bubbleColor = widget.isSent ? Color(0xFFE6F7FF) : Color(0xFFF0F8FF);
+      bubbleColor = widget.isSent
+          ? const Color(0xFFE6F7FF)
+          : const Color(0xFFF0F8FF);
     } else {
-      bubbleColor = widget.isSent ? Color(0xFFE6F2EC) : Colors.grey[200]!;
+      bubbleColor = widget.isSent ? const Color(0xFFE6F2EC) : Colors.grey[200]!;
     }
 
     return Bubble(
@@ -217,6 +299,7 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
     );
   }
 
+  // ... rest of your existing methods remain the same
   Widget _buildTimestampWithStatus() {
     return Row(
       mainAxisAlignment: widget.isSent
@@ -319,6 +402,62 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
     );
   }
 
+  void _showMessageOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => MessageOptionsBottomSheet(
+        message: widget.message,
+        isSent: widget.isSent,
+        isPinned: widget.isPinned,
+        isBeingRepliedTo: widget.isBeingRepliedTo,
+        onReply: () {
+          Navigator.pop(context);
+          widget.onReply?.call();
+        },
+        onPin: () {
+          Navigator.pop(context);
+          widget.onPin?.call();
+        },
+        onCopy: () {
+          Navigator.pop(context);
+          Clipboard.setData(ClipboardData(text: widget.message));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Message copied')));
+        },
+        onDelete: widget.isSent
+            ? () {
+                Navigator.pop(context);
+                _showDeleteDialog();
+              }
+            : null,
+      ),
+    );
+  }
+
+  void _showDeleteDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Message'),
+        content: const Text('Are you sure you want to delete this message?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
   IconData _getMediaIcon(ChatMedias media) {
     final mediaUrl = media.mediaUrl?.toLowerCase() ?? '';
     if (mediaUrl.contains('image') ||
@@ -373,7 +512,7 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
   Widget _buildTextContent() {
     return SelectableText(
       widget.message,
-      style: TextStyle(fontSize: 14, color: Colors.black87),
+      style: const TextStyle(fontSize: 14, color: Colors.black87),
     );
   }
 
