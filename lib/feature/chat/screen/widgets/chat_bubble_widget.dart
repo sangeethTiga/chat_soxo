@@ -13,9 +13,9 @@ class ChatBubbleMessage extends StatefulWidget {
   final bool isSent;
   final List<ChatMedias>? chatMedias;
   final Entry? messageData;
-  final Entry? replyToMessage; // 🔑 Original message being replied to
+  final Entry? replyToMessage;
   final bool isPinned;
-  final bool isBeingRepliedTo; // ✅ NEW: Visual feedback for active reply
+  final bool isBeingRepliedTo;
   final VoidCallback? onReply;
   final VoidCallback? onPin;
   final VoidCallback? onScrollToReply;
@@ -30,7 +30,7 @@ class ChatBubbleMessage extends StatefulWidget {
     this.messageData,
     this.replyToMessage,
     this.isPinned = false,
-    this.isBeingRepliedTo = false, // ✅ NEW: Default to false
+    this.isBeingRepliedTo = false,
     this.onReply,
     this.onPin,
     this.onScrollToReply,
@@ -40,90 +40,28 @@ class ChatBubbleMessage extends StatefulWidget {
   State<ChatBubbleMessage> createState() => _ChatBubbleMessageState();
 }
 
-class _ChatBubbleMessageState extends State<ChatBubbleMessage>
-    with TickerProviderStateMixin {
+class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
   bool _isLongPressed = false;
-  late AnimationController _scaleController;
-  late Animation<double> _scaleAnimation;
-
-  // ✅ NEW: Animation controllers for reply feedback
-  late AnimationController _replyHighlightController;
-  late Animation<double> _replyGlowAnimation;
-  late Animation<Color?> _replyColorAnimation;
 
   @override
   void initState() {
     super.initState();
-    _scaleController = AnimationController(
-      duration: const Duration(milliseconds: 150),
-      vsync: this,
-    );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
-      CurvedAnimation(parent: _scaleController, curve: Curves.easeInOut),
-    );
-
-    // ✅ NEW: Initialize reply highlight animations
-    _replyHighlightController = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-
-    _replyGlowAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _replyHighlightController,
-        curve: Curves.easeInOut,
-      ),
-    );
-
-    _replyColorAnimation =
-        ColorTween(
-          begin: Colors.transparent,
-          end: Colors.blue.withOpacity(0.15),
-        ).animate(
-          CurvedAnimation(
-            parent: _replyHighlightController,
-            curve: Curves.easeInOut,
-          ),
-        );
-  }
-
-  @override
-  void didUpdateWidget(ChatBubbleMessage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    // ✅ NEW: Animate when isBeingRepliedTo changes
-    if (widget.isBeingRepliedTo != oldWidget.isBeingRepliedTo) {
-      if (widget.isBeingRepliedTo) {
-        _replyHighlightController.repeat(reverse: true);
-      } else {
-        _replyHighlightController.stop();
-        _replyHighlightController.reset();
-      }
-    }
   }
 
   @override
   void dispose() {
-    _scaleController.dispose();
-    _replyHighlightController.dispose(); // ✅ NEW: Dispose reply controller
     super.dispose();
   }
 
   void _onLongPress() {
     setState(() => _isLongPressed = true);
-    _scaleController.forward();
     HapticFeedback.mediumImpact();
     _showMessageOptions();
   }
 
   void _onTapUp() {
     if (_isLongPressed) {
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (mounted) {
-          setState(() => _isLongPressed = false);
-          _scaleController.reverse();
-        }
-      });
+      setState(() => _isLongPressed = false);
     }
   }
 
@@ -135,6 +73,7 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
         message: widget.message,
         isSent: widget.isSent,
         isPinned: widget.isPinned,
+        isBeingRepliedTo: widget.isBeingRepliedTo,
         onReply: () {
           Navigator.pop(context);
           widget.onReply?.call();
@@ -174,7 +113,6 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              // TODO: Implement delete functionality
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
@@ -185,134 +123,72 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: Listenable.merge([_scaleAnimation, _replyGlowAnimation]),
-      builder: (context, child) {
-        return Transform.scale(
-          scale: _scaleAnimation.value,
-          child:
-              // ✅ NEW: Wrap with reply highlight container
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                margin: EdgeInsets.symmetric(vertical: 2.h, horizontal: 4.w),
-                padding: widget.isBeingRepliedTo
-                    ? EdgeInsets.all(6.w)
-                    : EdgeInsets.zero,
-                decoration: BoxDecoration(
-                  // ✅ Dynamic background based on reply state
-                  color: widget.isBeingRepliedTo
-                      ? _replyColorAnimation.value
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(16.r),
-                  border: widget.isBeingRepliedTo
-                      ? Border.all(
-                          color: Colors.blue.withOpacity(
-                            _replyGlowAnimation.value * 0.6,
-                          ),
-                          width: 2.w,
-                        )
-                      : null,
-                  // ✅ Glowing shadow effect when being replied to
-                  boxShadow: widget.isBeingRepliedTo
-                      ? [
-                          BoxShadow(
-                            color: Colors.blue.withOpacity(
-                              _replyGlowAnimation.value * 0.3,
-                            ),
-                            blurRadius: 8,
-                            spreadRadius: 2,
-                          ),
-                        ]
-                      : null,
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 2.h, horizontal: 4.w),
+      padding: widget.isBeingRepliedTo ? EdgeInsets.all(6.w) : EdgeInsets.zero,
+      decoration: BoxDecoration(
+        color: widget.isBeingRepliedTo
+            ? Colors.green.withOpacity(0.15)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(16.r),
+        border: widget.isBeingRepliedTo
+            ? Border.all(color: Colors.blue.withOpacity(0.6), width: 2.w)
+            : null,
+        boxShadow: widget.isBeingRepliedTo
+            ? [
+                BoxShadow(
+                  color: Colors.blue.withOpacity(0.3),
+                  blurRadius: 8,
+                  spreadRadius: 2,
                 ),
-                child: GestureDetector(
-                  onLongPress: _onLongPress,
-                  onTapUp: (_) => _onTapUp(),
-                  onTap: widget.replyToMessage != null
-                      ? widget.onScrollToReply
-                      : null,
-                  child: Column(
-                    crossAxisAlignment: widget.isSent
-                        ? CrossAxisAlignment.end
-                        : CrossAxisAlignment.start,
-                    children: [
-                      if (widget.isBeingRepliedTo) _buildReplyStatusIndicator(),
-                      _buildMainBubbleWithReply(),
-                    ],
-                  ),
-                ),
-              ),
-        );
-      },
+              ]
+            : null,
+      ),
+      child: GestureDetector(
+        onLongPress: _onLongPress,
+        onTapUp: (_) => _onTapUp(),
+        onTap: widget.replyToMessage != null ? widget.onScrollToReply : null,
+        child: Column(
+          crossAxisAlignment: widget.isSent
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
+          children: [
+            if (widget.isBeingRepliedTo) _buildReplyStatusIndicator(),
+            _buildMainBubbleWithReply(),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildReplyStatusIndicator() {
-    return AnimatedBuilder(
-      animation: _replyGlowAnimation,
-      builder: (context, child) {
-        return Container(
-          margin: EdgeInsets.only(
-            left: widget.isSent ? 0 : 50.w,
-            right: widget.isSent ? 50.w : 0,
-            bottom: 4.h,
+    return Container(
+      margin: EdgeInsets.only(
+        left: widget.isSent ? 0 : 50.w,
+        right: widget.isSent ? 50.w : 0,
+        bottom: 4.h,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.reply_rounded,
+            size: 14,
+            color: Colors.blue.withOpacity(0.8),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Transform.scale(
-                scale: 1.0 + (_replyGlowAnimation.value * 0.2),
-                child: Icon(
-                  Icons.reply_rounded,
-                  size: 14,
-                  color: Colors.blue.withOpacity(
-                    0.8 + (_replyGlowAnimation.value * 0.2),
-                  ),
-                ),
-              ),
-              SizedBox(width: 4.w),
-              AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 200),
-                style: TextStyle(
-                  fontSize: 11.sp,
-                  color: Colors.blue.withOpacity(
-                    0.8 + (_replyGlowAnimation.value * 0.2),
-                  ),
-                  fontWeight: FontWeight.w600,
-                ),
-                child: const Text('Replying to this message'),
-              ),
-            ],
+          SizedBox(width: 4.w),
+          Text(
+            'Replying to this message',
+            style: TextStyle(
+              fontSize: 11.sp,
+              color: Colors.blue.withOpacity(0.8),
+              fontWeight: FontWeight.w600,
+            ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
-
-  // Widget _buildPinIndicator() {
-  //   return Container(
-  //     margin: EdgeInsets.only(
-  //       left: widget.isSent ? 0 : 50.w,
-  //       right: widget.isSent ? 50.w : 0,
-  //       bottom: 4.h,
-  //     ),
-  //     child: Row(
-  //       mainAxisSize: MainAxisSize.min,
-  //       children: [
-  //         Icon(Icons.push_pin, size: 12, color: Colors.orange),
-  //         SizedBox(width: 4.w),
-  //         Text(
-  //           'Pinned',
-  //           style: TextStyle(
-  //             fontSize: 10,
-  //             color: Colors.orange,
-  //             fontWeight: FontWeight.w500,
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
 
   Widget _buildMainBubbleWithReply() {
     Color bubbleColor;
@@ -322,56 +198,43 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
       bubbleColor = widget.isSent ? Color(0xFFE6F2EC) : Colors.grey[200]!;
     }
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      child: Bubble(
-        margin: BubbleEdges.only(top: 3),
-        alignment: widget.isSent ? Alignment.topRight : Alignment.topLeft,
-        nipWidth: 18,
-        nipHeight: 10,
-        radius: Radius.circular(12.r),
-        nip: widget.isSent ? BubbleNip.rightTop : BubbleNip.leftTop,
-        color: bubbleColor, // ✅ Dynamic color
-        child: SizedBox(
-          width: 188.w,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (widget.replyToMessage != null) _buildInlineReplyPreview(),
-
-              // Message content
-              _buildMessageContent(),
-
-              // Media attachments
-              if (widget.chatMedias != null &&
-                  widget.chatMedias!.isNotEmpty) ...[
-                5.verticalSpace,
-                _buildMediaAttachments(),
-              ],
-
-              // Timestamp with reply indicator
-              SizedBox(height: 4.h),
-              _buildTimestampWithStatus(),
+    return Bubble(
+      margin: BubbleEdges.only(top: 3),
+      alignment: widget.isSent ? Alignment.topRight : Alignment.topLeft,
+      nipWidth: 18,
+      nipHeight: 10,
+      radius: Radius.circular(12.r),
+      nip: widget.isSent ? BubbleNip.rightTop : BubbleNip.leftTop,
+      color: bubbleColor,
+      child: SizedBox(
+        width: 188.w,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (widget.replyToMessage != null) _buildInlineReplyPreview(),
+            _buildMessageContent(),
+            if (widget.chatMedias != null && widget.chatMedias!.isNotEmpty) ...[
+              5.verticalSpace,
+              _buildMediaAttachments(),
             ],
-          ),
+            SizedBox(height: 4.h),
+            _buildTimestampWithStatus(),
+          ],
         ),
       ),
     );
   }
 
-  // ✅ Enhanced timestamp with reply status
   Widget _buildTimestampWithStatus() {
     return Row(
       mainAxisAlignment: widget.isSent
           ? MainAxisAlignment.end
           : MainAxisAlignment.start,
       children: [
-        // ✅ Small reply indicator icon in timestamp area
         if (widget.isBeingRepliedTo) ...[
           Icon(Icons.reply, size: 10, color: Colors.blue.withOpacity(0.7)),
           SizedBox(width: 2.w),
         ],
-
         Text(
           widget.timestamp,
           style: TextStyle(
@@ -400,8 +263,7 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
               ? Colors.green.withOpacity(0.1)
               : Colors.blue.withOpacity(0.1));
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
+    return Container(
       margin: EdgeInsets.only(bottom: 8.h),
       padding: EdgeInsets.all(8.w),
       decoration: BoxDecoration(
@@ -431,7 +293,6 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
               ),
             ],
           ),
-
           SizedBox(height: 2.h),
           Text(
             replyMessage.content ?? '',
@@ -520,10 +381,7 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
   Widget _buildTextContent() {
     return SelectableText(
       widget.message,
-      style: TextStyle(
-        fontSize: 14,
-        color: widget.isBeingRepliedTo ? Colors.black87 : Colors.black87,
-      ),
+      style: TextStyle(fontSize: 14, color: Colors.black87),
     );
   }
 
@@ -581,7 +439,6 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
             );
           },
         ),
-
         if (mediaCount > maxDisplayCount) ...[
           SizedBox(height: 8.h),
           _buildMediaCountIndicator(mediaCount),
@@ -635,7 +492,7 @@ class MessageOptionsBottomSheet extends StatelessWidget {
     required this.message,
     required this.isSent,
     required this.isPinned,
-    this.isBeingRepliedTo = false, // ✅ NEW
+    this.isBeingRepliedTo = false,
     this.onReply,
     this.onPin,
     this.onCopy,
@@ -652,7 +509,6 @@ class MessageOptionsBottomSheet extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Handle bar
           Container(
             width: 40.w,
             height: 4.h,
@@ -662,8 +518,6 @@ class MessageOptionsBottomSheet extends StatelessWidget {
               borderRadius: BorderRadius.circular(2.r),
             ),
           ),
-
-          // ✅ Enhanced message preview with reply status
           Container(
             margin: EdgeInsets.all(16.w),
             padding: EdgeInsets.all(12.w),
@@ -696,7 +550,6 @@ class MessageOptionsBottomSheet extends StatelessWidget {
                   ),
                   SizedBox(height: 8.h),
                 ],
-
                 Text(
                   message,
                   style: TextStyle(fontSize: 14),
@@ -706,11 +559,8 @@ class MessageOptionsBottomSheet extends StatelessWidget {
               ],
             ),
           ),
-
-          // Options
           Column(
             children: [
-              // ✅ Enhanced reply option with highlight
               _buildOption(
                 icon: Icons.reply,
                 title: 'Reply',
@@ -732,7 +582,6 @@ class MessageOptionsBottomSheet extends StatelessWidget {
                 ),
             ],
           ),
-
           SizedBox(height: 20.h),
         ],
       ),
@@ -744,7 +593,7 @@ class MessageOptionsBottomSheet extends StatelessWidget {
     required String title,
     VoidCallback? onTap,
     bool isDestructive = false,
-    bool isHighlighted = false, // ✅ NEW: Highlight option
+    bool isHighlighted = false,
   }) {
     final color = isDestructive
         ? Colors.red
