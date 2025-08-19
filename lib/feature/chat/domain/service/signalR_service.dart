@@ -119,7 +119,7 @@ class ChatSignalRService {
   bool get isComingBackFromInactivity {
     if (_lastActivity == null) return false;
     final inactiveTime = DateTime.now().difference(_lastActivity!);
-    return inactiveTime.inMinutes > 2; // Consider 2+ minutes as "away"
+    return inactiveTime.inMinutes > 2;
   }
 
   Future<void> _attemptConnection(
@@ -160,8 +160,6 @@ class ChatSignalRService {
       log('SignalR: ✅ Connected successfully with $transport');
       log('SignalR: Connection ID: ${_hubConnection?.connectionId}');
       onConnected?.call();
-
-      await _testConnection();
     } catch (error) {
       _isConnected = false;
       log('SignalR: ❌ Connection failed with $transport: $error');
@@ -498,20 +496,6 @@ class ChatSignalRService {
     }
   }
 
-  Future<void> _testConnection() async {
-    if (!_isConnected || _hubConnection == null) return;
-
-    try {
-      log('🧪 Testing connection...');
-      await _hubConnection!
-          .invoke('Ping')
-          .timeout(const Duration(seconds: 5), onTimeout: () => null);
-      log('✅ Connection test successful');
-    } catch (e) {
-      log('⚠️ Connection test failed: $e');
-    }
-  }
-
   Future<void> _safeInvoke(String method, {List<Object>? args}) async {
     if (_hubConnection == null) {
       log('⚠️ Cannot invoke "$method" — hubConnection is null');
@@ -554,7 +538,6 @@ class ChatSignalRService {
         log(
           '🔄 User coming back from inactivity, requesting recent messages...',
         );
-        await _requestRecentMessages(chatId);
       }
     } catch (error) {
       log('❌ SignalR: Error joining chat group: $error');
@@ -630,16 +613,6 @@ class ChatSignalRService {
     } catch (e) {
       log('❌ SignalR ping failed: $e');
       rethrow;
-    }
-  }
-
-  Future<void> _requestRecentMessages(String chatId) async {
-    try {
-      // You might need to implement this on your server
-      await _hubConnection!.invoke('ReceiveMessage', args: [chatId, '10']);
-      log('✅ Requested recent messages for chat: $chatId');
-    } catch (e) {
-      log('⚠️ Could not request recent messages: $e');
     }
   }
 

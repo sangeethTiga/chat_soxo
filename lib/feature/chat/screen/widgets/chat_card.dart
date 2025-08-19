@@ -478,9 +478,6 @@ class CachedImageDisplay extends StatelessWidget {
   }
 }
 
-/// Audio preview widget
-
-/// Document preview widget
 class _InstantDocumentPreview extends StatelessWidget {
   final String fileUrl;
   final String mediaId;

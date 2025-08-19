@@ -258,10 +258,9 @@ class ChatCubit extends Cubit<ChatState> {
         '📊 Last entry will be: ID=${filteredNewEntries.last.id}, Content="${filteredNewEntries.last.content}"',
       );
 
-      // ✅ CRITICAL: Create completely new ChatEntryResponse instance
-      final updatedChatEntry = ChatEntryResponse(
+      // ✅ CRITICAL: Use copyWith instead of manual state creation
+      final updatedChatEntry = state.chatEntry!.copyWith(
         entries: updatedEntries,
-        userChats: state.chatEntry!.userChats,
       );
 
       // Update cache
@@ -272,40 +271,19 @@ class ChatCubit extends Cubit<ChatState> {
         '🚀 🎯 EMITTING STATE UPDATE with ${filteredNewEntries.length} new entries',
       );
       log('📊 Previous state hash: ${state.hashCode}');
-      log('📊 Previous entries hash: ${state.chatEntry?.entries?.hashCode}');
+      log('📊 Previous entries count: ${currentEntries.length}');
+      log('📊 New entries count: ${updatedEntries.length}');
 
-      // ✅ CRITICAL: Force complete state recreation
-      final newState = ChatState(
-        // Copy all existing properties
-        isArrow: state.isArrow,
-        isRecording: state.isRecording,
-        recordingDuration: state.recordingDuration,
-        recordingPath: state.recordingPath,
-        hasRecordingPermission: state.hasRecordingPermission,
-        chatList: state.chatList,
-        isChat: state.isChat,
-        selectedTab: state.selectedTab,
-        allChats: state.allChats,
-        selectedFiles: state.selectedFiles,
-        isUploadingFiles: state.isUploadingFiles,
-        uploadProgress: state.uploadProgress,
-        fileUrls: Map<String, String>.from(state.fileUrls ?? {}),
-        fileTypes: Map<String, String>.from(state.fileTypes ?? {}),
-        viewingFile: state.viewingFile,
-        isLoadingMedia: state.isLoadingMedia,
-        // ✅ Update critical properties with new instances
-        chatEntry: updatedChatEntry,
-        isChatEntry: ApiFetchStatus.success,
-        errorMessage: null,
+      // ✅ CRITICAL: Use state.copyWith() instead of manual ChatState creation
+      emit(
+        state.copyWith(
+          chatEntry: updatedChatEntry,
+          isChatEntry: ApiFetchStatus.success,
+          errorMessage: null,
+        ),
       );
 
-      log('📊 New state hash: ${newState.hashCode}');
-      log('📊 New entries hash: ${newState.chatEntry?.entries?.hashCode}');
-
-      // ✅ EMIT the new state
-      emit(newState);
-
-      // ✅ Load media for new entries
+      // ✅ Load media for new entries AFTER emit
       _loadMediaForNewEntries(filteredNewEntries);
 
       log('✅ 🎯 STATE EMITTED SUCCESSFULLY from ReceiveMessage');
