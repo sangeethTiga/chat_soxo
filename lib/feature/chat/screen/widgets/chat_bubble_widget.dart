@@ -41,7 +41,7 @@ class ChatBubbleMessage extends StatefulWidget {
 }
 
 class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
-  bool _isLongPressed = false;
+  final bool _isLongPressed = false;
 
   @override
   void initState() {
@@ -54,15 +54,8 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
   }
 
   void _onLongPress() {
-    setState(() => _isLongPressed = true);
     HapticFeedback.mediumImpact();
     _showMessageOptions();
-  }
-
-  void _onTapUp() {
-    if (_isLongPressed) {
-      setState(() => _isLongPressed = false);
-    }
   }
 
   void _showMessageOptions() {
@@ -146,7 +139,6 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
       ),
       child: GestureDetector(
         onLongPress: _onLongPress,
-        onTapUp: (_) => _onTapUp(),
         onTap: widget.replyToMessage != null ? widget.onScrollToReply : null,
         child: Column(
           crossAxisAlignment: widget.isSent

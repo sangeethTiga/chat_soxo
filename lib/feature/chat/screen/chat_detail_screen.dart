@@ -8,6 +8,7 @@ import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_entry/chat_entry_response.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/enhanced_widget.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/opmiized_card.dart';
+import 'package:soxo_chat/shared/constants/colors.dart';
 import 'package:soxo_chat/shared/widgets/animated_divider/animated_divider.dart';
 import 'package:soxo_chat/shared/widgets/appbar/appbar.dart';
 
@@ -226,11 +227,7 @@ class _ChatContentState extends State<ChatContent>
 
         return AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          decoration: BoxDecoration(
-            color: chatState.isReplying ?? false
-                ? Colors.blue.withOpacity(0.02)
-                : Colors.white,
-          ),
+          decoration: BoxDecoration(color: kWhite),
           child: Column(
             children: [
               if (pinnedEntries.isNotEmpty) ...{
@@ -255,19 +252,9 @@ class _ChatContentState extends State<ChatContent>
               ),
 
               14.verticalSpace,
-              AnimatedBuilder(
-                animation: _replyScaleAnimation,
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: chatState.isReplying ?? false
-                        ? _replyScaleAnimation.value
-                        : 1.0,
-                    child: EnhancedUnifiedMessageInput(
-                      chatData: widget.data,
-                      onCancelReply: _cancelReply,
-                    ),
-                  );
-                },
+              EnhancedUnifiedMessageInput(
+                chatData: widget.data,
+                onCancelReply: _cancelReply,
               ),
             ],
           ),
