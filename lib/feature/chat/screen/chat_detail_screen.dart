@@ -239,6 +239,7 @@ class _ChatContentState extends State<ChatContent>
                   imageUrl: pinnedEntries[0].sender?.imageUrl,
                 ),
                 AnimatedDividerCard(
+                  count: pinnedEntries.length.toString(),
                   onArrowTap: widget.onToggleTap,
                   arrowAnimation: widget.arrowAnimation,
                 ),
@@ -370,7 +371,6 @@ class _EnhancedChatDetailScreenState extends State<EnhancedChatDetailScreen>
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              // ✅ Show reply status in app bar
               if (state.isReplying ?? false)
                 Text(
                   'Replying to ${state.replyingTo?.sender?.name ?? 'message'}...',
@@ -504,13 +504,6 @@ class _GroupContentState extends State<GroupContent>
     super.dispose();
   }
 
-  // void _startReply(Entry message) {
-  //   context.read<ChatCubit>().startReply(message);
-  //   _replyAnimationController.forward();
-  //   HapticFeedback.lightImpact();
-  //   log('🔄 Started reply to message: ${message.id}');
-  // }
-
   void _cancelReply() {
     context.read<ChatCubit>().cancelReply();
     _replyAnimationController.reverse();
@@ -520,10 +513,14 @@ class _GroupContentState extends State<GroupContent>
   Widget build(BuildContext context) {
     return BlocBuilder<ChatCubit, ChatState>(
       builder: (context, state) {
+        final pinnedList = state.chatEntry?.entries
+            ?.where((e) => (e.pinned ?? '').trim().toUpperCase() == 'Y')
+            .toList();
         return Column(
           children: [
             _buildGroupList(),
             AnimatedDividerCard(
+              count: pinnedList?.length.toString(),
               onArrowTap: widget.onToggleTap,
               arrowAnimation: widget.arrowAnimation,
             ),

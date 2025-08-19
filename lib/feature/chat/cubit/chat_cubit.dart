@@ -1445,12 +1445,26 @@ class ChatCubit extends Cubit<ChatState> {
 
   //=============== Start Reply (Instant UI State)
   void startReply(Entry originalMessage) {
-    emit(state.copyWith(isReplying: true, replyingTo: originalMessage));
+    emit(
+      state.copyWith(
+        isReplying: true,
+        replyingTo: originalMessage,
+        selectedReplyMessageId: originalMessage.id.toString(),
+        selectedReplyMessage: originalMessage,
+      ),
+    );
   }
 
   //=============== Cancel Reply (Instant UI State)
   void cancelReply() {
-    emit(state.copyWith(isReplying: false, replyingTo: null));
+    emit(
+      state.copyWith(
+        isReplying: false,
+        replyingTo: null,
+        selectedReplyMessageId: null,
+        selectedReplyMessage: null,
+      ),
+    );
   }
 
   void pinnedTongle(Entry message) {

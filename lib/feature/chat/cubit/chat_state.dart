@@ -29,6 +29,8 @@ class ChatState extends Equatable {
   final Map<String, dynamic>? replyNotification; // Temporary reply notification
   final Map<String, Entry>? replyRelationships; // Cache of reply relationships
   final Set<String>? activeReplies;
+  final String? selectedReplyMessageId;
+  final Entry? selectedReplyMessage;
   const ChatState({
     this.isArrow = false,
     this.isRecording = false,
@@ -57,6 +59,8 @@ class ChatState extends Equatable {
     this.replyNotification,
     this.replyRelationships,
     this.activeReplies,
+    this.selectedReplyMessageId, // ✅ NEW
+    this.selectedReplyMessage,
   });
 
   ChatState copyWith({
@@ -88,6 +92,8 @@ class ChatState extends Equatable {
     Map<String, dynamic>? replyNotification,
     Map<String, Entry>? replyRelationships,
     Set<String>? activeReplies,
+    String? selectedReplyMessageId, // ✅ NEW
+    Entry? selectedReplyMessage,
   }) {
     return ChatState(
       isArrow: isArrow ?? this.isArrow,
@@ -119,6 +125,11 @@ class ChatState extends Equatable {
       replyNotification: replyNotification ?? this.replyNotification,
       replyRelationships: replyRelationships ?? this.replyRelationships,
       activeReplies: activeReplies ?? this.activeReplies,
+
+      selectedReplyMessageId:
+          selectedReplyMessageId ?? this.selectedReplyMessageId, // ✅ NEW
+      selectedReplyMessage:
+          selectedReplyMessage ?? this.selectedReplyMessage, // ✅ NEW
     );
   }
 
@@ -151,6 +162,8 @@ class ChatState extends Equatable {
     replyNotification,
     replyRelationships,
     activeReplies,
+    selectedReplyMessageId, // ✅ NEW
+    selectedReplyMessage,
   ];
 }
 

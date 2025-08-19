@@ -199,7 +199,7 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
     }
 
     return Bubble(
-      margin: BubbleEdges.only(top: 3),
+      margin: BubbleEdges.only(top: 6),
       alignment: widget.isSent ? Alignment.topRight : Alignment.topLeft,
       nipWidth: 18,
       nipHeight: 10,
@@ -207,7 +207,7 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage> {
       nip: widget.isSent ? BubbleNip.rightTop : BubbleNip.leftTop,
       color: bubbleColor,
       child: SizedBox(
-        width: 188.w,
+        width: 220.w,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -518,47 +518,47 @@ class MessageOptionsBottomSheet extends StatelessWidget {
               borderRadius: BorderRadius.circular(2.r),
             ),
           ),
-          Container(
-            margin: EdgeInsets.all(16.w),
-            padding: EdgeInsets.all(12.w),
-            decoration: BoxDecoration(
-              color: isBeingRepliedTo
-                  ? Colors.blue.withOpacity(0.05)
-                  : Colors.grey[100],
-              borderRadius: BorderRadius.circular(8.r),
-              border: isBeingRepliedTo
-                  ? Border.all(color: Colors.blue.withOpacity(0.3))
-                  : null,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (isBeingRepliedTo) ...[
-                  Row(
-                    children: [
-                      Icon(Icons.reply, size: 16, color: Colors.blue),
-                      SizedBox(width: 4.w),
-                      Text(
-                        'Currently being replied to',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.blue,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 8.h),
-                ],
-                Text(
-                  message,
-                  style: TextStyle(fontSize: 14),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
+          // Container(
+          //   margin: EdgeInsets.all(16.w),
+          //   padding: EdgeInsets.all(12.w),
+          //   decoration: BoxDecoration(
+          //     color: isBeingRepliedTo
+          //         ? Colors.blue.withOpacity(0.05)
+          //         : Colors.grey[100],
+          //     borderRadius: BorderRadius.circular(8.r),
+          //     border: isBeingRepliedTo
+          //         ? Border.all(color: Colors.blue.withOpacity(0.3))
+          //         : null,
+          //   ),
+          //   child: Column(
+          //     crossAxisAlignment: CrossAxisAlignment.start,
+          //     children: [
+          //       if (isBeingRepliedTo) ...[
+          //         Row(
+          //           children: [
+          //             Icon(Icons.reply, size: 16, color: Colors.blue),
+          //             SizedBox(width: 4.w),
+          //             Text(
+          //               'Currently being replied to',
+          //               style: TextStyle(
+          //                 fontSize: 12,
+          //                 color: Colors.blue,
+          //                 fontWeight: FontWeight.w500,
+          //               ),
+          //             ),
+          //           ],
+          //         ),
+          //         SizedBox(height: 8.h),
+          //       ],
+          //       Text(
+          //         message,
+          //         style: TextStyle(fontSize: 14),
+          //         maxLines: 3,
+          //         overflow: TextOverflow.ellipsis,
+          //       ),
+          //     ],
+          //   ),
+          // ),
           Column(
             children: [
               _buildOption(
@@ -573,13 +573,13 @@ class MessageOptionsBottomSheet extends StatelessWidget {
                 onTap: onPin,
               ),
               _buildOption(icon: Icons.copy, title: 'Copy', onTap: onCopy),
-              if (isSent && onDelete != null)
-                _buildOption(
-                  icon: Icons.delete_outline,
-                  title: 'Delete',
-                  onTap: onDelete,
-                  isDestructive: true,
-                ),
+              // if (isSent && onDelete != null)
+              // _buildOption(
+              //   icon: Icons.delete_outline,
+              //   title: 'Delete',
+              //   onTap: onDelete,
+              //   isDestructive: true,
+              // ),
             ],
           ),
           SizedBox(height: 20.h),

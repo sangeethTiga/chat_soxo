@@ -318,6 +318,7 @@ class _OptimizedChatMessagesListsState
               messageData: messageData,
               replyToMessage: originalMessage,
               isPinned: _isPinned(messageData),
+              
 
               // ✅ Pass reply state for instant visual feedback
               isBeingRepliedTo: isBeingRepliedTo,

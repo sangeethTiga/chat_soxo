@@ -11,11 +11,13 @@ import 'package:soxo_chat/shared/themes/font_palette.dart';
 class AnimatedDividerCard extends StatelessWidget {
   final VoidCallback onArrowTap;
   final Animation<double> arrowAnimation;
+  final String? count;
 
   const AnimatedDividerCard({
     super.key,
     required this.onArrowTap,
     required this.arrowAnimation,
+    this.count,
   });
 
   @override
@@ -30,12 +32,7 @@ class AnimatedDividerCard extends StatelessWidget {
             4.horizontalSpace,
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              child: Text(
-                '3',
-                style: FontPalette.hW600S14.copyWith(
-                  color: const Color(0XFF9C27B0),
-                ),
-              ),
+              child: Text(count ?? '', style: FontPalette.hW600S14.copyWith()),
             ),
             8.horizontalSpace,
             GestureDetector(
