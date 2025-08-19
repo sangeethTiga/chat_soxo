@@ -172,205 +172,77 @@ class ChatCubit extends Cubit<ChatState> {
 
   // ✅ CRITICAL FIXES for UI updates
   // 🔧 CRITICAL FIX: Enhanced _handleNewEntries in ChatCubit
-  // 🔧 FIXED: Enhanced _handleNewEntries in ChatCubit
 
-  // void _handleNewEntries(List<Entry> newEntries) {
-  //   log(
-  //     '📨 🎯 SignalR: Received ${newEntries.length} new entries from ReceiveMessage',
-  //   );
-  //   log('📊 Current chat ID: $_currentChatId');
-  //   log('📊 Current chat state: ${state.isChatEntry}');
-  //   log('📊 Has chatEntry: ${state.chatEntry != null}');
-
-  //   if (_isDisposed) {
-  //     log('⚠️ Cubit is disposed, ignoring new entries');
-  //     return;
-  //   }
-
-  //   if (_currentChatId == null) {
-  //     log('⚠️ No current chat ID set');
-  //     return;
-  //   }
-
-  //   // ✅ DEBUG: Log incoming entries in detail
-  //   for (var i = 0; i < newEntries.length; i++) {
-  //     final entry = newEntries[i];
-  //     log(
-  //       '🔍 Entry $i: ID=${entry.id}, ChatID=${entry.chatId}, Content="${entry.content}", Sender=${entry.senderId}',
-  //     );
-
-  //     // ✅ NEW: Check if this is a reply message
-  //     if (entry.otherDetails1?.isNotEmpty == true) {
-  //       try {
-  //         final replyData = jsonDecode(entry.otherDetails1!);
-  //         log('📝 Reply data found: $replyData');
-  //         if (replyData is List && replyData.isNotEmpty) {
-  //           final replyInfo = replyData[0];
-  //           if (replyInfo is Map<String, dynamic>) {
-  //             final replyToId =
-  //                 replyInfo['ReplayChatEntryId']?.toString() ??
-  //                 replyInfo['InitialChatEntryId']?.toString();
-  //             log('📝 This is a reply to message: $replyToId');
-  //           }
-  //         }
-  //       } catch (e) {
-  //         log('⚠️ Error parsing reply data: $e');
-  //       }
-  //     }
-  //   }
-
-  //   if (state.chatEntry == null) {
-  //     log('⚠️ No chat entry state - requesting fresh data');
-  //     getChatEntry(chatId: _currentChatId);
-  //     return;
-  //   }
-
-  //   final currentChatIdStr = _currentChatId.toString();
-  //   final relevantEntries = newEntries.where((entry) {
-  //     final entryChatId = entry.chatId?.toString() ?? '';
-  //     final isRelevant = entryChatId == currentChatIdStr;
-  //     log(
-  //       '🔍 Entry ${entry.id}: chatId="$entryChatId" vs current="$currentChatIdStr" -> $isRelevant',
-  //     );
-  //     return isRelevant;
-  //   }).toList();
-
-  //   log('📊 Relevant entries for current chat: ${relevantEntries.length}');
-
-  //   if (relevantEntries.isEmpty) {
-  //     log('ℹ️ No relevant entries for current chat $_currentChatId');
-  //     return;
-  //   }
-
-  //   // ✅ CRITICAL: Get current entries and check for duplicates
-  //   final currentEntries = List<Entry>.from(state.chatEntry!.entries ?? []);
-  //   log('📊 Current entries count: ${currentEntries.length}');
-
-  //   final existingIds = currentEntries
-  //       .map((e) => e.id?.toString())
-  //       .where((id) => id != null)
-  //       .toSet();
-
-  //   log('📊 Existing entry IDs (last 5): ${existingIds.take(5).toList()}');
-
-  //   final filteredNewEntries = relevantEntries.where((entry) {
-  //     final entryId = entry.id?.toString();
-  //     final isNew = entryId != null && !existingIds.contains(entryId);
-  //     log('🔍 Entry ${entry.id}: exists=${!isNew}, will add=$isNew');
-  //     return isNew;
-  //   }).toList();
-
-  //   log(
-  //     '📊 New entries after filtering duplicates: ${filteredNewEntries.length}',
-  //   );
-
-  //   if (filteredNewEntries.isEmpty) {
-  //     log('ℹ️ No new entries to add (all already exist)');
-  //     return;
-  //   }
-
-  //   try {
-  //     // ✅ CRITICAL: Create completely new collections for immutability
-  //     final updatedEntries = <Entry>[...currentEntries, ...filteredNewEntries];
-
-  //     log('📊 Total entries after update: ${updatedEntries.length}');
-  //     log(
-  //       '📊 Last entry will be: ID=${filteredNewEntries.last.id}, Content="${filteredNewEntries.last.content}"',
-  //     );
-
-  //     // ✅ CRITICAL: Use copyWith instead of manual state creation
-  //     final updatedChatEntry = state.chatEntry!.copyWith(
-  //       entries: updatedEntries,
-  //     );
-
-  //     // Update cache
-  //     _chatCache[_currentChatId!] = updatedChatEntry;
-  //     _chatCacheTimestamps[_currentChatId!] = DateTime.now();
-
-  //     log(
-  //       '🚀 🎯 EMITTING STATE UPDATE with ${filteredNewEntries.length} new entries',
-  //     );
-  //     log('📊 Previous state hash: ${state.hashCode}');
-  //     log('📊 Previous entries count: ${currentEntries.length}');
-  //     log('📊 New entries count: ${updatedEntries.length}');
-
-  //     // ✅ CRITICAL: Use state.copyWith() instead of manual ChatState creation
-  //     emit(
-  //       state.copyWith(
-  //         chatEntry: updatedChatEntry,
-  //         isChatEntry: ApiFetchStatus.success,
-  //         errorMessage: null,
-  //       ),
-  //     );
-
-  //     // ✅ Load media for new entries AFTER emit
-  //     _loadMediaForNewEntries(filteredNewEntries);
-
-  //     log('✅ 🎯 STATE EMITTED SUCCESSFULLY from ReceiveMessage');
-
-  //     // ✅ Debug verification with delay
-  //     Future.delayed(Duration(milliseconds: 200), () {
-  //       if (!_isDisposed) {
-  //         log('🔍 Post-emit verification:');
-  //         log('  - Current state entries: ${state.chatEntry?.entries?.length}');
-  //         log('  - Current state status: ${state.isChatEntry}');
-  //         log('  - Current state hash: ${state.hashCode}');
-
-  //         if (state.chatEntry?.entries?.isNotEmpty == true) {
-  //           final lastEntry = state.chatEntry!.entries!.last;
-  //           log(
-  //             '  - Last entry: ID=${lastEntry.id}, Content="${lastEntry.content}"',
-  //           );
-  //         }
-  //       }
-  //     });
-  //   } catch (e) {
-  //     log('❌ Error updating state with new entries from ReceiveMessage: $e');
-  //     log('❌ Stack trace: ${StackTrace.current}');
-  //     emit(state.copyWith(errorMessage: 'Failed to update chat: $e'));
-  //   }
-  // }
-  // 🔧 ENHANCED: SignalR Reply Detection and UI Auto-Update
-
-  // ✅ Add this method to your ChatCubit class
   void _handleNewEntries(List<Entry> newEntries) {
     log(
       '📨 🎯 SignalR: Received ${newEntries.length} new entries from ReceiveMessage',
     );
+    log('📊 Current chat ID: $_currentChatId');
+    log('📊 Current chat state: ${state.isChatEntry}');
+    log('📊 Has chatEntry: ${state.chatEntry != null}');
 
-    if (_isDisposed || _currentChatId == null || state.chatEntry == null) {
-      log('⚠️ Cannot handle new entries - invalid state');
+    if (_isDisposed) {
+      log('⚠️ Cubit is disposed, ignoring new entries');
       return;
     }
 
-    // ✅ CRITICAL: Process each entry and detect reply messages
-    for (var entry in newEntries) {
-      _processIncomingEntry(entry);
+    if (_currentChatId == null) {
+      log('⚠️ No current chat ID set');
+      return;
     }
 
-    // ✅ Filter relevant entries for current chat
+    // ✅ DEBUG: Log incoming entries in detail
+    for (var i = 0; i < newEntries.length; i++) {
+      final entry = newEntries[i];
+      log(
+        '🔍 Entry $i: ID=${entry.id}, ChatID=${entry.chatId}, Content="${entry.content}", Sender=${entry.senderId}',
+      );
+    }
+
+    if (state.chatEntry == null) {
+      log('⚠️ No chat entry state - requesting fresh data');
+      getChatEntry(chatId: _currentChatId);
+      return;
+    }
+
     final currentChatIdStr = _currentChatId.toString();
     final relevantEntries = newEntries.where((entry) {
       final entryChatId = entry.chatId?.toString() ?? '';
-      return entryChatId == currentChatIdStr;
+      final isRelevant = entryChatId == currentChatIdStr;
+      log(
+        '🔍 Entry ${entry.id}: chatId="$entryChatId" vs current="$currentChatIdStr" -> $isRelevant',
+      );
+      return isRelevant;
     }).toList();
+
+    log('📊 Relevant entries for current chat: ${relevantEntries.length}');
 
     if (relevantEntries.isEmpty) {
       log('ℹ️ No relevant entries for current chat $_currentChatId');
       return;
     }
 
-    // ✅ Get current entries and filter duplicates
+    // ✅ CRITICAL: Get current entries and check for duplicates
     final currentEntries = List<Entry>.from(state.chatEntry!.entries ?? []);
+    log('📊 Current entries count: ${currentEntries.length}');
+
     final existingIds = currentEntries
         .map((e) => e.id?.toString())
         .where((id) => id != null)
         .toSet();
 
+    log('📊 Existing entry IDs (last 5): ${existingIds.take(5).toList()}');
+
     final filteredNewEntries = relevantEntries.where((entry) {
       final entryId = entry.id?.toString();
-      return entryId != null && !existingIds.contains(entryId);
+      final isNew = entryId != null && !existingIds.contains(entryId);
+      log('🔍 Entry ${entry.id}: exists=${!isNew}, will add=$isNew');
+      return isNew;
     }).toList();
+
+    log(
+      '📊 New entries after filtering duplicates: ${filteredNewEntries.length}',
+    );
 
     if (filteredNewEntries.isEmpty) {
       log('ℹ️ No new entries to add (all already exist)');
@@ -378,16 +250,17 @@ class ChatCubit extends Cubit<ChatState> {
     }
 
     try {
-      // ✅ Create updated entries list
+      // ✅ CRITICAL: Create completely new collections for immutability
       final updatedEntries = <Entry>[...currentEntries, ...filteredNewEntries];
 
-      // ✅ CRITICAL: Enhance entries with reply relationships
-      final enhancedEntries = _enhanceEntriesWithReplyRelationships(
-        updatedEntries,
+      log('📊 Total entries after update: ${updatedEntries.length}');
+      log(
+        '📊 Last entry will be: ID=${filteredNewEntries.last.id}, Content="${filteredNewEntries.last.content}"',
       );
 
+      // ✅ CRITICAL: Use copyWith instead of manual state creation
       final updatedChatEntry = state.chatEntry!.copyWith(
-        entries: enhancedEntries,
+        entries: updatedEntries,
       );
 
       // Update cache
@@ -397,7 +270,11 @@ class ChatCubit extends Cubit<ChatState> {
       log(
         '🚀 🎯 EMITTING STATE UPDATE with ${filteredNewEntries.length} new entries',
       );
+      log('📊 Previous state hash: ${state.hashCode}');
+      log('📊 Previous entries count: ${currentEntries.length}');
+      log('📊 New entries count: ${updatedEntries.length}');
 
+      // ✅ CRITICAL: Use state.copyWith() instead of manual ChatState creation
       emit(
         state.copyWith(
           chatEntry: updatedChatEntry,
@@ -406,206 +283,32 @@ class ChatCubit extends Cubit<ChatState> {
         ),
       );
 
-      // ✅ Load media for new entries
+      // ✅ Load media for new entries AFTER emit
       _loadMediaForNewEntries(filteredNewEntries);
 
       log('✅ 🎯 STATE EMITTED SUCCESSFULLY from ReceiveMessage');
-    } catch (e) {
-      log('❌ Error updating state with new entries: $e');
-      emit(state.copyWith(errorMessage: 'Failed to update chat: $e'));
-    }
-  }
 
-  // ✅ NEW: Process incoming entry and detect reply type
-  void _processIncomingEntry(Entry entry) {
-    log('🔍 Processing entry: ${entry.id}');
-    log('📝 Entry type: ${entry.type}');
-    log('📝 Entry content: "${entry.content}"');
-    log('📝 OtherDetails1: ${entry.otherDetails1}');
+      // ✅ Debug verification with delay
+      Future.delayed(Duration(milliseconds: 200), () {
+        if (!_isDisposed) {
+          log('🔍 Post-emit verification:');
+          log('  - Current state entries: ${state.chatEntry?.entries?.length}');
+          log('  - Current state status: ${state.isChatEntry}');
+          log('  - Current state hash: ${state.hashCode}');
 
-    // ✅ Check if this is a reply message
-    if (_isReplyMessage(entry)) {
-      final replyInfo = _extractReplyInfo(entry);
-      if (replyInfo != null) {
-        log('📨 REPLY MESSAGE DETECTED!');
-        log('  - Reply to message ID: ${replyInfo['replyToId']}');
-        log('  - Original message ID: ${replyInfo['originalId']}');
-
-        // ✅ Auto-trigger UI updates for reply visualization
-        _handleIncomingReply(entry, replyInfo);
-      }
-    }
-  }
-
-  // ✅ NEW: Handle incoming reply message
-  void _handleIncomingReply(Entry replyEntry, Map<String, dynamic> replyInfo) {
-    log('🎯 Handling incoming reply message: ${replyEntry.id}');
-
-    // ✅ Find the original message being replied to
-    final originalMessageId = replyInfo['replyToId'];
-    final originalMessage = _findMessageById(originalMessageId);
-
-    if (originalMessage != null) {
-      log('✅ Found original message: ${originalMessage.id}');
-
-      // ✅ CRITICAL: Temporarily highlight the original message being replied to
-      _highlightOriginalMessage(originalMessage);
-
-      // ✅ Show a brief notification about the reply
-      _showReplyNotification(replyEntry, originalMessage);
-    } else {
-      log('⚠️ Original message not found: $originalMessageId');
-    }
-  }
-
-  // ✅ NEW: Enhance entries with reply relationships
-  List<Entry> _enhanceEntriesWithReplyRelationships(List<Entry> entries) {
-    return entries.map((entry) {
-      if (_isReplyMessage(entry)) {
-        final replyInfo = _extractReplyInfo(entry);
-        if (replyInfo != null) {
-          final originalMessage = entries.firstWhere(
-            (e) => e.id.toString() == replyInfo['replyToId'],
-            orElse: () => entry, // Return original if not found
-          );
-
-          // ✅ Add reply metadata to the entry
-          return entry.copyWith(
-            // You might need to add these fields to your Entry model
-            // replyToMessage: originalMessage,
-            // isReply: true,
-          );
-        }
-      }
-      return entry;
-    }).toList();
-  }
-
-  // ✅ NEW: Check if message is a reply
-  bool _isReplyMessage(Entry entry) {
-    // Check type
-    if (entry.type == 'CR') return true;
-
-    // Check otherDetails1 for reply information
-    if (entry.otherDetails1?.isNotEmpty == true) {
-      try {
-        final decoded = jsonDecode(entry.otherDetails1!);
-        if (decoded is List && decoded.isNotEmpty) {
-          final replyInfo = decoded[0];
-          if (replyInfo is Map<String, dynamic>) {
-            return replyInfo.containsKey('ReplayChatEntryId') ||
-                replyInfo.containsKey('InitialChatEntryId');
+          if (state.chatEntry?.entries?.isNotEmpty == true) {
+            final lastEntry = state.chatEntry!.entries!.last;
+            log(
+              '  - Last entry: ID=${lastEntry.id}, Content="${lastEntry.content}"',
+            );
           }
         }
-      } catch (e) {
-        log('⚠️ Error checking reply message: $e');
-      }
-    }
-
-    return false;
-  }
-
-  // ✅ NEW: Extract reply information from entry
-  Map<String, dynamic>? _extractReplyInfo(Entry entry) {
-    if (entry.otherDetails1?.isEmpty != false) return null;
-
-    try {
-      final decoded = jsonDecode(entry.otherDetails1!);
-      if (decoded is List && decoded.isNotEmpty) {
-        final replyInfo = decoded[0];
-        if (replyInfo is Map<String, dynamic>) {
-          return {
-            'replyToId':
-                replyInfo['ReplayChatEntryId']?.toString() ??
-                replyInfo['InitialChatEntryId']?.toString(),
-            'originalId': replyInfo['InitialChatEntryId']?.toString(),
-            'rawData': replyInfo,
-          };
-        }
-      }
+      });
     } catch (e) {
-      log('⚠️ Error extracting reply info: $e');
+      log('❌ Error updating state with new entries from ReceiveMessage: $e');
+      log('❌ Stack trace: ${StackTrace.current}');
+      emit(state.copyWith(errorMessage: 'Failed to update chat: $e'));
     }
-
-    return null;
-  }
-
-  // ✅ NEW: Find message by ID in current entries
-  Entry? _findMessageById(String? messageId) {
-    if (messageId == null) return null;
-
-    final entries = state.chatEntry?.entries ?? [];
-    try {
-      return entries.firstWhere((entry) => entry.id.toString() == messageId);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  // ✅ NEW: Temporarily highlight the original message
-  void _highlightOriginalMessage(Entry originalMessage) {
-    log('✨ Highlighting original message: ${originalMessage.id}');
-
-    // ✅ Emit state with highlighted message
-    emit(state.copyWith(highlightedMessageId: originalMessage.id.toString()));
-
-    // ✅ Remove highlight after 3 seconds
-    Timer(Duration(seconds: 3), () {
-      if (!_isDisposed) {
-        emit(state.copyWith(highlightedMessageId: null));
-        log('✨ Removed highlight from message: ${originalMessage.id}');
-      }
-    });
-  }
-
-  // ✅ NEW: Show reply notification
-  void _showReplyNotification(Entry replyEntry, Entry originalMessage) {
-    log('🔔 Showing reply notification');
-
-    // ✅ You can emit a temporary notification state
-    emit(
-      state.copyWith(
-        replyNotification: {
-          'replyEntry': replyEntry,
-          'originalMessage': originalMessage,
-          'timestamp': DateTime.now().millisecondsSinceEpoch,
-        },
-      ),
-    );
-
-    // ✅ Clear notification after 2 seconds
-    Timer(Duration(seconds: 2), () {
-      if (!_isDisposed) {
-        emit(state.copyWith(replyNotification: null));
-      }
-    });
-  }
-
-  // ✅ NEW: Auto-scroll to original message when reply is tapped
-  void scrollToOriginalMessage(String originalMessageId) {
-    log('📍 Scrolling to original message: $originalMessageId');
-
-    // ✅ Highlight the message first
-    emit(
-      state.copyWith(
-        scrollToMessageId: originalMessageId,
-        highlightedMessageId: originalMessageId,
-      ),
-    );
-
-    // ✅ Clear scroll target after scroll completes
-    Timer(Duration(milliseconds: 500), () {
-      if (!_isDisposed) {
-        emit(state.copyWith(scrollToMessageId: null));
-      }
-    });
-
-    // ✅ Remove highlight after 3 seconds
-    Timer(Duration(seconds: 3), () {
-      if (!_isDisposed) {
-        emit(state.copyWith(highlightedMessageId: null));
-      }
-    });
   }
 
   void _loadMediaForNewEntries(List<Entry> newEntries) {
