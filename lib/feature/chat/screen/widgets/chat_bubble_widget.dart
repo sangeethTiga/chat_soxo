@@ -228,7 +228,6 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
                 child: GestureDetector(
                   onLongPress: _onLongPress,
                   onTapUp: (_) => _onTapUp(),
-                  // 🔑 Tap on reply preview to scroll to original
                   onTap: widget.replyToMessage != null
                       ? widget.onScrollToReply
                       : null,
@@ -237,13 +236,7 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
                         ? CrossAxisAlignment.end
                         : CrossAxisAlignment.start,
                     children: [
-                      // ✅ NEW: Reply status indicator
                       if (widget.isBeingRepliedTo) _buildReplyStatusIndicator(),
-
-                      // 🔑 Pin indicator
-                      if (widget.isPinned) _buildPinIndicator(),
-
-                      // 🔑 Main message bubble with inline reply
                       _buildMainBubbleWithReply(),
                     ],
                   ),
@@ -296,30 +289,30 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
     );
   }
 
-  Widget _buildPinIndicator() {
-    return Container(
-      margin: EdgeInsets.only(
-        left: widget.isSent ? 0 : 50.w,
-        right: widget.isSent ? 50.w : 0,
-        bottom: 4.h,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.push_pin, size: 12, color: Colors.orange),
-          SizedBox(width: 4.w),
-          Text(
-            'Pinned',
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.orange,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildPinIndicator() {
+  //   return Container(
+  //     margin: EdgeInsets.only(
+  //       left: widget.isSent ? 0 : 50.w,
+  //       right: widget.isSent ? 50.w : 0,
+  //       bottom: 4.h,
+  //     ),
+  //     child: Row(
+  //       mainAxisSize: MainAxisSize.min,
+  //       children: [
+  //         Icon(Icons.push_pin, size: 12, color: Colors.orange),
+  //         SizedBox(width: 4.w),
+  //         Text(
+  //           'Pinned',
+  //           style: TextStyle(
+  //             fontSize: 10,
+  //             color: Colors.orange,
+  //             fontWeight: FontWeight.w500,
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildMainBubbleWithReply() {
     Color bubbleColor;

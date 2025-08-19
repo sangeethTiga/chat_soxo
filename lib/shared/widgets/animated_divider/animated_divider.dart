@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
+import 'package:soxo_chat/feature/chat/screen/widgets/user_data.dart';
+import 'package:soxo_chat/shared/routes/routes.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
-import 'package:soxo_chat/shared/widgets/padding/main_padding.dart';
 
 class AnimatedDividerCard extends StatelessWidget {
   final VoidCallback onArrowTap;
@@ -68,66 +70,67 @@ class AnimatedDividerCard extends StatelessWidget {
 }
 
 class GroupCardWidget extends StatelessWidget {
-  const GroupCardWidget({super.key});
+  final String? title;
+  final String? imageUrl;
+  final int? chatId;
+  const GroupCardWidget({super.key, this.title, this.imageUrl, this.chatId});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        MainPadding(
-          bottom: 0,
-          top: 16.h,
-          child: Row(
-            children: [
-              SvgPicture.asset('assets/icons/mynaui_pin-solid.svg'),
-              5.horizontalSpace,
-              Image.asset('assets/images/Rectangle 1.png'),
-              5.horizontalSpace,
-              Expanded(
-                child: RichText(
-                  text: TextSpan(
-                    text: 'Anoop TS  ',
-                    style: FontPalette.hW700S14.copyWith(
-                      color: const Color(0XFF515978),
-                    ),
+    return InkWell(
+      onTap: () {
+        _navigateToSingleChat(context);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+
+        child: Row(
+          children: [
+            ChatAvatar(name: title ?? '', size: 30, imageUrl: imageUrl),
+
+            12.horizontalSpace,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      TextSpan(
-                        text: 'send request to case',
+                      Text(
+                        title ?? '',
+                        style: FontPalette.hW700S14.copyWith(
+                          color: Colors.black87,
+                        ),
+                      ),
+                      5.horizontalSpace,
+                      Text(
+                        'send request to case review',
                         style: FontPalette.hW500S14.copyWith(
-                          color: const Color(0XFF515978),
+                          color: Colors.grey[600],
                         ),
                       ),
                     ],
                   ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
-                ),
+                  4.verticalSpace,
+                  Text(
+                    '3 Replied 4 Pending',
+                    style: FontPalette.hW500S12.copyWith(
+                      color: Color(0XFF166FF6),
+                    ),
+                  ),
+                ],
               ),
-              SvgPicture.asset('assets/icons/clock.svg'),
-              5.horizontalSpace,
-              const Text('45 min'),
-            ],
-          ),
+            ),
+            SvgPicture.asset('assets/icons/clock.svg'),
+            3.horizontalSpace,
+            const Text('45 min'),
+          ],
         ),
-        Padding(
-          padding: EdgeInsets.only(left: 34.w, top: 0.h, bottom: 0),
-          child: Row(
-            children: [
-              Text(
-                '3 Replayed , 4 Pending',
-                style: FontPalette.hW500S12.copyWith(
-                  color: const Color(0XFF166FF6),
-                ),
-              ),
-              5.horizontalSpace,
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: SvgPicture.asset('assets/icons/Eye.svg'),
-              ),
-            ],
-          ),
-        ),
-      ],
+      ),
     );
+  }
+
+  void _navigateToSingleChat(BuildContext context) {
+    context.push(routeSingleChat, extra: {"title": title, 'chat_id': chatId});
   }
 }

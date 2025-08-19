@@ -1,28 +1,15 @@
-import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:go_router/go_router.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
-import 'package:soxo_chat/feature/chat/domain/models/add_chat/add_chatentry_request.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_entry/chat_entry_response.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/enhanced_widget.dart';
-import 'package:soxo_chat/feature/chat/screen/widgets/file_picker_widget.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/opmiized_card.dart';
-import 'package:soxo_chat/feature/chat/screen/widgets/record_dialog.dart';
-import 'package:soxo_chat/feature/chat/screen/widgets/user_data.dart';
-import 'package:soxo_chat/shared/constants/colors.dart';
-import 'package:soxo_chat/shared/routes/routes.dart';
-import 'package:soxo_chat/shared/themes/font_palette.dart';
-import 'package:soxo_chat/shared/utils/auth/auth_utils.dart';
-import 'package:soxo_chat/shared/widgets/alert/alert_dialog_custom.dart';
+import 'package:soxo_chat/shared/widgets/animated_divider/animated_divider.dart';
 import 'package:soxo_chat/shared/widgets/appbar/appbar.dart';
-import 'package:soxo_chat/shared/widgets/padding/main_padding.dart';
-import 'package:soxo_chat/shared/widgets/text_fields/text_field_widget.dart';
 
 class ChatDetailScreen extends StatefulWidget {
   final Map<String, dynamic>? data;
@@ -145,6 +132,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                         FadeTransition(opacity: animation, child: child),
                     child: isArrow
                         ? GroupContent(
+                            data: widget.data,
                             key: const ValueKey('group'),
                             onToggleTap: _handleViewToggle,
                             arrowAnimation: _arrowRotationAnimation,
@@ -361,7 +349,6 @@ class _EnhancedChatDetailScreenState extends State<EnhancedChatDetailScreen>
     );
   }
 
-  // ✅ Enhanced app bar with reply status
   PreferredSizeWidget _buildEnhancedAppBar() {
     return AppBar(
       backgroundColor: Colors.white,
@@ -398,7 +385,6 @@ class _EnhancedChatDetailScreenState extends State<EnhancedChatDetailScreen>
         },
       ),
       actions: [
-        // ✅ Quick cancel reply button in app bar
         BlocBuilder<ChatCubit, ChatState>(
           builder: (context, state) {
             if (state.isReplying ?? false) {
@@ -416,22 +402,6 @@ class _EnhancedChatDetailScreenState extends State<EnhancedChatDetailScreen>
       ],
     );
   }
-
-  // void _handleErrorMessage(BuildContext context, ChatState state) {
-  //   if (state.errorMessage != null) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(
-  //         content: Text(state.errorMessage!),
-  //         backgroundColor: Colors.red,
-  //         action: SnackBarAction(
-  //           label: 'Dismiss',
-  //           textColor: Colors.white,
-  //           onPressed: () => context.read<ChatCubit>().clearError(),
-  //         ),
-  //       ),
-  //     );
-  //   }
-  // }
 
   Widget _buildBody() {
     return Container(
@@ -462,6 +432,7 @@ class _EnhancedChatDetailScreenState extends State<EnhancedChatDetailScreen>
                         FadeTransition(opacity: animation, child: child),
                     child: isArrow
                         ? GroupContent(
+                            data: widget.data,
                             key: const ValueKey('group'),
                             onToggleTap: _handleViewToggle,
                             arrowAnimation: _arrowRotationAnimation,
@@ -484,31 +455,97 @@ class _EnhancedChatDetailScreenState extends State<EnhancedChatDetailScreen>
   }
 }
 
-class GroupContent extends StatelessWidget {
+class GroupContent extends StatefulWidget {
   final VoidCallback onToggleTap;
   final Animation<double> arrowAnimation;
   final Animation<double> contentAnimation;
+  final Map<String, dynamic>? data;
 
   const GroupContent({
     super.key,
     required this.onToggleTap,
     required this.arrowAnimation,
     required this.contentAnimation,
+    required this.data,
   });
 
   @override
+  State<GroupContent> createState() => _GroupContentState();
+}
+
+class _GroupContentState extends State<GroupContent>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _replyAnimationController;
+  late Animation<double> _replyScaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeAnimations();
+  }
+
+  void _initializeAnimations() {
+    _replyAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+
+    _replyScaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _replyAnimationController,
+        curve: Curves.elasticOut,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _replyAnimationController.dispose();
+    super.dispose();
+  }
+
+  // void _startReply(Entry message) {
+  //   context.read<ChatCubit>().startReply(message);
+  //   _replyAnimationController.forward();
+  //   HapticFeedback.lightImpact();
+  //   log('🔄 Started reply to message: ${message.id}');
+  // }
+
+  void _cancelReply() {
+    context.read<ChatCubit>().cancelReply();
+    _replyAnimationController.reverse();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        _buildGroupList(),
-        AnimatedDividerCard(
-          onArrowTap: onToggleTap,
-          arrowAnimation: arrowAnimation,
-        ),
-        const Spacer(),
-        const UnifiedMessageInput(isGroup: true),
-        20.verticalSpace,
-      ],
+    return BlocBuilder<ChatCubit, ChatState>(
+      builder: (context, state) {
+        return Column(
+          children: [
+            _buildGroupList(),
+            AnimatedDividerCard(
+              onArrowTap: widget.onToggleTap,
+              arrowAnimation: widget.arrowAnimation,
+            ),
+            const Spacer(),
+            AnimatedBuilder(
+              animation: _replyScaleAnimation,
+              builder: (context, child) {
+                return Transform.scale(
+                  scale: state.isReplying ?? false
+                      ? _replyScaleAnimation.value
+                      : 1.0,
+                  child: EnhancedUnifiedMessageInput(
+                    chatData: widget.data,
+                    onCancelReply: _cancelReply,
+                  ),
+                );
+              },
+            ),
+            20.verticalSpace,
+          ],
+        );
+      },
     );
   }
 
@@ -530,59 +567,10 @@ class GroupContent extends StatelessWidget {
           itemCount: pinnedList.length,
           itemBuilder: (context, index) {
             final data = pinnedList[index];
-
-            return AnimatedBuilder(
-              animation: contentAnimation,
-              builder: (context, child) {
-                final totalItems = pinnedList.length;
-                final normalizedIndex =
-                    index / (totalItems > 1 ? totalItems - 1 : 1);
-
-                final slideStart = normalizedIndex * 0.3;
-                final slideEnd = (slideStart + 0.4).clamp(0.0, 1.0);
-
-                final fadeStart = normalizedIndex * 0.2;
-                final fadeEnd = (fadeStart + 0.3).clamp(0.0, 1.0);
-
-                final slideAnimation =
-                    Tween<Offset>(
-                      begin: const Offset(0, 0.5),
-                      end: Offset.zero,
-                    ).animate(
-                      CurvedAnimation(
-                        parent: contentAnimation,
-                        curve: Interval(
-                          slideStart,
-                          slideEnd,
-                          curve: Curves.easeOutCubic,
-                        ),
-                      ),
-                    );
-
-                final fadeAnimation = Tween<double>(begin: 0.0, end: 1.0)
-                    .animate(
-                      CurvedAnimation(
-                        parent: contentAnimation,
-                        curve: Interval(
-                          fadeStart,
-                          fadeEnd,
-                          curve: Curves.easeIn,
-                        ),
-                      ),
-                    );
-
-                return SlideTransition(
-                  position: slideAnimation,
-                  child: FadeTransition(
-                    opacity: fadeAnimation,
-                    child: GroupCardWidget(
-                      title: data.sender?.name,
-                      imageUrl: data.sender?.imageUrl,
-                      chatId: data.chatId ?? 0,
-                    ),
-                  ),
-                );
-              },
+            return GroupCardWidget(
+              title: data.sender?.name,
+              imageUrl: data.sender?.imageUrl,
+              chatId: data.chatId ?? 0,
             );
           },
         );
@@ -617,388 +605,5 @@ class ChatHeader extends StatelessWidget {
         ),
       ],
     );
-  }
-}
-
-class UnifiedMessageInput extends StatefulWidget {
-  final Map<String, dynamic>? chatData;
-  final bool isGroup;
-  final Entry? replyingTo; // 🔑 NEW: Reply support
-  final VoidCallback? onCancelReply; // 🔑 NEW: Cancel reply
-
-  const UnifiedMessageInput({
-    super.key,
-    this.chatData,
-    this.isGroup = false,
-    this.replyingTo,
-    this.onCancelReply,
-  });
-
-  @override
-  State<UnifiedMessageInput> createState() => _UnifiedMessageInputState();
-}
-
-class _UnifiedMessageInputState extends State<UnifiedMessageInput>
-    with SingleTickerProviderStateMixin {
-  late TextEditingController _messageController;
-  late AnimationController _recordingAnimationController;
-  late Animation<double> _pulseAnimation;
-
-  bool _hasText = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeControllers();
-  }
-
-  void _initializeControllers() {
-    _messageController = TextEditingController();
-    _messageController.addListener(_onTextChanged);
-
-    _recordingAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
-      vsync: this,
-    );
-
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.3).animate(
-      CurvedAnimation(
-        parent: _recordingAnimationController,
-        curve: Curves.easeInOut,
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _recordingAnimationController.dispose();
-    _messageController.removeListener(_onTextChanged);
-    _messageController.dispose();
-    super.dispose();
-  }
-
-  void _onTextChanged() {
-    final hasText = _messageController.text.trim().isNotEmpty;
-    if (hasText != _hasText) {
-      setState(() => _hasText = hasText);
-    }
-  }
-
-  Future<void> _sendMessage() async {
-    final messageText = _messageController.text.trim();
-    final user = await AuthUtils.instance.readUserData();
-    final bool isReply = widget.replyingTo != null;
-
-    if (widget.isGroup) {
-      _handleGroupMessage(messageText);
-      return;
-    }
-
-    final selectedFiles = context.read<ChatCubit>().state.selectedFiles ?? [];
-    if (messageText.isEmpty && selectedFiles.isEmpty) return;
-
-    _messageController.clear();
-    String? otherDetails1;
-    if (isReply) {
-      final replyDetails = [
-        {"ReplayChatEntryId": widget.replyingTo!.id.toString()},
-      ];
-      otherDetails1 = jsonEncode(replyDetails);
-    }
-
-    log("Stringfied -=- =- =- =- =- =- =- =-= -=- = $otherDetails1");
-    // 🔑 Include reply information if replying
-    await context.read<ChatCubit>().createChat(
-      AddChatEntryRequest(
-        chatId: widget.chatData?['chat_id'],
-        senderId: int.tryParse(user?.result?.userId.toString() ?? '1'),
-        type: isReply ? 'CR' : 'N',
-        typeValue: 0,
-        messageType: 'text',
-        content: messageText.isNotEmpty ? messageText : 'File attachment',
-        source: 'Website',
-        attachedFiles: selectedFiles,
-        otherDetails1: otherDetails1, // 🔑 Pass the reply information
-      ),
-      files: selectedFiles,
-    );
-
-    // Clear reply after sending
-    widget.onCancelReply?.call();
-
-    log('Message sent: $messageText');
-  }
-
-  void _handleGroupMessage(String messageText) {
-    if (messageText.isEmpty) return;
-
-    _messageController.clear();
-    FocusScope.of(context).unfocus();
-
-    // Clear reply after sending
-    widget.onCancelReply?.call();
-
-    log('Group message sent: $messageText');
-  }
-
-  // ... rest of your existing methods remain the same
-
-  Widget _buildTextInput() {
-    return TextFeildWidget(
-      hintText: widget.replyingTo != null
-          ? 'Reply to ${widget.replyingTo!.sender?.name ?? 'User'}...'
-          : 'Type a message',
-      controller: _messageController,
-      inputBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10.r),
-        borderSide: const BorderSide(color: Color(0xffCACACA), width: 1),
-      ),
-      suffixIcon: _buildVoiceButton(),
-      miniLength: 1,
-      maxLines: 5,
-    );
-  }
-
-  // ... include all your other existing methods like _buildVoiceButton, _buildSendButton, etc.
-
-  @override
-  Widget build(BuildContext context) {
-    return MainPadding(
-      right: 16,
-      bottom: widget.isGroup ? 0.h : 28.h,
-      child: Row(
-        children: [
-          SizedBox(width: 10.w),
-          if (!widget.isGroup)
-            _buildFilePickerButton(context.watch<ChatCubit>().state),
-          SizedBox(width: 10.w),
-          Expanded(child: _buildTextInput()),
-          SizedBox(width: 6.w),
-          _buildSendButton(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilePickerButton(ChatState state) {
-    return InkWell(
-      onTap: () => showFilePickerBottomSheet(context),
-      child: (state.selectedFiles?.isNotEmpty ?? false)
-          ? Badge.count(
-              backgroundColor: kPrimaryColor,
-              count: state.selectedFiles?.length ?? 0,
-              child: SvgPicture.asset('assets/icons/Vector.svg'),
-            )
-          : SvgPicture.asset('assets/icons/Vector.svg'),
-    );
-  }
-
-  Widget _buildVoiceButton() {
-    return BlocSelector<ChatCubit, ChatState, bool>(
-      selector: (state) => state.hasRecordingPermission,
-      builder: (context, hasPermission) {
-        return InkWell(
-          onTap: hasPermission
-              ? _startRecording
-              : () => showPermissionDialog(context),
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: SvgPicture.asset('assets/icons/Group 1000006770.svg'),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildSendButton() {
-    return AnimatedOpacity(
-      opacity: _hasText ? 1.0 : 0.0,
-      duration: const Duration(milliseconds: 200),
-      child: _hasText
-          ? Padding(
-              padding: EdgeInsets.only(top: 5.h),
-              child: GestureDetector(
-                onTap: _sendMessage,
-                child: Container(
-                  padding: EdgeInsets.only(left: 4.w),
-                  alignment: Alignment.center,
-                  height: 48.h,
-                  width: 48.w,
-                  decoration: const BoxDecoration(
-                    color: kPrimaryColor,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.send, color: Colors.white),
-                ),
-              ),
-            )
-          : const SizedBox.shrink(),
-    );
-  }
-
-  void _startRecording() {
-    final chatCubit = context.read<ChatCubit>();
-    chatCubit.startRecording();
-    _recordingAnimationController.repeat(reverse: true);
-
-    showRecordingDialog(
-      context,
-      _pulseAnimation,
-      _cancelRecording,
-      _stopRecording,
-    );
-  }
-
-  void _stopRecording() async {
-    final user = await AuthUtils.instance.readUserData();
-    if (!widget.isGroup) {
-      context.read<ChatCubit>().stopRecordingAndSend(
-        AddChatEntryRequest(
-          chatId: widget.chatData?['chat_id'],
-          senderId: int.tryParse(user?.result?.userId.toString() ?? '1'),
-          type: 'N',
-          typeValue: 0,
-          messageType: 'voice',
-          content: 'Voice message',
-          source: 'Mobile',
-        ),
-      );
-    }
-
-    _recordingAnimationController.stop();
-    Navigator.pop(context);
-
-    // Clear reply after sending voice message
-    widget.onCancelReply?.call();
-  }
-
-  void _cancelRecording() {
-    context.read<ChatCubit>().cancelRecording();
-    _recordingAnimationController.stop();
-    Navigator.pop(context);
-  }
-}
-
-// class MessageInputSection extends StatelessWidget {
-//   final Map<String, dynamic>? chatData;
-
-//   const MessageInputSection({super.key, this.chatData});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return UnifiedMessageInput(chatData: chatData);
-//   }
-// }
-
-class AnimatedDividerCard extends StatelessWidget {
-  final VoidCallback onArrowTap;
-  final Animation<double> arrowAnimation;
-
-  const AnimatedDividerCard({
-    super.key,
-    required this.onArrowTap,
-    required this.arrowAnimation,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onArrowTap,
-      child: Container(
-        padding: EdgeInsets.only(left: 0.w, right: 12, top: 0, bottom: 0),
-        child: Row(
-          children: [
-            const Expanded(child: Divider()),
-            2.horizontalSpace,
-            AnimatedBuilder(
-              animation: arrowAnimation,
-              builder: (context, child) {
-                return Transform.rotate(
-                  angle: arrowAnimation.value * 6.28,
-                  child: Container(
-                    height: 25.h,
-                    width: 25.w,
-                    decoration: BoxDecoration(
-                      color: Color(0XFFEEF3F1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(6.0),
-                      child: SvgPicture.asset('assets/icons/icon.svg'),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class GroupCardWidget extends StatelessWidget {
-  final String? title;
-  final String? imageUrl;
-  final int? chatId;
-  const GroupCardWidget({super.key, this.title, this.imageUrl, this.chatId});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        _navigateToSingleChat(context);
-      },
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
-
-        child: Row(
-          children: [
-            ChatAvatar(name: title ?? '', size: 30, imageUrl: imageUrl),
-
-            12.horizontalSpace,
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        title ?? '',
-                        style: FontPalette.hW700S14.copyWith(
-                          color: Colors.black87,
-                        ),
-                      ),
-                      5.horizontalSpace,
-                      Text(
-                        'send request to case review',
-                        style: FontPalette.hW500S14.copyWith(
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                  4.verticalSpace,
-                  Text(
-                    '3 Replied 4 Pending',
-                    style: FontPalette.hW500S12.copyWith(
-                      color: Color(0XFF166FF6),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SvgPicture.asset('assets/icons/clock.svg'),
-            3.horizontalSpace,
-            const Text('45 min'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _navigateToSingleChat(BuildContext context) {
-    context.push(routeSingleChat, extra: {"title": title, 'chat_id': chatId});
   }
 }

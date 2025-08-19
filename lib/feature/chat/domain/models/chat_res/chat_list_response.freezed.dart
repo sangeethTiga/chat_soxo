@@ -37,6 +37,8 @@ mixin _$ChatListResponse {
   String? get status => throw _privateConstructorUsedError;
   @JsonKey(name: "createdBy")
   int? get createdBy => throw _privateConstructorUsedError;
+  @JsonKey(name: "unreadCount")
+  int? get unreadCount => throw _privateConstructorUsedError;
   @JsonKey(name: "createdAt")
   String? get createdAt => throw _privateConstructorUsedError;
   @JsonKey(name: "updatedAt")
@@ -76,6 +78,7 @@ abstract class $ChatListResponseCopyWith<$Res> {
     @JsonKey(name: "description") String? description,
     @JsonKey(name: "status") String? status,
     @JsonKey(name: "createdBy") int? createdBy,
+    @JsonKey(name: "unreadCount") int? unreadCount,
     @JsonKey(name: "createdAt") String? createdAt,
     @JsonKey(name: "updatedAt") String? updatedAt,
     @JsonKey(name: "branchPtr") String? branchPtr,
@@ -108,6 +111,7 @@ class _$ChatListResponseCopyWithImpl<$Res, $Val extends ChatListResponse>
     Object? description = freezed,
     Object? status = freezed,
     Object? createdBy = freezed,
+    Object? unreadCount = freezed,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
     Object? branchPtr = freezed,
@@ -148,6 +152,10 @@ class _$ChatListResponseCopyWithImpl<$Res, $Val extends ChatListResponse>
             createdBy: freezed == createdBy
                 ? _value.createdBy
                 : createdBy // ignore: cast_nullable_to_non_nullable
+                      as int?,
+            unreadCount: freezed == unreadCount
+                ? _value.unreadCount
+                : unreadCount // ignore: cast_nullable_to_non_nullable
                       as int?,
             createdAt: freezed == createdAt
                 ? _value.createdAt
@@ -197,6 +205,7 @@ abstract class _$$ChatListResponseImplCopyWith<$Res>
     @JsonKey(name: "description") String? description,
     @JsonKey(name: "status") String? status,
     @JsonKey(name: "createdBy") int? createdBy,
+    @JsonKey(name: "unreadCount") int? unreadCount,
     @JsonKey(name: "createdAt") String? createdAt,
     @JsonKey(name: "updatedAt") String? updatedAt,
     @JsonKey(name: "branchPtr") String? branchPtr,
@@ -228,6 +237,7 @@ class __$$ChatListResponseImplCopyWithImpl<$Res>
     Object? description = freezed,
     Object? status = freezed,
     Object? createdBy = freezed,
+    Object? unreadCount = freezed,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
     Object? branchPtr = freezed,
@@ -268,6 +278,10 @@ class __$$ChatListResponseImplCopyWithImpl<$Res>
         createdBy: freezed == createdBy
             ? _value.createdBy
             : createdBy // ignore: cast_nullable_to_non_nullable
+                  as int?,
+        unreadCount: freezed == unreadCount
+            ? _value.unreadCount
+            : unreadCount // ignore: cast_nullable_to_non_nullable
                   as int?,
         createdAt: freezed == createdAt
             ? _value.createdAt
@@ -310,6 +324,7 @@ class _$ChatListResponseImpl implements _ChatListResponse {
     @JsonKey(name: "description") this.description,
     @JsonKey(name: "status") this.status,
     @JsonKey(name: "createdBy") this.createdBy,
+    @JsonKey(name: "unreadCount") this.unreadCount,
     @JsonKey(name: "createdAt") this.createdAt,
     @JsonKey(name: "updatedAt") this.updatedAt,
     @JsonKey(name: "branchPtr") this.branchPtr,
@@ -346,6 +361,9 @@ class _$ChatListResponseImpl implements _ChatListResponse {
   @JsonKey(name: "createdBy")
   final int? createdBy;
   @override
+  @JsonKey(name: "unreadCount")
+  final int? unreadCount;
+  @override
   @JsonKey(name: "createdAt")
   final String? createdAt;
   @override
@@ -374,7 +392,7 @@ class _$ChatListResponseImpl implements _ChatListResponse {
 
   @override
   String toString() {
-    return 'ChatListResponse(chatId: $chatId, mode: $mode, type: $type, code: $code, title: $title, description: $description, status: $status, createdBy: $createdBy, createdAt: $createdAt, updatedAt: $updatedAt, branchPtr: $branchPtr, firmPtr: $firmPtr, userChats: $userChats, otherDetail1: $otherDetail1)';
+    return 'ChatListResponse(chatId: $chatId, mode: $mode, type: $type, code: $code, title: $title, description: $description, status: $status, createdBy: $createdBy, unreadCount: $unreadCount, createdAt: $createdAt, updatedAt: $updatedAt, branchPtr: $branchPtr, firmPtr: $firmPtr, userChats: $userChats, otherDetail1: $otherDetail1)';
   }
 
   @override
@@ -392,6 +410,8 @@ class _$ChatListResponseImpl implements _ChatListResponse {
             (identical(other.status, status) || other.status == status) &&
             (identical(other.createdBy, createdBy) ||
                 other.createdBy == createdBy) &&
+            (identical(other.unreadCount, unreadCount) ||
+                other.unreadCount == unreadCount) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
@@ -419,6 +439,7 @@ class _$ChatListResponseImpl implements _ChatListResponse {
     description,
     status,
     createdBy,
+    unreadCount,
     createdAt,
     updatedAt,
     branchPtr,
@@ -454,6 +475,7 @@ abstract class _ChatListResponse implements ChatListResponse {
     @JsonKey(name: "description") final String? description,
     @JsonKey(name: "status") final String? status,
     @JsonKey(name: "createdBy") final int? createdBy,
+    @JsonKey(name: "unreadCount") final int? unreadCount,
     @JsonKey(name: "createdAt") final String? createdAt,
     @JsonKey(name: "updatedAt") final String? updatedAt,
     @JsonKey(name: "branchPtr") final String? branchPtr,
@@ -489,6 +511,9 @@ abstract class _ChatListResponse implements ChatListResponse {
   @override
   @JsonKey(name: "createdBy")
   int? get createdBy;
+  @override
+  @JsonKey(name: "unreadCount")
+  int? get unreadCount;
   @override
   @JsonKey(name: "createdAt")
   String? get createdAt;

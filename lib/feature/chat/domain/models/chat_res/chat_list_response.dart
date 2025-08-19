@@ -28,6 +28,8 @@ class ChatListResponse with _$ChatListResponse {
     @JsonKey(name: "description") String? description,
     @JsonKey(name: "status") String? status,
     @JsonKey(name: "createdBy") int? createdBy,
+    @JsonKey(name: "unreadCount") int? unreadCount,
+
     @JsonKey(name: "createdAt") String? createdAt,
     @JsonKey(name: "updatedAt") String? updatedAt,
     @JsonKey(name: "branchPtr") String? branchPtr,

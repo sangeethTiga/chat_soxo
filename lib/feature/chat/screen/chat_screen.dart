@@ -262,7 +262,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                 name: data.title ?? '',
                                 message: data.description ?? '',
                                 time: getFormattedDate(data.updatedAt ?? ''),
-                                unreadCount: 2,
+                                unreadCount: data.unreadCount,
                               ),
                             ),
                           ),
@@ -292,7 +292,6 @@ void onChatItemTappedWithGo(
 ) async {
   HapticFeedback.selectionClick();
   context.read<ChatCubit>().getChatEntry(chatId: state.chatList?[index].chatId);
-
   context.read<ChatCubit>().initStateClear();
 
   context.push(
