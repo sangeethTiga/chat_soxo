@@ -19,8 +19,8 @@ class ChatSignalRService {
   HubConnection? _hubConnection;
   bool _isConnected = false;
   String? _currentChatId;
-  bool _isConnecting = false; 
-  Completer<void>? _connectionCompleter; 
+  bool _isConnecting = false;
+  Completer<void>? _connectionCompleter;
 
   Function(dynamic message)? onMessageReceived;
   Function(ChatEntryResponse chatEntry)? onChatEntryReceived;
@@ -229,11 +229,11 @@ class ChatSignalRService {
 
       // 🔧 FIX: Shorter timeout for HTTP connections to fail fast on SSL issues
       await _hubConnection?.start()?.timeout(
-        const Duration(seconds: 30), // Back to 30 seconds for faster fallback
+        const Duration(seconds: 60), // Back to 30 seconds for faster fallback
         onTimeout: () {
           throw TimeoutException(
-            'Connection timeout after 30 seconds',
-            Duration(seconds: 30),
+            'Connection timeout after 60 seconds',
+            Duration(seconds: 60),
           );
         },
       );
@@ -448,6 +448,8 @@ class ChatSignalRService {
       final type = data['type'] ?? data['Type'];
       final typeValue = data['typeValue'] ?? data['TypeValue'];
       final thread = data['thread'] ?? data['Thread'];
+      final otherDetails1 = data['otherDetails1'];
+      final pinned = data['pinned'];
 
       log('🔍 Extracted values:');
       log('   - id: $id (${id.runtimeType})');
@@ -467,6 +469,8 @@ class ChatSignalRService {
         type: type?.toString(),
         typeValue: _safeParseInt(typeValue),
         thread: thread?.toString(),
+        otherDetails1: otherDetails1,
+        pinned: pinned,
         chatMedias: _parseChatMedias(data['chatMedias'] ?? data['ChatMedias']),
       );
 

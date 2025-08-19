@@ -24,7 +24,11 @@ class ChatState extends Equatable {
   final Entry? replyingTo;
   final bool? isReplying;
   final String? isPinned;
-
+  final String? highlightedMessageId; // Message currently highlighted
+  final String? scrollToMessageId; // Message to scroll to
+  final Map<String, dynamic>? replyNotification; // Temporary reply notification
+  final Map<String, Entry>? replyRelationships; // Cache of reply relationships
+  final Set<String>? activeReplies;
   const ChatState({
     this.isArrow = false,
     this.isRecording = false,
@@ -48,6 +52,11 @@ class ChatState extends Equatable {
     this.isReplying,
     this.replyingTo,
     this.isPinned,
+    this.highlightedMessageId,
+    this.scrollToMessageId,
+    this.replyNotification,
+    this.replyRelationships,
+    this.activeReplies,
   });
 
   ChatState copyWith({
@@ -74,6 +83,11 @@ class ChatState extends Equatable {
     Entry? replyingTo,
     bool? isReplying,
     String? isPinned,
+    String? highlightedMessageId,
+    String? scrollToMessageId,
+    Map<String, dynamic>? replyNotification,
+    Map<String, Entry>? replyRelationships,
+    Set<String>? activeReplies,
   }) {
     return ChatState(
       isArrow: isArrow ?? this.isArrow,
@@ -99,6 +113,12 @@ class ChatState extends Equatable {
       replyingTo: replyingTo ?? this.replyingTo,
       isReplying: isReplying ?? this.isReplying,
       isPinned: isPinned ?? this.isPinned,
+
+      highlightedMessageId: highlightedMessageId ?? this.highlightedMessageId,
+      scrollToMessageId: scrollToMessageId ?? this.scrollToMessageId,
+      replyNotification: replyNotification ?? this.replyNotification,
+      replyRelationships: replyRelationships ?? this.replyRelationships,
+      activeReplies: activeReplies ?? this.activeReplies,
     );
   }
 
@@ -126,6 +146,11 @@ class ChatState extends Equatable {
     isReplying,
     replyingTo,
     isPinned,
+    highlightedMessageId,
+    scrollToMessageId,
+    replyNotification,
+    replyRelationships,
+    activeReplies,
   ];
 }
 
@@ -148,4 +173,91 @@ class InitialChatState extends ChatState {
         fileTypes: {},
         isArrow: false,
       );
+}
+
+extension ChatStateReplyHelpers on ChatState {
+  // Check if a message is highlighted
+  bool isMessageHighlighted(String messageId) {
+    return highlightedMessageId == messageId;
+  }
+
+  // Check if should scroll to message
+  bool shouldScrollToMessage(String messageId) {
+    return scrollToMessageId == messageId;
+  }
+
+  Map<String, dynamic>? getActiveReplyNotification() {
+    if (replyNotification == null) return null;
+
+    final timestamp = replyNotification!['timestamp'] as int?;
+    if (timestamp == null) return null;
+
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final isExpired = (now - timestamp) > 3000; // 3 seconds
+
+    return isExpired ? null : replyNotification;
+  }
+
+  bool isReplyMessage(Entry entry) {
+    return entry.type == 'CR' ||
+        (entry.otherDetails1?.isNotEmpty == true &&
+            entry.otherDetails1!.contains('ReplayChatEntryId'));
+  }
+
+  Entry? getOriginalMessageForReply(Entry replyEntry) {
+    if (!isReplyMessage(replyEntry)) return null;
+
+    try {
+      if (replyEntry.otherDetails1?.isNotEmpty == true) {
+        final decoded = jsonDecode(replyEntry.otherDetails1!);
+        if (decoded is List && decoded.isNotEmpty) {
+          final replyInfo = decoded[0];
+          if (replyInfo is Map<String, dynamic>) {
+            final originalId =
+                replyInfo['ReplayChatEntryId']?.toString() ??
+                replyInfo['InitialChatEntryId']?.toString();
+
+            if (originalId != null) {
+              return chatEntry?.entries?.firstWhere(
+                (e) => e.id.toString() == originalId,
+                orElse: () => throw StateError('Not found'),
+              );
+            }
+          }
+        }
+      }
+    } catch (e) {
+      // Return null if not found
+    }
+
+    return null;
+  }
+
+  // Get all replies for a message
+  List<Entry> getRepliesForMessage(String messageId) {
+    if (chatEntry?.entries == null) return [];
+
+    return chatEntry!.entries!.where((entry) {
+      if (!isReplyMessage(entry)) return false;
+
+      try {
+        if (entry.otherDetails1?.isNotEmpty == true) {
+          final decoded = jsonDecode(entry.otherDetails1!);
+          if (decoded is List && decoded.isNotEmpty) {
+            final replyInfo = decoded[0];
+            if (replyInfo is Map<String, dynamic>) {
+              final replyToId =
+                  replyInfo['ReplayChatEntryId']?.toString() ??
+                  replyInfo['InitialChatEntryId']?.toString();
+              return replyToId == messageId;
+            }
+          }
+        }
+      } catch (e) {
+        // Ignore parse errors
+      }
+
+      return false;
+    }).toList();
+  }
 }

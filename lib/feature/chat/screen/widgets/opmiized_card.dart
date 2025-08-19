@@ -83,7 +83,8 @@ class _OptimizedChatMessagesListsState
           content: message.content ?? '',
           source: 'mobile',
           attachedFiles: [],
-          otherDetails1: message.otherDetails1??'', // Preserve existing details
+          otherDetails1:
+              message.otherDetails1 ?? '', // Preserve existing details
           pinned: newPinnedStatus,
         ),
         files: [],
