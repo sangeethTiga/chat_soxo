@@ -214,47 +214,16 @@ class _ChatContentState extends State<ChatContent>
     super.dispose();
   }
 
-  // ✅ Enhanced start reply with ChatCubit integration
   void _startReply(Entry message) {
-    // 1. Update ChatCubit state for global reply management
     context.read<ChatCubit>().startReply(message);
-
-    // 2. Trigger animation
     _replyAnimationController.forward();
-
-    // 3. Haptic feedback
     HapticFeedback.lightImpact();
-
-    // 4. Show toast notification
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.reply_rounded, size: 16, color: Colors.white),
-            SizedBox(width: 8.w),
-            Text('Replying to ${message.sender?.name ?? 'message'}'),
-          ],
-        ),
-        duration: const Duration(milliseconds: 1000),
-        backgroundColor: Colors.blue,
-        behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.only(
-          bottom: MediaQuery.of(context).size.height * 0.15,
-          left: 16.w,
-          right: 16.w,
-        ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
-      ),
-    );
-
     log('🔄 Started reply to message: ${message.id}');
   }
 
-  // ✅ Enhanced cancel reply
   void _cancelReply() {
     context.read<ChatCubit>().cancelReply();
     _replyAnimationController.reverse();
-    log('❌ Cancelled reply');
   }
 
   @override
@@ -276,7 +245,6 @@ class _ChatContentState extends State<ChatContent>
           ),
           child: Column(
             children: [
-              // Group header (if pinned entries exist)
               if (pinnedEntries.isNotEmpty) ...{
                 GroupCardWidget(
                   title: pinnedEntries[0].sender?.name,
@@ -288,19 +256,15 @@ class _ChatContentState extends State<ChatContent>
                 ),
               },
 
-              // ✅ Enhanced chat messages with reply state
               Expanded(
                 child: OptimizedChatMessagesLists(
                   onReplyMessage: _startReply,
-                  // Pass current reply state to messages
                   currentReplyingTo: chatState.replyingTo,
                   isReplying: chatState.isReplying ?? false,
                 ),
               ),
 
               14.verticalSpace,
-
-              // ✅ Enhanced unified input with reply support
               AnimatedBuilder(
                 animation: _replyScaleAnimation,
                 builder: (context, child) {

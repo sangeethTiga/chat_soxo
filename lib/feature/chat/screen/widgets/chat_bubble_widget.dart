@@ -392,12 +392,9 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
     );
   }
 
-  // 🔑 Enhanced inline reply preview with better styling
   Widget _buildInlineReplyPreview() {
     final replyMessage = widget.replyToMessage!;
     final isReplyFromMe = replyMessage.senderId == widget.messageData?.senderId;
-
-    // ✅ Enhanced styling for reply preview
     final replyBorderColor = widget.isBeingRepliedTo
         ? (widget.isSent ? Colors.green[600] : Colors.blue[600])
         : (widget.isSent ? Colors.green : Colors.blue);
@@ -420,7 +417,7 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
         border: Border(
           left: BorderSide(
             color: replyBorderColor!,
-            width: widget.isBeingRepliedTo ? 4.w : 3.w, // ✅ Thicker when active
+            width: widget.isBeingRepliedTo ? 4.w : 3.w,
           ),
         ),
       ),
@@ -443,8 +440,6 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
           ),
 
           SizedBox(height: 2.h),
-
-          // 🔑 Original message preview
           Text(
             replyMessage.content ?? '',
             style: TextStyle(
@@ -455,8 +450,6 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-
-          // 🔑 Show media indicator if original message had media
           if (replyMessage.chatMedias?.isNotEmpty == true)
             Padding(
               padding: EdgeInsets.only(top: 2.h),
@@ -480,7 +473,6 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
     );
   }
 
-  // 🔑 Helper: Get media icon based on type
   IconData _getMediaIcon(ChatMedias media) {
     final mediaUrl = media.mediaUrl?.toLowerCase() ?? '';
     if (mediaUrl.contains('image') ||
@@ -497,7 +489,6 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
     }
   }
 
-  // 🔑 Helper: Get media type text
   String _getMediaTypeText(ChatMedias media) {
     final mediaUrl = media.mediaUrl?.toLowerCase() ?? '';
     if (mediaUrl.contains('image') ||
@@ -514,7 +505,6 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
     }
   }
 
-  // Your existing methods remain the same
   Widget _buildMessageContent() {
     switch (widget.type?.toLowerCase()) {
       case 'html':
@@ -637,12 +627,11 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
   }
 }
 
-// ✅ Enhanced Message Options with Reply Action Highlight
 class MessageOptionsBottomSheet extends StatelessWidget {
   final String message;
   final bool isSent;
   final bool isPinned;
-  final bool isBeingRepliedTo; // ✅ NEW: Show if currently being replied to
+  final bool isBeingRepliedTo;
   final VoidCallback? onReply;
   final VoidCallback? onPin;
   final VoidCallback? onCopy;
@@ -697,7 +686,6 @@ class MessageOptionsBottomSheet extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ✅ Reply status indicator
                 if (isBeingRepliedTo) ...[
                   Row(
                     children: [
@@ -798,7 +786,6 @@ class MessageOptionsBottomSheet extends StatelessWidget {
   }
 }
 
-// Keep your existing classes unchanged
 class OptimizedMediaPreview extends StatelessWidget {
   final ChatMedias? media;
   final bool isInChatBubble;

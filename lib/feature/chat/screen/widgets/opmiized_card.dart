@@ -63,24 +63,24 @@ class _OptimizedChatMessagesListsState
     return _pinnedMessageIds.contains(message.chatId);
   }
 
-  // Enhanced reply detection with better error handling
-  bool _isReplyMessage(Entry message) {
-    final String? detailsStr = message.otherDetails1;
-    if (detailsStr != null && detailsStr.isNotEmpty) {
-      try {
-        List<dynamic> detailsList = jsonDecode(detailsStr);
-        if (detailsList.isNotEmpty) {
-          var details = detailsList[0];
-          final String? replayChatEntryId = details["ReplayChatEntryId"]
-              ?.toString();
-          return replayChatEntryId != null && replayChatEntryId.isNotEmpty;
-        }
-      } catch (e) {
-        log("❌ JSON decode error in _isReplyMessage: $e");
-      }
-    }
-    return false;
-  }
+  // // Enhanced reply detection with better error handling
+  // bool _isReplyMessage(Entry message) {
+  //   final String? detailsStr = message.otherDetails1;
+  //   if (detailsStr != null && detailsStr.isNotEmpty) {
+  //     try {
+  //       List<dynamic> detailsList = jsonDecode(detailsStr);
+  //       if (detailsList.isNotEmpty) {
+  //         var details = detailsList[0];
+  //         final String? replayChatEntryId = details["ReplayChatEntryId"]
+  //             ?.toString();
+  //         return replayChatEntryId != null && replayChatEntryId.isNotEmpty;
+  //       }
+  //     } catch (e) {
+  //       log("❌ JSON decode error in _isReplyMessage: $e");
+  //     }
+  //   }
+  //   return false;
+  // }
 
   // Enhanced original message finder
   Entry? _getReplyMessage(Entry message, List<Entry> allEntries) {
