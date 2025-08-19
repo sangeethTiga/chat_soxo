@@ -172,6 +172,7 @@ class ChatCubit extends Cubit<ChatState> {
 
   // ✅ CRITICAL FIXES for UI updates
   // 🔧 CRITICAL FIX: Enhanced _handleNewEntries in ChatCubit
+  // 🔧 FIXED: Enhanced _handleNewEntries in ChatCubit
 
   void _handleNewEntries(List<Entry> newEntries) {
     log(
@@ -197,6 +198,25 @@ class ChatCubit extends Cubit<ChatState> {
       log(
         '🔍 Entry $i: ID=${entry.id}, ChatID=${entry.chatId}, Content="${entry.content}", Sender=${entry.senderId}',
       );
+
+      // ✅ NEW: Check if this is a reply message
+      if (entry.otherDetails1?.isNotEmpty == true) {
+        try {
+          final replyData = jsonDecode(entry.otherDetails1!);
+          log('📝 Reply data found: $replyData');
+          if (replyData is List && replyData.isNotEmpty) {
+            final replyInfo = replyData[0];
+            if (replyInfo is Map<String, dynamic>) {
+              final replyToId =
+                  replyInfo['ReplayChatEntryId']?.toString() ??
+                  replyInfo['InitialChatEntryId']?.toString();
+              log('📝 This is a reply to message: $replyToId');
+            }
+          }
+        } catch (e) {
+          log('⚠️ Error parsing reply data: $e');
+        }
+      }
     }
 
     if (state.chatEntry == null) {
