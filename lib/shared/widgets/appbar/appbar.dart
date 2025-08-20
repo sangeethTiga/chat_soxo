@@ -323,6 +323,7 @@ PreferredSizeWidget buildAppBarWithProfile(
   BuildContext context,
   Map<String, dynamic>? arguments, {
   final String? title,
+  final String? image,
 }) {
   return PreferredSize(
     preferredSize: Size.fromHeight(65.h),
@@ -363,7 +364,11 @@ PreferredSizeWidget buildAppBarWithProfile(
                 6.horizontalSpace,
 
                 // Chat avatar
-                ChatAvatar(name: title ?? '', size: 40.h),
+                CachedChatAvatar(
+                  name: title ?? '',
+                  size: 40.h,
+                  imageUrl: image,
+                ),
                 6.horizontalSpace,
 
                 // Chat info section with improved participant display

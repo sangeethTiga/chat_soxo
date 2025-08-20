@@ -518,6 +518,7 @@ class _ChatListItem extends StatelessWidget {
       extra: {
         "title": state.chatList?[index].title,
         "chat_id": state.chatList?[index].chatId,
+        "image": state.chatList?[index].otherDetail1,
       },
     );
   }

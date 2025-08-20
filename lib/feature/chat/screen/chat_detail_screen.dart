@@ -78,7 +78,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: buildAppBarWithProfile(context, {}, title: widget.data?['title']),
+      appBar: buildAppBarWithProfile(
+        context,
+        {},
+        title: widget.data?['title'],
+        image: widget.data?['image'],
+      ),
       body: BlocListener<ChatCubit, ChatState>(
         listenWhen: (previous, current) =>
             previous.errorMessage != current.errorMessage,
