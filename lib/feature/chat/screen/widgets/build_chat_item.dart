@@ -20,14 +20,14 @@ Widget buildChatItem({
     ),
     child: Row(
       children: [
-        ChatAvatar(name: name ?? '', size: 50, imageUrl: imageUrl),
+        CachedChatAvatar(name: name ?? '', size: 40, imageUrl: imageUrl),
 
         12.horizontalSpace,
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(name ?? '', style: FontPalette.hW600S14),
+              Text(name ?? '', style: FontPalette.hW600S13),
               SizedBox(height: 4),
               Text(
                 message ?? '',

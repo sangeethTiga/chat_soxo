@@ -4,6 +4,7 @@ import 'package:injectable/injectable.dart';
 import 'package:soxo_chat/feature/auth/domain/models/auth_res/auth_response.dart';
 import 'package:soxo_chat/feature/auth/domain/repositories/auth_repositories.dart';
 import 'package:soxo_chat/shared/app/enums/api_fetch_status.dart';
+import 'package:soxo_chat/shared/utils/auth/auth_utils.dart';
 
 part 'auth_state.dart';
 
@@ -25,5 +26,14 @@ class AuthCubit extends Cubit<AuthState> {
       );
     }
     emit(state.copyWith(isSignIn: ApiFetchStatus.failed));
+  }
+
+  String? _cachedUserName;
+
+  Future<String> getUserName() async {
+    if (_cachedUserName != null) return _cachedUserName!;
+    final user = await AuthUtils.instance.readUserData();
+    _cachedUserName = user?.result?.userName;
+    return _cachedUserName ?? 'Unknown';
   }
 }

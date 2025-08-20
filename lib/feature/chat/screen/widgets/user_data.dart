@@ -64,10 +64,10 @@ class ChatColorGenerator {
   }
 
   static String generateInitials(String name) {
-    if (name.isEmpty) return 'U';
+    if (name.isEmpty) return '';
 
     String cleanName = name.trim();
-    if (cleanName.isEmpty) return 'U';
+    if (cleanName.isEmpty) return '';
 
     List<String> words = cleanName
         .split(' ')
@@ -124,30 +124,10 @@ class ChatAvatar extends StatelessWidget {
           height: size,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(size / 2),
-            // boxShadow: [
-            //   BoxShadow(
-            //     color: Colors.black.withOpacity(0.1),
-            //     blurRadius: 4,
-            //     offset: const Offset(0, 2),
-            //   ),
-            // ],
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12.r),
             child: Image.memory(imageBytes),
-            // child: Image.network(
-            //   imageUrl!,
-            //   width: size,
-            //   height: size,
-            //   fit: BoxFit.cover,
-            //   errorBuilder: (context, error, stackTrace) {
-            //     return _buildInitialsAvatar();
-            //   },
-            //   loadingBuilder: (context, child, loadingProgress) {
-            //     if (loadingProgress == null) return child;
-            //     return _buildInitialsAvatar();
-            //   },
-            // ),
           ),
         );
       }
@@ -203,6 +183,175 @@ class ChatAvatar extends StatelessWidget {
               ),
         ),
       ),
+    );
+  }
+}
+
+class CachedChatAvatar extends StatelessWidget {
+  final String name;
+  final String? imageUrl;
+  final double size;
+  final TextStyle? textStyle;
+  final bool useGradient;
+
+  const CachedChatAvatar({
+    super.key,
+    required this.name,
+    this.imageUrl,
+    this.size = 40,
+    this.textStyle,
+    this.useGradient = true,
+  });
+
+  static final Map<String, Uint8List> _imageCache = {};
+  static final Map<String, bool> _invalidUrlCache = {};
+
+  @override
+  Widget build(BuildContext context) {
+    // Check if URL is known to be invalid
+    if (imageUrl != null && _invalidUrlCache.containsKey(imageUrl!)) {
+      return _buildInitialsAvatar();
+    }
+
+    // Check cache first
+    if (imageUrl != null && _imageCache.containsKey(imageUrl!)) {
+      return _ImageAvatar(imageBytes: _imageCache[imageUrl!]!, size: size);
+    }
+
+    // Process and cache image
+    if (imageUrl != null && imageUrl!.isNotEmpty) {
+      try {
+        final List decodedList = jsonDecode(imageUrl!);
+        if (decodedList.isNotEmpty &&
+            decodedList.first['ProfilePicture'] != null) {
+          final base64Image = decodedList.first['ProfilePicture'] as String;
+          final imageBytes = base64Decode(base64Image);
+
+          // Cache the result
+          _imageCache[imageUrl!] = imageBytes;
+
+          return _ImageAvatar(imageBytes: imageBytes, size: size);
+        }
+      } catch (e) {
+        // Cache invalid URL to avoid reprocessing
+        _invalidUrlCache[imageUrl!] = true;
+      }
+    }
+
+    return _buildInitialsAvatar();
+  }
+
+  Widget _buildInitialsAvatar() {
+    final primaryColor = ChatColorGenerator.generateColorFromName(name);
+    final initials = ChatColorGenerator.generateInitials(name);
+
+    return _InitialsAvatar(
+      size: size,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12.r),
+        gradient: useGradient
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  primaryColor,
+                  ChatColorGenerator.generateSecondaryColor(primaryColor),
+                ],
+              )
+            : null,
+        color: useGradient ? null : primaryColor,
+      ),
+      textStyle:
+          textStyle ??
+          TextStyle(
+            color: Colors.white,
+            fontSize: size * 0.4,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+            shadows: [
+              Shadow(
+                color: Colors.black.withOpacity(0.25),
+                offset: const Offset(0, 1),
+                blurRadius: 2,
+              ),
+            ],
+          ),
+      initials: initials,
+    );
+  }
+
+  static void clearCache() {
+    _imageCache.clear();
+    _invalidUrlCache.clear();
+  }
+}
+
+class _InitialsAvatar extends StatelessWidget {
+  final double size;
+  final BoxDecoration decoration;
+  final TextStyle textStyle;
+  final String initials;
+
+  const _InitialsAvatar({
+    required this.size,
+    required this.decoration,
+    required this.textStyle,
+    required this.initials,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: decoration,
+      child: Center(child: Text(initials, style: textStyle)),
+    );
+  }
+}
+
+class _ImageAvatar extends StatelessWidget {
+  final Uint8List imageBytes;
+  final double size;
+
+  const _ImageAvatar({required this.imageBytes, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(size / 2)),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12.r),
+        child: Image.memory(
+          imageBytes,
+          fit: BoxFit.cover,
+          gaplessPlayback: true, // Prevents flickering during rebuilds
+          errorBuilder: (context, error, stackTrace) {
+            return _FallbackAvatar(size: size);
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _FallbackAvatar extends StatelessWidget {
+  final double size;
+
+  const _FallbackAvatar({required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12.r),
+        color: Colors.grey[400],
+      ),
+      child: Icon(Icons.person, size: size * 0.6, color: Colors.white),
     );
   }
 }

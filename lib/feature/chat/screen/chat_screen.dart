@@ -36,18 +36,41 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   final ScrollController _tabScrollController = ScrollController();
 
-  final int _selectedTabIndex = 0;
+  // Cache static decorations
+  late final BoxDecoration _backgroundDecoration;
+  late final BoxDecoration _containerDecoration;
 
   @override
   void initState() {
     super.initState();
+    _initializeDecorations();
     _initializeAnimations();
+    _loadData();
     _startAnimations();
   }
 
-  void _initializeAnimations() {
+  void _initializeDecorations() {
+    _backgroundDecoration = const BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color(0xFFF2F2F2), Color(0xFFB7E8CA)],
+      ),
+    );
+
+    _containerDecoration = BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+    );
+  }
+
+  void _loadData() {
+    // Load data only once
     context.read<ChatCubit>().getChatList();
     context.read<PersonListsCubit>().getPersonList();
+  }
+
+  void _initializeAnimations() {
     _containerAnimationController = AnimationController(
       duration: const Duration(milliseconds: 1000),
       vsync: this,
@@ -118,80 +141,14 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     final result = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16.r),
-          ),
-          title: Row(
-            children: [
-              Icon(Icons.logout_rounded, color: Colors.red[600], size: 24.sp),
-              SizedBox(width: 12.w),
-              Text(
-                'Logout',
-                style: TextStyle(
-                  fontSize: 20.sp,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[800],
-                ),
-              ),
-            ],
-          ),
-          content: Text(
-            'Are you sure you want to logout from your account?',
-            style: TextStyle(
-              fontSize: 16.sp,
-              color: Colors.grey[600],
-              height: 1.4,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-              ),
-              child: Text(
-                'Cancel',
-                style: TextStyle(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ),
-            SizedBox(width: 8.w),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop(true);
-
-                Helper().logout(context);
-                if (context.mounted) {
-                  context.go('/login');
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red[600],
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-                elevation: 0,
-              ),
-              child: Text(
-                'Logout',
-                style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ],
-        );
-      },
+      builder: (BuildContext context) => _LogoutDialog(),
     );
     return result ?? false;
+  }
+
+  void _onTabTapped(String value) {
+    HapticFeedback.lightImpact();
+    context.read<ChatCubit>().selectedTab(value);
   }
 
   @override
@@ -210,25 +167,26 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           isLeading: false,
         ),
         body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFFF2F2F2), Color(0xFFB7E8CA)],
-            ),
-          ),
+          decoration: _backgroundDecoration,
           child: Column(
             children: [
               Expanded(
                 child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(24.r),
-                    ),
-                  ),
+                  decoration: _containerDecoration,
                   child: Column(
-                    children: [_buildAnimatedTabs(), _buildAnimatedChatList()],
+                    children: [
+                      _AnimatedTabs(
+                        tabAnimationController: _tabAnimationController,
+                        tabSlideAnimation: _tabSlideAnimation,
+                        tabScrollController: _tabScrollController,
+                        onTabTapped: _onTabTapped,
+                      ),
+                      _AnimatedChatList(
+                        listAnimationController: _listAnimationController,
+                        listSlideAnimation: _listSlideAnimation,
+                        scrollController: _scrollController,
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -240,55 +198,119 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       ),
     );
   }
+}
 
-  Widget _buildAnimatedTabs() {
+// Extracted to prevent rebuilds of the entire dialog
+class _LogoutDialog extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+      title: Row(
+        children: [
+          Icon(Icons.logout_rounded, color: Colors.red[600], size: 24.sp),
+          SizedBox(width: 12.w),
+          Text(
+            'Logout',
+            style: TextStyle(
+              fontSize: 20.sp,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[800],
+            ),
+          ),
+        ],
+      ),
+      content: Text(
+        'Are you sure you want to logout from your account?',
+        style: TextStyle(fontSize: 16.sp, color: Colors.grey[600], height: 1.4),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          style: TextButton.styleFrom(
+            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8.r),
+            ),
+          ),
+          child: Text(
+            'Cancel',
+            style: TextStyle(
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[600],
+            ),
+          ),
+        ),
+        SizedBox(width: 8.w),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.of(context).pop(true);
+            Helper().logout(context);
+            if (context.mounted) {
+              context.go('/login');
+            }
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red[600],
+            foregroundColor: Colors.white,
+            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8.r),
+            ),
+            elevation: 0,
+          ),
+          child: Text(
+            'Logout',
+            style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// Extracted tabs section to prevent unnecessary rebuilds
+class _AnimatedTabs extends StatelessWidget {
+  final AnimationController tabAnimationController;
+  final Animation<double> tabSlideAnimation;
+  final ScrollController tabScrollController;
+  final Function(String) onTabTapped;
+
+  const _AnimatedTabs({
+    required this.tabAnimationController,
+    required this.tabSlideAnimation,
+    required this.tabScrollController,
+    required this.onTabTapped,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return BlocBuilder<ChatCubit, ChatState>(
+      buildWhen: (previous, current) =>
+          previous.selectedTab != current.selectedTab,
       builder: (context, state) {
         return AnimatedBuilder(
-          animation: _tabAnimationController,
+          animation: tabAnimationController,
           builder: (context, child) {
             return Transform.translate(
-              offset: Offset(_tabSlideAnimation.value, 0),
+              offset: Offset(tabSlideAnimation.value, 0),
               child: Container(
                 padding: EdgeInsets.fromLTRB(16.w, 20.h, 16.w, 12.h),
                 child: SizedBox(
                   height: 30.h,
                   child: ListView.separated(
-                    controller: _tabScrollController,
+                    controller: tabScrollController,
                     scrollDirection: Axis.horizontal,
                     physics: const BouncingScrollPhysics(),
                     itemCount: chatTab.length,
                     separatorBuilder: (context, index) => SizedBox(width: 6.w),
                     itemBuilder: (context, index) {
-                      return TweenAnimationBuilder<double>(
-                        duration: Duration(milliseconds: 600 + (index * 100)),
-                        tween: Tween(begin: 0.0, end: 1.0),
-                        builder: (context, value, child) {
-                          final clampedValue = value.clamp(0.0, 1.0);
-
-                          return Transform.scale(
-                            scale: 0.8 + (0.2 * clampedValue),
-                            child: Opacity(
-                              opacity: clampedValue,
-                              child: GestureDetector(
-                                onTap: () => _onTabTapped(chatTab[index].type),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeInOut,
-                                  transform: Matrix4.identity()
-                                    ..scale(
-                                      _selectedTabIndex == index ? 1.00 : 1.0,
-                                    ),
-                                  child: buildTab(
-                                    chatTab[index].name,
-                                    state.selectedTab == chatTab[index].type,
-                                    width: index == 0 ? 20.w : 8.w,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
+                      return _TabItem(
+                        index: index,
+                        tab: chatTab[index],
+                        isSelected: state.selectedTab == chatTab[index].type,
+                        onTap: () => onTabTapped(chatTab[index].type),
                       );
                     },
                   ),
@@ -300,19 +322,82 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       },
     );
   }
+}
 
-  Widget _buildAnimatedChatList() {
+// Individual tab item to prevent rebuilding all tabs when one changes
+class _TabItem extends StatelessWidget {
+  final int index;
+  final dynamic tab;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _TabItem({
+    required this.index,
+    required this.tab,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      duration: Duration(milliseconds: 600 + (index * 100)),
+      tween: Tween(begin: 0.0, end: 1.0),
+      builder: (context, value, child) {
+        final clampedValue = value.clamp(0.0, 1.0);
+
+        return Transform.scale(
+          scale: 0.8 + (0.2 * clampedValue),
+          child: Opacity(
+            opacity: clampedValue,
+            child: GestureDetector(
+              onTap: onTap,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                transform: Matrix4.identity()..scale(isSelected ? 1.00 : 1.0),
+                child: buildTab(
+                  tab.name,
+                  isSelected,
+                  width: index == 0 ? 20.w : 8.w,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// Extracted chat list to prevent unnecessary rebuilds
+class _AnimatedChatList extends StatelessWidget {
+  final AnimationController listAnimationController;
+  final Animation<double> listSlideAnimation;
+  final ScrollController scrollController;
+
+  const _AnimatedChatList({
+    required this.listAnimationController,
+    required this.listSlideAnimation,
+    required this.scrollController,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Expanded(
       child: AnimatedBuilder(
-        animation: _listAnimationController,
+        animation: listAnimationController,
         builder: (context, child) {
           return Transform.translate(
-            offset: Offset(0, _listSlideAnimation.value),
+            offset: Offset(0, listSlideAnimation.value),
             child: Opacity(
-              opacity: _listAnimationController.value,
+              opacity: listAnimationController.value,
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16.w),
                 child: BlocBuilder<ChatCubit, ChatState>(
+                  buildWhen: (previous, current) =>
+                      previous.chatList != current.chatList ||
+                      previous.selectedTab != current.selectedTab,
                   builder: (context, state) {
                     final filteredChats = state.chatList ?? [];
 
@@ -322,44 +407,11 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                       );
                     }
 
-                    return ListView.separated(
-                      controller: _scrollController,
-                      physics: const BouncingScrollPhysics(),
-                      padding: EdgeInsets.only(bottom: 100.h),
-                      itemCount: filteredChats.length,
-                      separatorBuilder: (context, index) =>
-                          SizedBox(height: 0.h),
-                      itemBuilder: (context, index) {
-                        final data = filteredChats[index];
-
-                        final delay = (index * 0.1).clamp(
-                          0.0,
-                          1.0,
-                        ); // Normalize delay
-                        final itemProgress =
-                            (_listAnimationController.value - delay).clamp(
-                              0.0,
-                              1.0,
-                            );
-                        final itemTranslate = (1 - itemProgress) * 30;
-                        return Transform.translate(
-                          offset: Offset(0, itemTranslate),
-                          child: Opacity(
-                            opacity: _listAnimationController.value,
-                            child: GestureDetector(
-                              onTap: () =>
-                                  onChatItemTappedWithGo(index, state, context),
-                              child: buildChatItem(
-                                imageUrl: data.otherDetail1 ?? '',
-                                name: data.title ?? '',
-                                message: data.description ?? '',
-                                time: getFormattedDate(data.updatedAt ?? ''),
-                                unreadCount: data.unreadCount,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
+                    return _ChatListView(
+                      filteredChats: filteredChats,
+                      scrollController: scrollController,
+                      listAnimationController: listAnimationController,
+                      state: state,
                     );
                   },
                 ),
@@ -370,45 +422,124 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       ),
     );
   }
+}
 
-  void _onTabTapped(String value) {
-    HapticFeedback.lightImpact();
-    context.read<ChatCubit>().selectedTab(value);
+// Extracted ListView to prevent unnecessary rebuilds
+class _ChatListView extends StatelessWidget {
+  final List<dynamic> filteredChats;
+  final ScrollController scrollController;
+  final AnimationController listAnimationController;
+  final ChatState state;
+
+  const _ChatListView({
+    required this.filteredChats,
+    required this.scrollController,
+    required this.listAnimationController,
+    required this.state,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      controller: scrollController,
+      physics: const BouncingScrollPhysics(),
+      padding: EdgeInsets.only(bottom: 100.h),
+      itemCount: filteredChats.length,
+      separatorBuilder: (context, index) => SizedBox(height: 0.h),
+      itemBuilder: (context, index) {
+        final data = filteredChats[index];
+        return _ChatListItem(
+          index: index,
+          data: data,
+          state: state,
+          listAnimationController: listAnimationController,
+        );
+      },
+    );
   }
 }
 
-void onChatItemTappedWithGo(
-  int index,
-  ChatState state,
-  BuildContext context,
-) async {
-  HapticFeedback.selectionClick();
-  context.read<ChatCubit>().getChatEntry(chatId: state.chatList?[index].chatId);
-  context.read<ChatCubit>().initStateClear();
+// Individual chat item to prevent rebuilding entire list
+class _ChatListItem extends StatelessWidget {
+  final int index;
+  final dynamic data;
+  final ChatState state;
+  final AnimationController listAnimationController;
 
-  context.push(
-    routeChatDetail,
-    extra: {
-      "title": state.chatList?[index].title,
-      "chat_id": state.chatList?[index].chatId,
-    },
-  );
+  const _ChatListItem({
+    required this.index,
+    required this.data,
+    required this.state,
+    required this.listAnimationController,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final delay = (index * 0.1).clamp(0.0, 1.0);
+
+    return AnimatedBuilder(
+      animation: listAnimationController,
+      builder: (context, child) {
+        final itemProgress = (listAnimationController.value - delay).clamp(
+          0.0,
+          1.0,
+        );
+        final itemTranslate = (1 - itemProgress) * 30;
+
+        return Transform.translate(
+          offset: Offset(0, itemTranslate),
+          child: Opacity(
+            opacity: listAnimationController.value,
+            child: GestureDetector(
+              onTap: () => _onChatItemTapped(context, index, state),
+              child: buildChatItem(
+                imageUrl: data.otherDetail1 ?? '',
+                name: data.title ?? '',
+                message: data.description ?? '',
+                time: getFormattedDate(data.updatedAt ?? ''),
+                unreadCount: data.unreadCount,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _onChatItemTapped(BuildContext context, int index, ChatState state) {
+    HapticFeedback.selectionClick();
+    context.read<ChatCubit>().getChatEntry(
+      chatId: state.chatList?[index].chatId,
+    );
+    context.read<ChatCubit>().initStateClear();
+
+    context.push(
+      routeChatDetail,
+      extra: {
+        "title": state.chatList?[index].title,
+        "chat_id": state.chatList?[index].chatId,
+      },
+    );
+  }
 }
 
+// Utility class remains the same but can be optimized further
 class PdfNameExtractor {
-  // Method 1: Extract filename from URL
+  // Cached regex patterns for better performance
+  static final RegExp _pdfExtensionRegex = RegExp(
+    r'\.pdf$',
+    caseSensitive: false,
+  );
+
   static String extractFileNameFromUrl(String fileUrl) {
     try {
-      // Remove query parameters and fragments
       final uri = Uri.parse(fileUrl);
       String fileName = path.basename(uri.path);
 
-      // If no extension, add .pdf
-      if (!fileName.toLowerCase().endsWith('.pdf')) {
+      if (!_pdfExtensionRegex.hasMatch(fileName)) {
         fileName = '$fileName.pdf';
       }
 
-      // If empty or just extension, use default
       if (fileName.isEmpty || fileName == '.pdf') {
         return 'Document.pdf';
       }
@@ -419,16 +550,10 @@ class PdfNameExtractor {
     }
   }
 
-  // Method 2: Extract from file path
   static String extractFileNameFromPath(String filePath) {
     try {
-      String fileName = path.basename(filePath);
-
-      if (fileName.isEmpty) {
-        return 'Document.pdf';
-      }
-
-      return fileName;
+      final String fileName = path.basename(filePath);
+      return fileName.isEmpty ? 'Document.pdf' : fileName;
     } catch (e) {
       return 'Document.pdf';
     }

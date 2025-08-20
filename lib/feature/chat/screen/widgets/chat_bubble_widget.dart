@@ -59,14 +59,23 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
   double _dragDistance = 0.0;
   bool _isDragging = false;
   bool _hasTriggeredReply = false;
+  int? _currentUserId;
 
   static const double _replyThreshold = 60.0;
   static const double _maxDragDistance = 100.0;
+
+  // Cache computed values
+  late final Color _bubbleColor;
+  late final Color _replyBorderColor;
+  late final Color _replyBackgroundColor;
+  bool _isReplyFromMe = false;
 
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
+    _initializeColors();
+    _loadCurrentUserId();
   }
 
   void _initializeAnimations() {
@@ -85,6 +94,49 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
         curve: Curves.elasticOut,
       ),
     );
+  }
+
+  void _initializeColors() {
+    if (widget.isBeingRepliedTo) {
+      _bubbleColor = widget.isSent
+          ? const Color(0xFFE6F7FF)
+          : const Color(0xFFF0F8FF);
+      _replyBorderColor = widget.isSent
+          ? Colors.green[600]!
+          : Colors.blue[600]!;
+      _replyBackgroundColor = widget.isSent
+          ? Colors.green.withOpacity(0.15)
+          : Colors.blue.withOpacity(0.15);
+    } else {
+      _bubbleColor = widget.isSent
+          ? const Color(0xFFE6F2EC)
+          : Colors.grey[200]!;
+      _replyBorderColor = widget.isSent ? Colors.green : Colors.blue;
+      _replyBackgroundColor = widget.isSent
+          ? Colors.green.withOpacity(0.1)
+          : Colors.blue.withOpacity(0.1);
+    }
+  }
+
+  Future<void> _loadCurrentUserId() async {
+    try {
+      final user = await AuthUtils.instance.readUserData();
+      final userId = int.tryParse(user?.result?.userId?.toString() ?? '0') ?? 0;
+      if (mounted) {
+        setState(() {
+          _currentUserId = userId;
+          _isReplyFromMe = widget.replyToMessage?.senderId == userId;
+        });
+      }
+    } catch (e) {
+      log('Error getting current user ID: $e');
+      if (mounted) {
+        setState(() {
+          _currentUserId = 0;
+          _isReplyFromMe = false;
+        });
+      }
+    }
   }
 
   @override
@@ -155,7 +207,12 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
         margin: EdgeInsets.symmetric(vertical: 2.h, horizontal: 4.w),
         child: Stack(
           children: [
-            if (_dragDistance > 0) _buildReplyIcon(),
+            if (_dragDistance > 0)
+              _ReplyIcon(
+                isSent: widget.isSent,
+                hasTriggeredReply: _hasTriggeredReply,
+                animation: _replyIconAnimation,
+              ),
             AnimatedContainer(
               duration: _isDragging
                   ? Duration.zero
@@ -166,511 +223,20 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
                   widget.isSent ? -_dragDistance : _dragDistance,
                   0.0,
                 ),
-              child: _buildMessageContainer(),
+              child: _MessageContainer(
+                widget: widget,
+                bubbleColor: _bubbleColor,
+                replyBorderColor: _replyBorderColor,
+                replyBackgroundColor: _replyBackgroundColor,
+                isReplyFromMe: _isReplyFromMe,
+                currentUserId: _currentUserId,
+              ),
             ),
           ],
         ),
       ),
     );
   }
-
-  Widget _buildReplyIcon() {
-    return Positioned(
-      right: widget.isSent ? 20.w : null,
-      left: widget.isSent ? null : 20.w,
-      top: 0,
-      bottom: 0,
-      child: AnimatedBuilder(
-        animation: _replyIconAnimation,
-        builder: (context, child) {
-          return Center(
-            child: Transform.scale(
-              scale: 0.5 + (_replyIconAnimation.value * 0.5),
-              child: Container(
-                width: 40.w,
-                height: 40.w,
-                decoration: BoxDecoration(
-                  color: _hasTriggeredReply
-                      ? Colors.blue
-                      : Colors.grey.withOpacity(0.6),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.reply, color: Colors.white, size: 20),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildMessageContainer() {
-    return Container(
-      padding: widget.isBeingRepliedTo ? EdgeInsets.all(6.w) : EdgeInsets.zero,
-      decoration: BoxDecoration(
-        color: widget.isBeingRepliedTo
-            ? Colors.green.withOpacity(0.15)
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(16.r),
-        border: widget.isBeingRepliedTo
-            ? Border.all(color: Colors.blue.withOpacity(0.6), width: 2.w)
-            : null,
-        boxShadow: widget.isBeingRepliedTo
-            ? [
-                BoxShadow(
-                  color: Colors.blue.withOpacity(0.3),
-                  blurRadius: 8,
-                  spreadRadius: 2,
-                ),
-              ]
-            : null,
-      ),
-      child: Column(
-        crossAxisAlignment: widget.isSent
-            ? CrossAxisAlignment.end
-            : CrossAxisAlignment.start,
-        children: [
-          if (widget.isBeingRepliedTo) _buildReplyStatusIndicator(),
-          _buildMainBubbleWithReplyAlternative(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildReplyStatusIndicator() {
-    return Container(
-      margin: EdgeInsets.only(
-        left: widget.isSent ? 0 : 50.w,
-        right: widget.isSent ? 50.w : 0,
-        bottom: 4.h,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.reply_rounded,
-            size: 14,
-            color: Colors.blue.withOpacity(0.8),
-          ),
-          SizedBox(width: 4.w),
-          Text(
-            'Replying to this message',
-            style: TextStyle(
-              fontSize: 11.sp,
-              color: Colors.blue.withOpacity(0.8),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Replace your _buildMainBubbleWithReply method with this corrected version:
-
-  // Widget _buildMainBubbleWithReply() {
-  //   Color bubbleColor;
-  //   if (widget.isBeingRepliedTo) {
-  //     bubbleColor = widget.isSent
-  //         ? const Color(0xFFE6F7FF)
-  //         : const Color(0xFFF0F8FF);
-  //   } else {
-  //     bubbleColor = widget.isSent ? const Color(0xFFE6F2EC) : Colors.grey[200]!;
-  //   }
-
-  //   return Row(
-  //     mainAxisAlignment: widget.isSent
-  //         ? MainAxisAlignment.end
-  //         : MainAxisAlignment.start,
-  //     crossAxisAlignment: CrossAxisAlignment.end,
-  //     children: [
-  //       // Show avatar only for received messages (not sent by current user)
-  //       if (!widget.isSent) ...[
-  //         ChatAvatar(
-  //           name: widget.messageData?.sender?.imageUrl ?? '',
-  //           // You can also pass other properties like:
-  //           // imageUrl: widget.messageData?.sender?.imageUrl,
-  //           // userName: widget.messageData?.sender?.name,
-  //         ),
-  //         SizedBox(width: 8.w), // Add some spacing
-  //       ],
-
-  //       // Message bubble
-  //       Flexible(
-  //         child: Bubble(
-  //           margin: BubbleEdges.only(top: 6),
-  //           alignment: widget.isSent ? Alignment.topRight : Alignment.topLeft,
-  //           nipWidth: 18,
-  //           nipHeight: 10,
-  //           radius: Radius.circular(12.r),
-  //           nip: widget.isSent ? BubbleNip.rightTop : BubbleNip.leftTop,
-  //           color: bubbleColor,
-  //           child: SizedBox(
-  //             width: 220.w,
-  //             child: Column(
-  //               crossAxisAlignment: CrossAxisAlignment.start,
-  //               children: [
-  //                 if (widget.replyToMessage != null) _buildInlineReplyPreview(),
-  //                 _buildMessageContent(),
-  //                 if (widget.chatMedias != null &&
-  //                     widget.chatMedias!.isNotEmpty) ...[
-  //                   5.verticalSpace,
-  //                   _buildMediaAttachments(),
-  //                 ],
-  //                 SizedBox(height: 4.h),
-  //                 _buildTimestampWithStatus(),
-  //               ],
-  //             ),
-  //           ),
-  //         ),
-  //       ),
-
-  //       // Show avatar only for sent messages (sent by current user)
-  //       if (widget.isSent) ...[
-  //         SizedBox(width: 8.w), // Add some spacing
-  //         FutureBuilder(
-  //           future: AuthUtils.instance.readUserData(),
-  //           builder: (context, snapshot) {
-  //             final currentUser = snapshot.data?.result;
-  //             return ChatAvatar(name: currentUser?.userName ?? '');
-  //           },
-  //         ),
-  //       ],
-  //     ],
-  //   );
-  // }
-
-  // Alternative approach if you want to show both users' avatars differently:
-  Widget _buildMainBubbleWithReplyAlternative() {
-    Color bubbleColor;
-    if (widget.isBeingRepliedTo) {
-      bubbleColor = widget.isSent
-          ? const Color(0xFFE6F7FF)
-          : const Color(0xFFF0F8FF);
-    } else {
-      bubbleColor = widget.isSent ? const Color(0xFFE6F2EC) : Colors.grey[200]!;
-    }
-
-    return Row(
-      mainAxisAlignment: widget.isSent
-          ? MainAxisAlignment.end
-          : MainAxisAlignment.start,
-      crossAxisAlignment:
-          CrossAxisAlignment.start, // Changed to start for top alignment
-      children: [
-        // Left side avatar (for received messages)
-        if (!widget.isSent) ...[
-          Padding(
-            padding: EdgeInsets.only(top: 6.h), // Match bubble's top margin
-            child: _buildUserAvatar(isCurrentUser: false),
-          ),
-          SizedBox(width: 8.w),
-        ],
-
-        // Message bubble
-        Flexible(
-          child: Bubble(
-            margin: BubbleEdges.only(top: 6),
-            alignment: widget.isSent ? Alignment.topRight : Alignment.topLeft,
-            nipWidth: 18,
-            nipHeight: 10,
-            radius: Radius.circular(12.r),
-            nip: widget.isSent ? BubbleNip.rightTop : BubbleNip.leftTop,
-            color: bubbleColor,
-            child: SizedBox(
-              width: 260.w,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (!widget.isSent &&
-                      widget.messageData?.sender?.name != null) ...[
-                    Text(
-                      widget.messageData!.sender!.name!,
-                      style: TextStyle(
-                        fontSize: 11.sp,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    SizedBox(height: 2.h),
-                  ],
-                  if (widget.replyToMessage != null) _buildInlineReplyPreview(),
-                  _buildMessageContent(),
-                  if (widget.chatMedias != null &&
-                      widget.chatMedias!.isNotEmpty) ...[
-                    5.verticalSpace,
-                    _buildMediaAttachments(),
-                  ],
-                  SizedBox(height: 4.h),
-                  _buildTimestampWithStatus(),
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        // Right side avatar (for sent messages)
-        if (widget.isSent) ...[
-          SizedBox(width: 8.w),
-          Padding(
-            padding: EdgeInsets.only(top: 6.h), // Match bubble's top margin
-            child: _buildUserAvatar(isCurrentUser: true),
-          ),
-        ],
-      ],
-    );
-  }
-
-  // Helper method to build user avatar
-  Widget _buildUserAvatar({required bool isCurrentUser}) {
-    if (isCurrentUser) {
-      return FutureBuilder(
-        future: AuthUtils.instance.readUserData(),
-        builder: (context, snapshot) {
-          final currentUser = snapshot.data?.result;
-          return ChatAvatar(size: 26.h, name: currentUser?.userName ?? '');
-        },
-      );
-    } else {
-      // For other users (received messages)
-      return ChatAvatar(
-        size: 26.h,
-        name: widget.messageData?.sender?.name ?? '',
-        imageUrl: widget.messageData?.sender?.imageUrl,
-      );
-    }
-  }
-
-  // // Helper method to build user avatar
-  // Widget _buildUserAvatar({required bool isCurrentUser}) {
-  //   if (isCurrentUser) {
-  //     // For current user (sent messages)
-  //     return FutureBuilder(
-  //       future: AuthUtils.instance.readUserData(),
-  //       builder: (context, snapshot) {
-  //         final currentUser = snapshot.data?.result;
-  //         return ChatAvatar(name: currentUser?.userName ?? "");
-  //       },
-  //     );
-  //   } else {
-  //     // For other users (received messages)
-  //     return ChatAvatar(
-  //       size: 30.h,
-  //       name: widget.messageData?.sender?.imageUrl ?? '',
-  //       imageUrl: widget.messageData?.sender?.imageUrl,
-  //     );
-  //   }
-  // }
-
-  Widget _buildTimestampWithStatus() {
-    return Row(
-      mainAxisAlignment: widget.isSent
-          ? MainAxisAlignment.end
-          : MainAxisAlignment.start,
-      children: [
-        if (widget.isBeingRepliedTo) ...[
-          Icon(Icons.reply, size: 10, color: Colors.blue.withOpacity(0.7)),
-          SizedBox(width: 2.w),
-        ],
-        Text(
-          widget.timestamp,
-          style: TextStyle(
-            fontSize: 10,
-            color: widget.isBeingRepliedTo
-                ? Colors.blue[600]
-                : Colors.grey[600],
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Replace your _buildInlineReplyPreview method with this corrected version:
-
-  Widget _buildInlineReplyPreview() {
-    final replyMessage = widget.replyToMessage!;
-
-    return FutureBuilder<int?>(
-      future: _getCurrentUserId(),
-      builder: (context, snapshot) {
-        final currentUserId = snapshot.data ?? 0;
-
-        final isReplyFromMe = replyMessage.senderId == currentUserId;
-
-        final replyBorderColor = widget.isBeingRepliedTo
-            ? (widget.isSent ? Colors.green[600] : Colors.blue[600])
-            : (widget.isSent ? Colors.green : Colors.blue);
-
-        final replyBackgroundColor = widget.isBeingRepliedTo
-            ? (widget.isSent
-                  ? Colors.green.withOpacity(0.15)
-                  : Colors.blue.withOpacity(0.15))
-            : (widget.isSent
-                  ? Colors.green.withOpacity(0.1)
-                  : Colors.blue.withOpacity(0.1));
-
-        return Container(
-          margin: EdgeInsets.only(bottom: 8.h),
-          padding: EdgeInsets.all(8.w),
-          decoration: BoxDecoration(
-            color: replyBackgroundColor,
-            borderRadius: BorderRadius.circular(6.r),
-            border: Border(
-              left: BorderSide(
-                color: replyBorderColor!,
-                width: widget.isBeingRepliedTo ? 4.w : 3.w,
-              ),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.reply, size: 12, color: replyBorderColor),
-                  SizedBox(width: 4.w),
-                  Text(
-                    isReplyFromMe
-                        ? 'You'
-                        : (replyMessage.sender?.name ?? 'User'),
-                    style: TextStyle(
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.w600,
-                      color: replyBorderColor.withOpacity(0.9),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 2.h),
-              Text(
-                replyMessage.content ?? '',
-                style: TextStyle(
-                  fontSize: 11.sp,
-                  color: Colors.grey[600],
-                  fontStyle: FontStyle.italic,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (replyMessage.chatMedias?.isNotEmpty == true)
-                Padding(
-                  padding: EdgeInsets.only(top: 2.h),
-                  child: Row(
-                    children: [
-                      Icon(
-                        _getMediaIcon(replyMessage.chatMedias!.first),
-                        size: 10,
-                        color: Colors.grey[500],
-                      ),
-                      SizedBox(width: 2.w),
-                      Text(
-                        _getMediaTypeText(replyMessage.chatMedias!.first),
-                        style: TextStyle(
-                          fontSize: 9.sp,
-                          color: Colors.grey[500],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  // Add this helper method to your ChatBubbleMessage class:
-  Future<int?> _getCurrentUserId() async {
-    try {
-      final user = await AuthUtils.instance.readUserData();
-      return int.tryParse(user?.result?.userId?.toString() ?? '0') ?? 0;
-    } catch (e) {
-      log('Error getting current user ID: $e');
-      return 0;
-    }
-  }
-
-  // Widget _buildInlineReplyPreview() async {
-  //   final replyMessage = widget.replyToMessage!;
-  //   final user = await AuthUtils.instance.readUserData();
-  //   final currentUserId = await user?.result?.userId ?? 0;
-  //   final isReplyFromMe = replyMessage.senderId == widget.messageData?.senderId;
-  //   final replyBorderColor = widget.isBeingRepliedTo
-  //       ? (widget.isSent ? Colors.green[600] : Colors.blue[600])
-  //       : (widget.isSent ? Colors.green : Colors.blue);
-
-  //   final replyBackgroundColor = widget.isBeingRepliedTo
-  //       ? (widget.isSent
-  //             ? Colors.green.withOpacity(0.15)
-  //             : Colors.blue.withOpacity(0.15))
-  //       : (widget.isSent
-  //             ? Colors.green.withOpacity(0.1)
-  //             : Colors.blue.withOpacity(0.1));
-
-  //   return Container(
-  //     margin: EdgeInsets.only(bottom: 8.h),
-  //     padding: EdgeInsets.all(8.w),
-  //     decoration: BoxDecoration(
-  //       color: replyBackgroundColor,
-  //       borderRadius: BorderRadius.circular(6.r),
-  //       border: Border(
-  //         left: BorderSide(
-  //           color: replyBorderColor!,
-  //           width: widget.isBeingRepliedTo ? 4.w : 3.w,
-  //         ),
-  //       ),
-  //     ),
-  //     child: Column(
-  //       crossAxisAlignment: CrossAxisAlignment.start,
-  //       children: [
-  //         Row(
-  //           children: [
-  //             Icon(Icons.reply, size: 12, color: replyBorderColor),
-  //             SizedBox(width: 4.w),
-  //             Text(
-  //               isReplyFromMe ? 'You' : (replyMessage.sender?.name ?? 'User'),
-  //               style: TextStyle(
-  //                 fontSize: 11.sp,
-  //                 fontWeight: FontWeight.w600,
-  //                 color: replyBorderColor.withOpacity(0.9),
-  //               ),
-  //             ),
-  //           ],
-  //         ),
-  //         SizedBox(height: 2.h),
-  //         Text(
-  //           replyMessage.content ?? '',
-  //           style: TextStyle(
-  //             fontSize: 11.sp,
-  //             color: Colors.grey[600],
-  //             fontStyle: FontStyle.italic,
-  //           ),
-  //           maxLines: 2,
-  //           overflow: TextOverflow.ellipsis,
-  //         ),
-  //         if (replyMessage.chatMedias?.isNotEmpty == true)
-  //           Padding(
-  //             padding: EdgeInsets.only(top: 2.h),
-  //             child: Row(
-  //               children: [
-  //                 Icon(
-  //                   _getMediaIcon(replyMessage.chatMedias!.first),
-  //                   size: 10,
-  //                   color: Colors.grey[500],
-  //                 ),
-  //                 SizedBox(width: 2.w),
-  //                 Text(
-  //                   _getMediaTypeText(replyMessage.chatMedias!.first),
-  //                   style: TextStyle(fontSize: 9.sp, color: Colors.grey[500]),
-  //                 ),
-  //               ],
-  //             ),
-  //           ),
-  //       ],
-  //     ),
-  //   );
-  // }
 
   void _showMessageOptions() {
     showModalBottomSheet(
@@ -792,6 +358,338 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
       ),
     );
   }
+}
+
+// Extracted static widgets to prevent rebuilds
+class _ReplyIcon extends StatelessWidget {
+  final bool isSent;
+  final bool hasTriggeredReply;
+  final Animation<double> animation;
+
+  const _ReplyIcon({
+    required this.isSent,
+    required this.hasTriggeredReply,
+    required this.animation,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      right: isSent ? 20.w : null,
+      left: isSent ? null : 20.w,
+      top: 0,
+      bottom: 0,
+      child: AnimatedBuilder(
+        animation: animation,
+        builder: (context, child) {
+          return Center(
+            child: Transform.scale(
+              scale: 0.5 + (animation.value * 0.5),
+              child: Container(
+                width: 40.w,
+                height: 40.w,
+                decoration: BoxDecoration(
+                  color: hasTriggeredReply
+                      ? Colors.blue
+                      : Colors.grey.withOpacity(0.6),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.reply, color: Colors.white, size: 20),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _MessageContainer extends StatelessWidget {
+  final ChatBubbleMessage widget;
+  final Color bubbleColor;
+  final Color replyBorderColor;
+  final Color replyBackgroundColor;
+  final bool isReplyFromMe;
+  final int? currentUserId;
+
+  const _MessageContainer({
+    required this.widget,
+    required this.bubbleColor,
+    required this.replyBorderColor,
+    required this.replyBackgroundColor,
+    required this.isReplyFromMe,
+    required this.currentUserId,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: widget.isBeingRepliedTo ? EdgeInsets.all(6.w) : EdgeInsets.zero,
+      decoration: BoxDecoration(
+        color: widget.isBeingRepliedTo
+            ? Colors.green.withOpacity(0.15)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(16.r),
+        border: widget.isBeingRepliedTo
+            ? Border.all(color: Colors.blue.withOpacity(0.6), width: 2.w)
+            : null,
+        boxShadow: widget.isBeingRepliedTo
+            ? [
+                BoxShadow(
+                  color: Colors.blue.withOpacity(0.3),
+                  blurRadius: 8,
+                  spreadRadius: 2,
+                ),
+              ]
+            : null,
+      ),
+      child: Column(
+        crossAxisAlignment: widget.isSent
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
+        children: [
+          if (widget.isBeingRepliedTo) _ReplyStatusIndicator(widget: widget),
+          _MainBubble(
+            widget: widget,
+            bubbleColor: bubbleColor,
+            replyBorderColor: replyBorderColor,
+            replyBackgroundColor: replyBackgroundColor,
+            isReplyFromMe: isReplyFromMe,
+            currentUserId: currentUserId,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReplyStatusIndicator extends StatelessWidget {
+  final ChatBubbleMessage widget;
+
+  const _ReplyStatusIndicator({required this.widget});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.only(
+        left: widget.isSent ? 0 : 50.w,
+        right: widget.isSent ? 50.w : 0,
+        bottom: 4.h,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.reply_rounded,
+            size: 14,
+            color: Colors.blue.withOpacity(0.8),
+          ),
+          SizedBox(width: 4.w),
+          Text(
+            'Replying to this message',
+            style: TextStyle(
+              fontSize: 11.sp,
+              color: Colors.blue.withOpacity(0.8),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MainBubble extends StatelessWidget {
+  final ChatBubbleMessage widget;
+  final Color bubbleColor;
+  final Color replyBorderColor;
+  final Color replyBackgroundColor;
+  final bool isReplyFromMe;
+  final int? currentUserId;
+
+  const _MainBubble({
+    required this.widget,
+    required this.bubbleColor,
+    required this.replyBorderColor,
+    required this.replyBackgroundColor,
+    required this.isReplyFromMe,
+    required this.currentUserId,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: widget.isSent
+          ? MainAxisAlignment.end
+          : MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (!widget.isSent) ...[
+          Padding(
+            padding: EdgeInsets.only(top: 6.h),
+            child: _UserAvatar(messageData: widget.messageData),
+          ),
+          SizedBox(width: 8.w),
+        ],
+        Flexible(
+          child: Bubble(
+            margin: BubbleEdges.only(top: 6),
+            alignment: widget.isSent ? Alignment.topRight : Alignment.topLeft,
+            nipWidth: 18,
+            nipHeight: 10,
+            radius: Radius.circular(12.r),
+            nip: widget.isSent ? BubbleNip.rightTop : BubbleNip.leftTop,
+            color: bubbleColor,
+            child: SizedBox(
+              width: 270.w,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (!widget.isSent &&
+                      widget.messageData?.sender?.name != null)
+                    _SenderName(name: widget.messageData!.sender!.name!),
+                  if (widget.replyToMessage != null)
+                    _InlineReplyPreview(
+                      widget: widget,
+                      replyBorderColor: replyBorderColor,
+                      replyBackgroundColor: replyBackgroundColor,
+                      isReplyFromMe: isReplyFromMe,
+                    ),
+                  _MessageContent(type: widget.type, message: widget.message),
+                  if (widget.chatMedias?.isNotEmpty == true) ...[
+                    SizedBox(height: 5.h),
+                    _MediaAttachments(chatMedias: widget.chatMedias!),
+                  ],
+                  SizedBox(height: 4.h),
+                  _TimestampWithStatus(widget: widget),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _UserAvatar extends StatelessWidget {
+  final Entry? messageData;
+
+  const _UserAvatar({required this.messageData});
+
+  @override
+  Widget build(BuildContext context) {
+    return ChatAvatar(
+      size: 26.h,
+      name: messageData?.sender?.name ?? '',
+      imageUrl: messageData?.sender?.imageUrl,
+    );
+  }
+}
+
+class _SenderName extends StatelessWidget {
+  final String name;
+
+  const _SenderName({required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          name,
+          style: TextStyle(
+            fontSize: 11.sp,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey,
+          ),
+        ),
+        SizedBox(height: 2.h),
+      ],
+    );
+  }
+}
+
+class _InlineReplyPreview extends StatelessWidget {
+  final ChatBubbleMessage widget;
+  final Color replyBorderColor;
+  final Color replyBackgroundColor;
+  final bool isReplyFromMe;
+
+  const _InlineReplyPreview({
+    required this.widget,
+    required this.replyBorderColor,
+    required this.replyBackgroundColor,
+    required this.isReplyFromMe,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final replyMessage = widget.replyToMessage!;
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 8.h),
+      padding: EdgeInsets.all(8.w),
+      decoration: BoxDecoration(
+        color: replyBackgroundColor,
+        borderRadius: BorderRadius.circular(6.r),
+        border: Border(
+          left: BorderSide(
+            color: replyBorderColor,
+            width: widget.isBeingRepliedTo ? 4.w : 3.w,
+          ),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.reply, size: 12, color: replyBorderColor),
+              SizedBox(width: 4.w),
+              Text(
+                isReplyFromMe ? 'You' : (replyMessage.sender?.name ?? 'User'),
+                style: TextStyle(
+                  fontSize: 11.sp,
+                  fontWeight: FontWeight.w600,
+                  color: replyBorderColor.withOpacity(0.9),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 2.h),
+          Text(
+            replyMessage.content ?? '',
+            style: TextStyle(
+              fontSize: 11.sp,
+              color: Colors.grey[600],
+              fontStyle: FontStyle.italic,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (replyMessage.chatMedias?.isNotEmpty == true)
+            Padding(
+              padding: EdgeInsets.only(top: 2.h),
+              child: Row(
+                children: [
+                  Icon(
+                    _getMediaIcon(replyMessage.chatMedias!.first),
+                    size: 10,
+                    color: Colors.grey[500],
+                  ),
+                  SizedBox(width: 2.w),
+                  Text(
+                    _getMediaTypeText(replyMessage.chatMedias!.first),
+                    style: TextStyle(fontSize: 9.sp, color: Colors.grey[500]),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 
   IconData _getMediaIcon(ChatMedias media) {
     final mediaUrl = media.mediaUrl?.toLowerCase() ?? '';
@@ -824,97 +722,131 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
       return 'File';
     }
   }
+}
 
-  Widget _buildMessageContent() {
-    switch (widget.type?.toLowerCase()) {
+class _MessageContent extends StatelessWidget {
+  final String? type;
+  final String message;
+
+  const _MessageContent({required this.type, required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    switch (type?.toLowerCase()) {
       case 'html':
-        return FixedSizeHtmlWidget(htmlContent: widget.message);
+        return FixedSizeHtmlWidget(htmlContent: message);
       case 'voice':
-        return widget.message.isNotEmpty
-            ? _buildTextContent()
-            : const SizedBox.shrink();
       case 'file':
       case 'image':
       case 'document':
-        return widget.message.isNotEmpty
-            ? _buildTextContent()
+        return message.isNotEmpty
+            ? _TextContent(message: message)
             : const SizedBox.shrink();
       default:
-        return _buildTextContent();
+        return _TextContent(message: message);
     }
   }
+}
 
-  Widget _buildTextContent() {
+class _TextContent extends StatelessWidget {
+  final String message;
+
+  const _TextContent({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
     return SelectableText(
-      widget.message,
+      message,
       style: const TextStyle(fontSize: 14, color: Colors.black87),
     );
   }
+}
 
-  Widget _buildMediaAttachments() {
-    if (widget.chatMedias == null || widget.chatMedias!.isEmpty) {
-      return const SizedBox.shrink();
-    }
+class _MediaAttachments extends StatelessWidget {
+  final List<ChatMedias> chatMedias;
+
+  const _MediaAttachments({required this.chatMedias});
+
+  @override
+  Widget build(BuildContext context) {
+    if (chatMedias.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (widget.chatMedias!.length > 1)
-          _buildMediaGrid()
+        if (chatMedias.length > 1)
+          _MediaGrid(chatMedias: chatMedias)
         else
-          _buildSingleMedia(widget.chatMedias!.first),
+          _SingleMedia(media: chatMedias.first),
       ],
     );
   }
+}
 
-  Widget _buildSingleMedia(ChatMedias media) {
+class _SingleMedia extends StatelessWidget {
+  final ChatMedias media;
+
+  const _SingleMedia({required this.media});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       constraints: BoxConstraints(maxWidth: 200.w, maxHeight: 200.h),
       child: OptimizedMediaPreview(media: media, isInChatBubble: true),
     );
   }
+}
 
-  Widget _buildMediaGrid() {
-    final mediaCount = widget.chatMedias!.length;
-    final maxDisplayCount = 3;
+class _MediaGrid extends StatelessWidget {
+  final List<ChatMedias> chatMedias;
+  static const int maxDisplayCount = 3;
+
+  const _MediaGrid({required this.chatMedias});
+
+  @override
+  Widget build(BuildContext context) {
+    final mediaCount = chatMedias.length;
+    final displayCount = mediaCount > maxDisplayCount
+        ? maxDisplayCount
+        : mediaCount;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ...List.generate(
-          mediaCount > maxDisplayCount ? maxDisplayCount : mediaCount,
-          (index) {
-            final media = widget.chatMedias![index];
-            final isLast =
-                index ==
-                (mediaCount > maxDisplayCount
-                    ? maxDisplayCount - 1
-                    : mediaCount - 1);
+        ...List.generate(displayCount, (index) {
+          final media = chatMedias[index];
+          final isLast = index == displayCount - 1;
 
-            return Container(
-              margin: EdgeInsets.only(bottom: isLast ? 0 : 8.h),
-              constraints: BoxConstraints(
-                maxHeight: 120.h,
-                maxWidth: double.infinity,
-              ),
-              child: OptimizedMediaPreview(
-                media: media,
-                isInChatBubble: true,
-                maxHeight: 120.h,
-              ),
-            );
-          },
-        ),
+          return Container(
+            margin: EdgeInsets.only(bottom: isLast ? 0 : 8.h),
+            constraints: BoxConstraints(
+              maxHeight: 120.h,
+              maxWidth: double.infinity,
+            ),
+            child: OptimizedMediaPreview(
+              media: media,
+              isInChatBubble: true,
+              maxHeight: 120.h,
+            ),
+          );
+        }),
         if (mediaCount > maxDisplayCount) ...[
           SizedBox(height: 8.h),
-          _buildMediaCountIndicator(mediaCount),
+          _MediaCountIndicator(totalCount: mediaCount),
         ],
       ],
     );
   }
+}
 
-  Widget _buildMediaCountIndicator(int totalCount) {
-    const maxDisplayCount = 3;
+class _MediaCountIndicator extends StatelessWidget {
+  final int totalCount;
+  static const int maxDisplayCount = 3;
+
+  const _MediaCountIndicator({required this.totalCount});
+
+  @override
+  Widget build(BuildContext context) {
     final remainingCount = totalCount - maxDisplayCount;
 
     return Container(
@@ -943,6 +875,37 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
   }
 }
 
+class _TimestampWithStatus extends StatelessWidget {
+  final ChatBubbleMessage widget;
+
+  const _TimestampWithStatus({required this.widget});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: widget.isSent
+          ? MainAxisAlignment.end
+          : MainAxisAlignment.start,
+      children: [
+        if (widget.isBeingRepliedTo) ...[
+          Icon(Icons.reply, size: 10, color: Colors.blue.withOpacity(0.7)),
+          SizedBox(width: 2.w),
+        ],
+        Text(
+          widget.timestamp,
+          style: TextStyle(
+            fontSize: 10,
+            color: widget.isBeingRepliedTo
+                ? Colors.blue[600]
+                : Colors.grey[600],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// Bottom sheet remains the same but extracted for clarity
 class MessageOptionsBottomSheet extends StatelessWidget {
   final String message;
   final bool isSent;
@@ -1033,7 +996,6 @@ class MessageOptionsBottomSheet extends StatelessWidget {
               ),
             ],
 
-            // Main actions
             Flexible(
               child: SingleChildScrollView(
                 child: Padding(
@@ -1059,7 +1021,6 @@ class MessageOptionsBottomSheet extends StatelessWidget {
                         onTap: onCopy,
                       ),
 
-                      // Divider before destructive actions
                       Divider(
                         height: 24.h,
                         thickness: 1,
@@ -1068,7 +1029,6 @@ class MessageOptionsBottomSheet extends StatelessWidget {
                         endIndent: 20.w,
                       ),
 
-                      // Destructive actions
                       _buildOption(
                         icon: Icons.delete_outline_rounded,
                         title: 'Delete for Me',
@@ -1190,6 +1150,7 @@ class MessageOptionsBottomSheet extends StatelessWidget {
   }
 }
 
+// Optimized media preview widgets
 class OptimizedMediaPreview extends StatelessWidget {
   final ChatMedias? media;
   final bool isInChatBubble;
@@ -1207,6 +1168,7 @@ class OptimizedMediaPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (media == null) return const SizedBox.shrink();
+
     return MediaPreviewWidget(
       key: ValueKey('media_${media!.id}'),
       media: media,
