@@ -430,7 +430,7 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
         builder: (context, snapshot) {
           final currentUser = snapshot.data?.result;
           return ChatAvatar(
-            size: 30.h,
+            size: 26.h,
             name: currentUser?.userName ?? '',
             // imageUrl: currentUser?.i,
           );
@@ -439,7 +439,7 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
     } else {
       // For other users (received messages)
       return ChatAvatar(
-        size: 30.h,
+        size: 26.h,
 
         name: widget.messageData?.sender?.imageUrl ?? '',
         imageUrl: widget.messageData?.sender?.imageUrl,
