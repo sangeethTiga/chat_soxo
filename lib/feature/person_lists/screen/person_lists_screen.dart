@@ -144,7 +144,6 @@ class PersonListsScreen extends StatelessWidget {
                                             },
                                           );
                                         } else {
-                                          // Create new chat
                                           final chatResponse = await context
                                               .read<PersonListsCubit>()
                                               .createChat(
@@ -152,7 +151,7 @@ class PersonListsScreen extends StatelessWidget {
                                                   mode: 'MIS',
                                                   type: 'personal',
                                                   code: generateRandomString(4),
-                                                  title: null,
+                                                  title: '',
                                                   description: '',
                                                   status: 'Running',
                                                   createdBy: 1,

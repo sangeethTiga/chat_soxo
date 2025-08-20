@@ -1916,6 +1916,31 @@ class ChatCubit extends Cubit<ChatState> {
     }
   }
 
+  Future<void> deleteApi({
+    String? chatId,
+    String? chatEntryId,
+    String? mode,
+  }) async {
+    final res = await _chatRepositories.deleteChat(
+      chatEntryId: chatEntryId,
+      chatId: chatId,
+      mode: mode,
+    );
+    if (res.data != null) {
+      ChatEntryResponse? updatedChatEntry;
+      if (mode == 'CDIS' || mode == 'CDISA') {
+        final updatedEntries = state.chatEntry?.entries
+            ?.where((e) => e.id != int.parse(chatEntryId ?? ''))
+            .toList();
+
+        updatedChatEntry = state.chatEntry?.copyWith(entries: updatedEntries);
+      } else {
+        updatedChatEntry = state.chatEntry?.copyWith(entries: []);
+      }
+      emit(state.copyWith(chatEntry: updatedChatEntry));
+    }
+  }
+
   Future<void> clearOldFileCache() async {
     log('🧹 Clearing old file cache...');
 

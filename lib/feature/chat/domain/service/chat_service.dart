@@ -522,4 +522,20 @@ class ChatService implements ChatRepositories {
       'document': documentCount,
     };
   }
+
+  @override
+  Future<ResponseResult> deleteChat({
+    String? mode,
+    String? chatId,
+    String? chatEntryId,
+  }) async {
+    final res = await NetworkProvider().delete(
+      ApiEndpoints.deleteCHat(chatId ?? '', chatEntryId ?? '', mode ?? ''),
+    );
+    if (res.statusCode == 200) {
+      return ResponseResult(data: res.data);
+    } else {
+      throw Error();
+    }
+  }
 }

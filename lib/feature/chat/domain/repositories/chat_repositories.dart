@@ -15,4 +15,10 @@ abstract class ChatRepositories {
   });
 
   Future<Map<String, dynamic>> getFileFromApi(String media);
+
+  Future<ResponseResult<dynamic>> deleteChat({
+    String? mode,
+    String? chatId,
+    String? chatEntryId,
+  });
 }

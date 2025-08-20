@@ -302,7 +302,6 @@ class _OptimizedChatMessagesListsState
             final messageKey = GlobalKey();
             _messageKeys[messageData.id.toString()] = messageKey;
 
-            // Enhanced reply detection
             final originalMessage = _getReplyMessage(messageData, pinnedList);
             final isBeingRepliedTo =
                 (chatState.isReplying ?? false) &&
@@ -318,9 +317,9 @@ class _OptimizedChatMessagesListsState
               messageData: messageData,
               replyToMessage: originalMessage,
               isPinned: _isPinned(messageData),
-              
+              chatEntryId: messageData.id.toString(),
+              chatId: messageData.chatId.toString(),
 
-              // ✅ Pass reply state for instant visual feedback
               isBeingRepliedTo: isBeingRepliedTo,
 
               onReply: () => _startReply(messageData),
