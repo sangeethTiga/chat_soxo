@@ -389,31 +389,40 @@ PreferredSizeWidget buildAppBarWithProfile(
                           Row(
                             children: [
                               // Participants list
-                              Expanded(
-                                child: userChats.isNotEmpty
-                                    ? _buildParticipantsWithCount(
-                                        userChats,
-                                      ) // or use _buildParticipantsList(userChats)
-                                    : Text(
-                                        'No participants',
-                                        style: FontPalette.hW600S12.copyWith(
-                                          color: Colors.grey[600],
+                              userChats.length > 3
+                                  ? Expanded(
+                                      child: userChats.isNotEmpty
+                                          ? _buildParticipantsWithCount(
+                                              userChats,
+                                            )
+                                          : Text(
+                                              'No participants',
+                                              style: FontPalette.hW600S12
+                                                  .copyWith(
+                                                    color: Colors.grey[600],
+                                                  ),
+                                            ),
+                                    )
+                                  : Row(
+                                      children: [
+                                        8.horizontalSpace,
+                                        Container(
+                                          height: 8.h,
+                                          width: 8.w,
+                                          decoration: const BoxDecoration(
+                                            color: Color(0xFF68D391),
+                                            shape: BoxShape.circle,
+                                          ),
                                         ),
-                                      ),
-                              ),
+                                        4.horizontalSpace,
+                                        Text(
+                                          'Online',
+                                          style: FontPalette.hW600S12,
+                                        ),
+                                      ],
+                                    ),
 
                               // Online status indicator
-                              // 8.horizontalSpace,
-                              // Container(
-                              //   height: 8.h,
-                              //   width: 8.w,
-                              //   decoration: const BoxDecoration(
-                              //     color: Color(0xFF68D391),
-                              //     shape: BoxShape.circle,
-                              //   ),
-                              // ),
-                              // 4.horizontalSpace,
-                              // Text('Online', style: FontPalette.hW600S12),
                             ],
                           ),
                         ],

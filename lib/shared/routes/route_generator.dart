@@ -40,7 +40,7 @@ class RouteGenerator {
               context,
               state,
               ChatDetailScreen(data: data),
-              duration: const Duration(milliseconds: 600),
+              duration: const Duration(milliseconds: 400),
             );
           },
         ),
