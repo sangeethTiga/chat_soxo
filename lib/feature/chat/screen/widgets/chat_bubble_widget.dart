@@ -68,7 +68,7 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
   late final Color _bubbleColor;
   late final Color _replyBorderColor;
   late final Color _replyBackgroundColor;
-  bool _isReplyFromMe = false;
+  final bool _isReplyFromMe = false;
 
   @override
   void initState() {
@@ -125,7 +125,7 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
       if (mounted) {
         setState(() {
           _currentUserId = userId;
-          _isReplyFromMe = widget.replyToMessage?.senderId == userId;
+          // _isReplyFromMe = widget.replyToMessage?.senderId == userId;
         });
       }
     } catch (e) {
@@ -133,7 +133,7 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
       if (mounted) {
         setState(() {
           _currentUserId = 0;
-          _isReplyFromMe = false;
+          // _isReplyFromMe = false;
         });
       }
     }
@@ -647,13 +647,24 @@ class _InlineReplyPreview extends StatelessWidget {
             children: [
               Icon(Icons.reply, size: 12, color: replyBorderColor),
               SizedBox(width: 4.w),
-              Text(
-                isReplyFromMe ? 'You' : (replyMessage.sender?.name ?? 'User'),
-                style: TextStyle(
-                  fontSize: 11.sp,
-                  fontWeight: FontWeight.w600,
-                  color: replyBorderColor.withOpacity(0.9),
-                ),
+              FutureBuilder(
+                future: AuthUtils.instance.readUserData(),
+                builder: (context, asyncSnapshot) {
+                  log(
+                    "ID =- =-= ${widget.replyToMessage?.senderId == asyncSnapshot.data?.result?.userId}. ${widget.replyToMessage?.senderId}. ${asyncSnapshot.data?.result?.userId}",
+                  );
+                  return Text(
+                    widget.replyToMessage?.senderId ==
+                            asyncSnapshot.data?.result?.userId
+                        ? 'You'
+                        : (replyMessage.sender?.name ?? ''),
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.w600,
+                      color: replyBorderColor.withOpacity(0.9),
+                    ),
+                  );
+                },
               ),
             ],
           ),

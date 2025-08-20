@@ -2384,6 +2384,18 @@ class ChatCubit extends Cubit<ChatState> {
     }
   }
 
+  Future<void> loadCurrentUserId() async {
+    try {
+      final user = await AuthUtils.instance.readUserData();
+      final userId = int.tryParse(user?.result?.userId?.toString() ?? '0') ?? 0;
+
+      emit(state.copyWith(currentUserId: userId, isUserLoaded: true));
+    } catch (e) {
+      log('Error getting current user ID: $e');
+      emit(state.copyWith(currentUserId: 0, isUserLoaded: true));
+    }
+  }
+
   //=-=-======================
   // Add these properties to your class
   bool _isConnecting = false;

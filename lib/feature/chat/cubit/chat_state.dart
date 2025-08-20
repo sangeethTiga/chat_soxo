@@ -31,6 +31,8 @@ class ChatState extends Equatable {
   final Set<String>? activeReplies;
   final String? selectedReplyMessageId;
   final Entry? selectedReplyMessage;
+  final int? currentUserId;
+  final bool isUserLoaded;
   const ChatState({
     this.isArrow = false,
     this.isRecording = false,
@@ -61,6 +63,8 @@ class ChatState extends Equatable {
     this.activeReplies,
     this.selectedReplyMessageId, // ✅ NEW
     this.selectedReplyMessage,
+    this.currentUserId,
+    this.isUserLoaded = false,
   });
 
   ChatState copyWith({
@@ -94,6 +98,8 @@ class ChatState extends Equatable {
     Set<String>? activeReplies,
     String? selectedReplyMessageId, // ✅ NEW
     Entry? selectedReplyMessage,
+    int? currentUserId,
+    bool? isUserLoaded,
   }) {
     return ChatState(
       isArrow: isArrow ?? this.isArrow,
@@ -130,6 +136,8 @@ class ChatState extends Equatable {
           selectedReplyMessageId ?? this.selectedReplyMessageId, // ✅ NEW
       selectedReplyMessage:
           selectedReplyMessage ?? this.selectedReplyMessage, // ✅ NEW
+      currentUserId: currentUserId ?? this.currentUserId,
+      isUserLoaded: isUserLoaded ?? this.isUserLoaded,
     );
   }
 
@@ -164,6 +172,7 @@ class ChatState extends Equatable {
     activeReplies,
     selectedReplyMessageId, // ✅ NEW
     selectedReplyMessage,
+    currentUserId, isUserLoaded,
   ];
 }
 
