@@ -152,12 +152,15 @@ String getFormattedDate(String dateStr) {
 
   final difference = today.difference(inputDay).inDays;
 
+  final timeFormat = DateFormat('h:mm a');
+  final formattedTime = timeFormat.format(inputDate);
+
   if (difference == 0) {
-    return "Today";
+    return "Today, $formattedTime";
   } else if (difference == 1) {
-    return "Yesterday";
+    return "Yesterday, $formattedTime";
   } else {
-    return DateFormat('dd MMM yyyy').format(inputDate);
+    return DateFormat('dd MMM yyyy, h:mm a').format(inputDate);
   }
 }
 

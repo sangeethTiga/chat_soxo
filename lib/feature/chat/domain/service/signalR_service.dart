@@ -21,7 +21,14 @@ class ChatSignalRService {
   String? _currentChatId;
   bool _isConnecting = false;
   Completer<void>? _connectionCompleter;
+  Timer? _connectionTimeoutTimer;
+  int _connectionAttempts = 0;
 
+  // Configuration constants
+  static const Duration _maxConnectionWait = Duration(seconds: 15);
+  static const int _maxConcurrentAttempts = 3;
+
+  // Callback functions
   Function(dynamic message)? onMessageReceived;
   Function(ChatEntryResponse chatEntry)? onChatEntryReceived;
   Function(List<Entry> newEntries)? onNewEntriesReceived;
@@ -57,110 +64,209 @@ class ChatSignalRService {
   }
 
   Future<void> initializeConnection() async {
-    // 🔧 FIX: Prevent concurrent connection attempts
-    if (_isConnecting) {
-      log('⏳ Connection already in progress, waiting...');
-      await _connectionCompleter?.future;
-      return;
-    }
+    log('🔗 SignalR: initializeConnection called');
 
+    // Check if already connected
     if (_hubConnection != null && _isConnected) {
-      log('SignalR: Already connected');
+      log('✅ SignalR: Already connected');
       return;
     }
 
+    // Handle concurrent attempts with timeout
+    if (_isConnecting) {
+      log('⏳ Connection in progress, waiting with timeout...');
+
+      if (_connectionCompleter != null) {
+        try {
+          await _connectionCompleter!.future.timeout(
+            _maxConnectionWait,
+            onTimeout: () {
+              log('⏰ Connection wait timed out, forcing reset');
+              _forceResetConnectionState();
+              throw TimeoutException(
+                'Connection wait timeout',
+                _maxConnectionWait,
+              );
+            },
+          );
+          return;
+        } catch (e) {
+          log('❌ Error waiting for connection: $e');
+          _forceResetConnectionState();
+        }
+      }
+    }
+
+    // Increment attempt counter and check limit
+    _connectionAttempts++;
+    if (_connectionAttempts > _maxConcurrentAttempts) {
+      log('❌ Too many connection attempts ($_connectionAttempts), resetting');
+      await _forceResetConnectionState();
+      _connectionAttempts = 0;
+    }
+
+    // Start connection attempt
     _isConnecting = true;
     _connectionCompleter = Completer<void>();
 
+    // Set up timeout timer
+    _connectionTimeoutTimer?.cancel();
+    _connectionTimeoutTimer = Timer(_maxConnectionWait, () {
+      if (_isConnecting) {
+        log('⏰ Connection attempt timed out');
+        _handleConnectionTimeout();
+      }
+    });
+
     try {
-      final user = await AuthUtils.instance.readUserData();
-      String username = user?.result?.userName?.trim() ?? '';
-      final String token = user?.result?.jwtToken ?? '';
+      log('🚀 Starting new connection attempt #$_connectionAttempts');
+      await _performConnection();
 
-      // 🔧 FIX: Validate token before proceeding
-      if (token.isEmpty) {
-        throw Exception('Authentication token is missing');
-      }
-
-      username = Uri.encodeComponent(username);
-
-      // 🔧 FIX: Start with HTTP since server doesn't support HTTPS properly
-      List<String> baseUrls = [
-        "http://20.244.37.96:5002/api/chatsHub", // HTTP first (server doesn't support HTTPS)
-        "https://20.244.37.96:5002/api/chatsHub", // HTTPS fallback (if server gets fixed)
-      ];
-
-      if (username.isNotEmpty) {
-        baseUrls = baseUrls.map((url) => "$url?userName=$username").toList();
-      }
-
-      Exception? lastError;
-
-      // 🔧 FIX: Try different URLs and transports
-      for (final baseUrl in baseUrls) {
-        log('🔗 SignalR: Attempting connection to: $baseUrl');
-
-        final transportStrategies = [
-          HttpTransportType.LongPolling, // Most reliable for HTTP servers
-          HttpTransportType.WebSockets, // Try WebSockets second
-          HttpTransportType.ServerSentEvents, // Last resort
-        ];
-
-        for (final transport in transportStrategies) {
-          try {
-            log('🔄 SignalR: Trying $baseUrl with transport: $transport');
-            await _attemptConnection(token, baseUrl, transport);
-            log(
-              '✅ SignalR: Successfully connected with $transport to $baseUrl',
-            );
-
-            _isConnecting = false;
-            _connectionCompleter?.complete();
-            return;
-          } catch (e) {
-            lastError = e is Exception ? e : Exception(e.toString());
-            log('❌ SignalR: $transport on $baseUrl failed: $e');
-
-            // 🔧 FIX: Skip HTTPS if SSL/TLS errors detected
-            if (baseUrl.startsWith('https://') &&
-                (e.toString().contains('HandshakeException') ||
-                    e.toString().contains('WRONG_VERSION_NUMBER') ||
-                    e.toString().contains('TLS') ||
-                    e.toString().contains('SSL'))) {
-              log(
-                '⚠️ SSL/TLS error detected, skipping remaining transports for HTTPS',
-              );
-              break; // Skip to next URL (HTTP)
-            }
-
-            // 🔧 FIX: Properly cleanup failed connection
-            await _cleanupFailedConnection();
-          }
-        }
-      }
-
-      _lastActivity = DateTime.now();
-      _startActivityTracking();
-      log('❌ SignalR: All connection attempts failed');
-
-      _isConnecting = false;
-      _connectionCompleter?.completeError(
-        lastError ?? Exception('All connection attempts failed'),
-      );
-      onError?.call(lastError ?? Exception('All connection attempts failed'));
-      throw lastError ?? Exception('All connection attempts failed');
+      _connectionAttempts = 0; // Reset on success
+      log('✅ Connection successful, reset attempt counter');
     } catch (e) {
-      _isConnecting = false;
-      _connectionCompleter?.completeError(e);
+      log('❌ Connection attempt #$_connectionAttempts failed: $e');
+      _handleConnectionFailure(e);
       rethrow;
+    } finally {
+      _connectionTimeoutTimer?.cancel();
     }
   }
 
-  // 🔧 FIX: Proper cleanup method
+  void _handleConnectionTimeout() {
+    log('⏰ Connection timeout reached');
+    _handleConnectionFailure(
+      TimeoutException('Connection timeout', _maxConnectionWait),
+    );
+  }
+
+  Future<void> _performConnection() async {
+    final user = await AuthUtils.instance.readUserData();
+    String username = user?.result?.userName?.trim() ?? '';
+    final String token = user?.result?.jwtToken ?? '';
+
+    if (token.isEmpty) {
+      throw Exception('Authentication token is missing');
+    }
+
+    username = Uri.encodeComponent(username);
+
+    List<String> baseUrls = [
+      "http://20.244.37.96:5002/api/chatsHub",
+      "https://20.244.37.96:5002/api/chatsHub",
+    ];
+
+    if (username.isNotEmpty) {
+      baseUrls = baseUrls.map((url) => "$url?userName=$username").toList();
+    }
+
+    Exception? lastError;
+
+    for (final baseUrl in baseUrls) {
+      final transportStrategies = [
+        HttpTransportType.LongPolling,
+        HttpTransportType.WebSockets,
+        HttpTransportType.ServerSentEvents,
+      ];
+
+      for (final transport in transportStrategies) {
+        try {
+          log('🔄 Trying $baseUrl with transport: $transport');
+          await _attemptConnection(token, baseUrl, transport);
+
+          // Success - complete the completer and update state
+          _isConnected = true;
+          _isConnecting = false;
+
+          if (_connectionCompleter != null &&
+              !_connectionCompleter!.isCompleted) {
+            _connectionCompleter!.complete();
+          }
+
+          onConnected?.call();
+          _startActivityTracking();
+
+          log('✅ Successfully connected with $transport to $baseUrl');
+          return;
+        } catch (e) {
+          lastError = e is Exception ? e : Exception(e.toString());
+          log('❌ $transport on $baseUrl failed: $e');
+
+          await _cleanupFailedConnection();
+
+          // Skip HTTPS if SSL/TLS errors
+          if (baseUrl.startsWith('https://') && _isSSLError(e)) {
+            log(
+              '⚠️ SSL/TLS error detected, skipping remaining transports for HTTPS',
+            );
+            break;
+          }
+        }
+      }
+    }
+
+    throw lastError ?? Exception('All connection attempts failed');
+  }
+
+  bool _isSSLError(dynamic error) {
+    final errorString = error.toString().toLowerCase();
+    return errorString.contains('handshakeexception') ||
+        errorString.contains('wrong_version_number') ||
+        errorString.contains('tls') ||
+        errorString.contains('ssl');
+  }
+
+  void _handleConnectionFailure(dynamic error) {
+    log('❌ Handling connection failure: $error');
+
+    _connectionTimeoutTimer?.cancel();
+
+    if (_connectionCompleter != null && !_connectionCompleter!.isCompleted) {
+      _connectionCompleter!.completeError(error);
+    }
+
+    _isConnecting = false;
+    _connectionCompleter = null;
+    _isConnected = false;
+
+    unawaited(_cleanupFailedConnection());
+    onError?.call(error is Exception ? error : Exception(error.toString()));
+  }
+
+  Future<void> _forceResetConnectionState() async {
+    log('🔄 Force resetting connection state');
+
+    _connectionTimeoutTimer?.cancel();
+
+    if (_connectionCompleter != null && !_connectionCompleter!.isCompleted) {
+      _connectionCompleter!.completeError(Exception('Connection force reset'));
+    }
+
+    _isConnecting = false;
+    _connectionCompleter = null;
+
+    if (_hubConnection != null && !_isConnected) {
+      try {
+        await _hubConnection!.stop();
+      } catch (e) {
+        log('⚠️ Error stopping connection during reset: $e');
+      }
+      _hubConnection = null;
+    }
+
+    _isConnected = false;
+    log('✅ Connection state force reset complete');
+  }
+
   Future<void> _cleanupFailedConnection() async {
     try {
       if (_hubConnection != null) {
-        await _hubConnection!.stop();
+        await _hubConnection!.stop().timeout(
+          Duration(seconds: 5),
+          onTimeout: () {
+            log('⚠️ Connection stop timeout during cleanup');
+          },
+        );
       }
     } catch (e) {
       log('⚠️ Error during cleanup: $e');
@@ -197,11 +303,9 @@ class ChatSignalRService {
     );
     log('SignalR: Target URL: $baseUrl');
 
-    // 🔧 FIX: Detect HTTP vs HTTPS and adjust strategy
     final isHttps = baseUrl.startsWith('https://');
     log('SignalR: Using ${isHttps ? "HTTPS" : "HTTP"} connection');
 
-    // 🔧 FIX: Enhanced connection options with HTTP-specific settings
     final connectionOptions = HttpConnectionOptions(
       accessTokenFactory: () async {
         log('SignalR: Providing access token...');
@@ -210,13 +314,10 @@ class ChatSignalRService {
       transport: transport,
       skipNegotiation: transport == HttpTransportType.WebSockets,
       logMessageContent: true,
-
-      // 🔧 FIX: Add headers for better compatibility
     );
 
     _hubConnection = HubConnectionBuilder()
         .withUrl(baseUrl, options: connectionOptions)
-        // 🔧 FIX: More aggressive reconnection strategy
         .withAutomaticReconnect(
           retryDelays: [1000, 2000, 5000, 10000, 15000, 30000],
         )
@@ -227,9 +328,8 @@ class ChatSignalRService {
     try {
       log('SignalR: Starting connection...');
 
-      // 🔧 FIX: Shorter timeout for HTTP connections to fail fast on SSL issues
       await _hubConnection?.start()?.timeout(
-        const Duration(seconds: 60), // Back to 30 seconds for faster fallback
+        const Duration(seconds: 60),
         onTimeout: () {
           throw TimeoutException(
             'Connection timeout after 60 seconds',
@@ -238,7 +338,6 @@ class ChatSignalRService {
         },
       );
 
-      // 🔧 FIX: Verify connection is actually established
       if (_hubConnection?.connectionId == null) {
         throw Exception('Connection established but no connection ID received');
       }
@@ -250,7 +349,6 @@ class ChatSignalRService {
     } catch (error) {
       _isConnected = false;
       log('SignalR: ❌ Connection failed with $transport: $error');
-
       await _cleanupFailedConnection();
       rethrow;
     }
@@ -259,18 +357,15 @@ class ChatSignalRService {
   void _setupEventHandlers() {
     if (_hubConnection == null) return;
 
-    // 🔧 FIX: Better error handling in event handlers
     _hubConnection?.onreconnecting(({Exception? error}) {
       _isConnected = false;
       log('SignalR: Reconnecting. Error: $error');
-      // Don't call onDisconnected during reconnecting
     });
 
     _hubConnection?.onreconnected(({String? connectionId}) {
       _isConnected = true;
       log('SignalR: Reconnected. ConnectionId: $connectionId');
       if (_currentChatId != null) {
-        // 🔧 FIX: Rejoin chat group after reconnection
         Future.delayed(Duration(milliseconds: 500), () {
           joinChatGroup(_currentChatId!);
         });
@@ -283,7 +378,6 @@ class ChatSignalRService {
       log('SignalR: Connection closed. Error: $error');
       onDisconnected?.call();
 
-      // 🔧 FIX: Auto-reconnect on unexpected closure
       if (error != null) {
         log('🔄 Attempting auto-reconnect due to unexpected closure...');
         Future.delayed(Duration(seconds: 2), () {
@@ -320,7 +414,6 @@ class ChatSignalRService {
         log('🎯 SignalR: Method "$methodName" called!');
         _logResponse(methodName, arguments);
 
-        // 🔧 FIX: Wrap in try-catch to prevent handler crashes
         try {
           _handleSpecificResponse(methodName, arguments);
         } catch (e) {
@@ -341,32 +434,26 @@ class ChatSignalRService {
         case 'MessageReceived':
           _handleReceiveMessage(arguments);
           break;
-
         case 'ReceiveChatEntry':
         case 'ChatEntryReceived':
           _handleChatEntryResponse(arguments);
           break;
-
         case 'ReceiveNewEntries':
         case 'NewEntriesReceived':
           _handleNewEntriesResponse(arguments);
           break;
-
         case 'ReceiveEntryUpdate':
         case 'EntryUpdated':
           _handleEntryUpdateResponse(arguments);
           break;
-
         case 'ReceiveEntryDeletion':
         case 'EntryDeleted':
           _handleEntryDeletionResponse(arguments);
           break;
-
         case 'ReceiveTypingStatus':
         case 'TypingStatusChanged':
           _handleTypingStatusResponse(arguments);
           break;
-
         default:
           log('🤷‍♂️ SignalR: Unknown method "$methodName"');
           _handleReceiveMessage(arguments);
@@ -458,7 +545,6 @@ class ChatSignalRService {
       log('   - messageType: $messageType');
       log('   - content: $content');
 
-      // 🔧 FIX: More robust type conversion
       final entry = Entry(
         id: _safeParseInt(id),
         chatId: _safeParseInt(chatId),
@@ -483,13 +569,10 @@ class ChatSignalRService {
     }
   }
 
-  // 🔧 FIX: Safe integer parsing
   int? _safeParseInt(dynamic value) {
     if (value == null) return null;
     if (value is int) return value;
-    if (value is String) {
-      return int.tryParse(value);
-    }
+    if (value is String) return int.tryParse(value);
     if (value is double) return value.toInt();
     return null;
   }
@@ -615,7 +698,6 @@ class ChatSignalRService {
       await _hubConnection!.invoke(method, args: args);
     } catch (e) {
       log('❌ Error invoking "$method": $e');
-      // 🔧 FIX: Don't rethrow for optional operations
     }
   }
 
@@ -744,7 +826,6 @@ class ChatSignalRService {
     await initializeConnection();
   }
 
-  // 🔧 FIX: Health check method
   Future<bool> checkConnectionHealth() async {
     if (!_isConnected) return false;
 
@@ -757,7 +838,6 @@ class ChatSignalRService {
     }
   }
 
-  // 🔧 FIX: Periodic health monitoring
   void startHealthMonitoring() {
     Timer.periodic(Duration(minutes: 1), (timer) async {
       if (_isConnected) {
@@ -769,6 +849,21 @@ class ChatSignalRService {
           });
         }
       }
+    });
+  }
+
+  Future<void> forceReset() async {
+    log('🔄 Force resetting entire SignalR service');
+    _connectionTimeoutTimer?.cancel();
+    _activityTimer?.cancel();
+    _connectionAttempts = 0;
+    await _forceResetConnectionState();
+    log('✅ SignalR service force reset complete');
+  }
+
+  void unawaited(Future<void> future) {
+    future.catchError((error) {
+      log('Unawaited future error: $error');
     });
   }
 }

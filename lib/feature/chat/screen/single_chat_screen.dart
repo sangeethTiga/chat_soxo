@@ -78,7 +78,11 @@ class _SingleChatScreenState extends State<SingleChatScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: buildAppBarWithProfile(context, {}, title: widget.data?['title']),
+      appBar: buildAppBarWithProfileSimple(
+        context,
+        {},
+        title: widget.data?['title'],
+      ),
       body: BlocListener<ChatCubit, ChatState>(
         listenWhen: (previous, current) =>
             previous.errorMessage != current.errorMessage,

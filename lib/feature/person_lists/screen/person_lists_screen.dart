@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -81,111 +83,129 @@ class PersonListsScreen extends StatelessWidget {
                           ),
                           12.verticalSpace,
                           Expanded(
-                            child: ListView.builder(
-                              shrinkWrap: true,
-                              itemCount: state.personList?.length,
-                              itemBuilder: (context, i) {
-                                final data = state.personList?[i];
-
-                                return BlocSelector<
-                                  ChatCubit,
-                                  ChatState,
-                                  List<ChatListResponse>
-                                >(
-                                  selector: (state) {
-                                    return state.chatList ?? [];
-                                  },
-                                  builder: (context, state) {
-                                    return buildChatContacts(
-                                      data?.name ?? '',
-                                      () async {
-                                        final user = await AuthUtils.instance
-                                            .readUserData();
-                                        final myUserId = int.tryParse(
-                                          user?.result?.userId.toString() ?? '',
-                                        );
-
-                                        bool chatExists = false;
-                                        int? existingChatId;
-
-                                        for (ChatListResponse element
-                                            in state) {
-                                          // Check if this chat has exactly these two members
-                                          final participantIds =
-                                              element.userChats
-                                                  ?.map((u) => u.userId)
-                                                  .toList() ??
-                                              [];
-
-                                          if (participantIds.contains(
-                                                data?.userId,
-                                              ) &&
-                                              participantIds.contains(
-                                                myUserId,
-                                              )) {
-                                            chatExists = true;
-                                            existingChatId = element.chatId;
-                                            break;
-                                          }
-                                        }
-
-                                        if (chatExists) {
-                                          // Open existing chat
-                                          await context
-                                              .read<ChatCubit>()
-                                              .getChatEntry(
-                                                chatId: existingChatId!,
-                                              );
-                                          context.push(
-                                            routeChatDetail,
-                                            extra: {
-                                              "title": data?.name,
-                                              "chat_id": existingChatId,
-                                            },
-                                          );
-                                        } else {
-                                          final chatResponse = await context
-                                              .read<PersonListsCubit>()
-                                              .createChat(
-                                                ChatRequest(
-                                                  mode: 'MIS',
-                                                  type: 'personal',
-                                                  code: generateRandomString(4),
-                                                  title: '',
-                                                  description: '',
-                                                  status: 'Running',
-                                                  createdBy: 1,
-                                                  branchPtr: 'TR',
-                                                  firmPtr: "F1",
-                                                  userChats: [
-                                                    UserChat(
-                                                      userId: data?.id,
-                                                      role: 'member',
-                                                      type: 'Normal',
-                                                    ),
-                                                    UserChat(
-                                                      userId: myUserId,
-                                                      role: 'member',
-                                                      type: 'Normal',
-                                                    ),
-                                                  ],
-                                                ),
-                                              );
-
-                                          if (chatResponse?.chatId != null) {
-                                            context.push(
-                                              routeChatDetail,
-                                              extra: {
-                                                "title": data?.name,
-                                                "chat_id":
-                                                    chatResponse!.chatId ?? 0,
-                                              },
-                                            );
-                                          }
-                                        }
+                            child: FutureBuilder(
+                              future: AuthUtils.instance.readUserData(),
+                              builder: (context, asyncSnapshot) {
+                                final userId =
+                                    asyncSnapshot.data?.result?.userId;
+                                log("USER ID$userId");
+                                final list = state.personList
+                                    ?.where((e) => e.id != userId)
+                                    .toList();
+                                return ListView.builder(
+                                  shrinkWrap: true,
+                                  itemCount: list?.length,
+                                  itemBuilder: (context, i) {
+                                    final data = list?[i];
+                                    log("id${data?.userId}");
+                                    return BlocSelector<
+                                      ChatCubit,
+                                      ChatState,
+                                      List<ChatListResponse>
+                                    >(
+                                      selector: (state) {
+                                        return state.chatList ?? [];
                                       },
+                                      builder: (context, state) {
+                                        return buildChatContacts(
+                                          data?.name ?? '',
+                                          () async {
+                                            final user = await AuthUtils
+                                                .instance
+                                                .readUserData();
+                                            final myUserId = int.tryParse(
+                                              user?.result?.userId.toString() ??
+                                                  '',
+                                            );
 
-                                      isShow: true,
+                                            bool chatExists = false;
+                                            int? existingChatId;
+
+                                            for (ChatListResponse element
+                                                in state) {
+                                              // Check if this chat has exactly these two members
+                                              final participantIds =
+                                                  element.userChats
+                                                      ?.map((u) => u.userId)
+                                                      .toList() ??
+                                                  [];
+
+                                              if (participantIds.contains(
+                                                    data?.userId,
+                                                  ) &&
+                                                  participantIds.contains(
+                                                    myUserId,
+                                                  )) {
+                                                chatExists = true;
+                                                existingChatId = element.chatId;
+                                                break;
+                                              }
+                                            }
+
+                                            if (chatExists) {
+                                              // Open existing chat
+                                              await context
+                                                  .read<ChatCubit>()
+                                                  .getChatEntry(
+                                                    chatId: existingChatId!,
+                                                  );
+                                              context.push(
+                                                routeChatDetail,
+                                                extra: {
+                                                  "title": data?.name,
+                                                  "chat_id": existingChatId,
+                                                },
+                                              );
+                                            } else {
+                                              final chatResponse = await context
+                                                  .read<PersonListsCubit>()
+                                                  .createChat(
+                                                    ChatRequest(
+                                                      mode: 'MIS',
+                                                      type: 'personal',
+                                                      code:
+                                                          generateRandomString(
+                                                            4,
+                                                          ),
+                                                      title: '',
+                                                      description: '',
+                                                      status: 'Running',
+                                                      createdBy: 1,
+                                                      branchPtr: 'TR',
+                                                      firmPtr: "F1",
+                                                      userChats: [
+                                                        UserChat(
+                                                          userId: data?.id,
+                                                          role: 'member',
+                                                          type: 'Normal',
+                                                        ),
+                                                        UserChat(
+                                                          userId: myUserId,
+                                                          role: 'member',
+                                                          type: 'Normal',
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  );
+
+                                              if (chatResponse?.chatId !=
+                                                  null) {
+                                                context.push(
+                                                  routeChatDetail,
+                                                  extra: {
+                                                    "title": data?.name,
+                                                    "chat_id":
+                                                        chatResponse!.chatId ??
+                                                        0,
+                                                  },
+                                                );
+                                              }
+                                            }
+                                          },
+
+                                          isShow: true,
+                                        );
+                                      },
                                     );
                                   },
                                 );

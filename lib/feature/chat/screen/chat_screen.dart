@@ -114,38 +114,130 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: buildSeamlessAppBar(title: 'Chat', context, {}, isLeading: false),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFF2F2F2), Color(0xFFB7E8CA)],
+  Future<bool> _showLogoutDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16.r),
           ),
-        ),
-        child: Column(
-          children: [
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(24.r),
-                  ),
+          title: Row(
+            children: [
+              Icon(Icons.logout_rounded, color: Colors.red[600], size: 24.sp),
+              SizedBox(width: 12.w),
+              Text(
+                'Logout',
+                style: TextStyle(
+                  fontSize: 20.sp,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[800],
                 ),
-                child: Column(
-                  children: [_buildAnimatedTabs(), _buildAnimatedChatList()],
+              ),
+            ],
+          ),
+          content: Text(
+            'Are you sure you want to logout from your account?',
+            style: TextStyle(
+              fontSize: 16.sp,
+              color: Colors.grey[600],
+              height: 1.4,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+              ),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey[600],
                 ),
               ),
             ),
+            SizedBox(width: 8.w),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop(true);
+
+                Helper().logout(context);
+                if (context.mounted) {
+                  context.go('/login');
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red[600],
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                elevation: 0,
+              ),
+              child: Text(
+                'Logout',
+                style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
+              ),
+            ),
           ],
+        );
+      },
+    );
+    return result ?? false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        _showLogoutDialog();
+      },
+      child: Scaffold(
+        appBar: buildSeamlessAppBar(
+          title: 'Chat',
+          context,
+          {},
+          isLeading: false,
         ),
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFFF2F2F2), Color(0xFFB7E8CA)],
+            ),
+          ),
+          child: Column(
+            children: [
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(24.r),
+                    ),
+                  ),
+                  child: Column(
+                    children: [_buildAnimatedTabs(), _buildAnimatedChatList()],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        floatingActionButtonLocation: ExpandableFab.location,
+        floatingActionButton: FlatingWidget(keys: _key),
       ),
-      floatingActionButtonLocation: ExpandableFab.location,
-      floatingActionButton: FlatingWidget(keys: _key),
     );
   }
 
