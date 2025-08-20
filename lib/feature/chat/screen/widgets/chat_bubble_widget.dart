@@ -424,24 +424,18 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
   // Helper method to build user avatar
   Widget _buildUserAvatar({required bool isCurrentUser}) {
     if (isCurrentUser) {
-      // For current user (sent messages)
       return FutureBuilder(
         future: AuthUtils.instance.readUserData(),
         builder: (context, snapshot) {
           final currentUser = snapshot.data?.result;
-          return ChatAvatar(
-            size: 26.h,
-            name: currentUser?.userName ?? '',
-            // imageUrl: currentUser?.i,
-          );
+          return ChatAvatar(size: 26.h, name: currentUser?.userName ?? '');
         },
       );
     } else {
       // For other users (received messages)
       return ChatAvatar(
         size: 26.h,
-
-        name: widget.messageData?.sender?.imageUrl ?? '',
+        name: widget.messageData?.sender?.name ?? '',
         imageUrl: widget.messageData?.sender?.imageUrl,
       );
     }

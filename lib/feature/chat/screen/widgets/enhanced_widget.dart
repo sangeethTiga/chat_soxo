@@ -381,9 +381,11 @@ class _EnhancedUnifiedMessageInputState
             : null,
       ),
       child: AnimatedOpacity(
-        opacity: _hasText ? 1.0 : 0.0,
+        opacity: _hasText || (state.selectedFiles?.isNotEmpty ?? false)
+            ? 1.0
+            : 0.0,
         duration: const Duration(milliseconds: 200),
-        child: _hasText
+        child: _hasText || (state.selectedFiles?.isNotEmpty ?? false)
             ? Material(
                 color: Colors.transparent,
                 child: InkWell(
