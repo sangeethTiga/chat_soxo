@@ -1,4 +1,4 @@
-import 'dart:developer';
+import 'dart:developer' as dev;
 
 import 'package:bubble/bubble.dart';
 import 'package:flutter/material.dart';
@@ -27,8 +27,8 @@ class ChatBubbleMessage extends StatefulWidget {
   final VoidCallback? onScrollToReply;
   final String? chatId;
   final String? chatEntryId;
-  final ScrollController? scrollController; // Add this
-  final Map<String, GlobalKey>? messageKeys; // Add this
+  final ScrollController? scrollController;
+  final Map<String, GlobalKey>? messageKeys;
   const ChatBubbleMessage({
     super.key,
     this.type,
@@ -45,8 +45,8 @@ class ChatBubbleMessage extends StatefulWidget {
     this.onScrollToReply,
     this.chatEntryId,
     this.chatId,
-    this.scrollController, // Add this parameter
-    this.messageKeys, // Add this parameter
+    this.scrollController,
+    this.messageKeys,
   });
 
   @override
@@ -67,7 +67,6 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
   static const double _replyThreshold = 60.0;
   static const double _maxDragDistance = 100.0;
 
-  // Cache computed values
   late final Color _bubbleColor;
   late final Color _replyBorderColor;
   late final Color _replyBackgroundColor;
@@ -131,15 +130,13 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
       if (mounted) {
         setState(() {
           _currentUserId = userId;
-          // _isReplyFromMe = widget.replyToMessage?.senderId == userId;
         });
       }
     } catch (e) {
-      log('Error getting current user ID: $e');
+      dev.log('Error getting current user ID: $e');
       if (mounted) {
         setState(() {
           _currentUserId = 0;
-          // _isReplyFromMe = false;
         });
       }
     }
@@ -366,7 +363,6 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
   }
 }
 
-// Extracted static widgets to prevent rebuilds
 class _ReplyIcon extends StatelessWidget {
   final bool isSent;
   final bool hasTriggeredReply;
@@ -430,56 +426,56 @@ class _MessageContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isPinned = widget.isPinned;
-    final pinnedBorderColor = isPinned ? Colors.amber[600]! : null;
-    final pinnedBackgroundColor = isPinned
-        ? Colors.amber.withOpacity(0.1)
-        : null;
-    return Container(
-      padding: widget.isBeingRepliedTo ? EdgeInsets.all(6.w) : EdgeInsets.zero,
-      decoration: BoxDecoration(
-        color: widget.isBeingRepliedTo
-            ? Colors.green.withOpacity(0.15)
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(16.r),
-        border: widget.isBeingRepliedTo
-            ? Border.all(color: Colors.blue.withOpacity(0.6), width: 2.w)
-            : isPinned
-            ? Border.all(color: pinnedBorderColor!, width: 2.w)
-            : null,
-        boxShadow: widget.isBeingRepliedTo
-            ? [
-                BoxShadow(
-                  color: Colors.blue.withOpacity(0.3),
-                  blurRadius: 8,
-                  spreadRadius: 2,
-                ),
-              ]
-            : isPinned
-            ? [
-                BoxShadow(
-                  color: Colors.amber.withOpacity(0.3),
-                  blurRadius: 8,
-                  spreadRadius: 1,
-                ),
-              ]
-            : null,
-      ),
-      child: Column(
-        crossAxisAlignment: widget.isSent
-            ? CrossAxisAlignment.end
-            : CrossAxisAlignment.start,
-        children: [
-          if (widget.isBeingRepliedTo) _ReplyStatusIndicator(widget: widget),
-          _MainBubble(
-            widget: widget,
-            bubbleColor: bubbleColor,
-            replyBorderColor: replyBorderColor,
-            replyBackgroundColor: replyBackgroundColor,
-            isReplyFromMe: isReplyFromMe,
-            currentUserId: currentUserId,
+    // final pinnedBorderColor = isPinned ? Colors.amber[600]! : null;
+
+    return Stack(
+      children: [
+        Container(
+          padding: widget.isBeingRepliedTo
+              ? EdgeInsets.all(6.w)
+              : EdgeInsets.zero,
+          decoration: BoxDecoration(
+            color: widget.isBeingRepliedTo
+                ? Colors.green.withOpacity(0.15)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(16.r),
+            border: widget.isBeingRepliedTo
+                ? Border.all(color: Colors.blue.withOpacity(0.6), width: 2.w)
+                : null,
+            boxShadow: widget.isBeingRepliedTo
+                ? [
+                    BoxShadow(
+                      color: Colors.blue.withOpacity(0.3),
+                      blurRadius: 8,
+                      spreadRadius: 2,
+                    ),
+                  ]
+                : null,
           ),
-        ],
-      ),
+          child: Column(
+            crossAxisAlignment: widget.isSent
+                ? CrossAxisAlignment.end
+                : CrossAxisAlignment.start,
+            children: [
+              if (widget.isBeingRepliedTo)
+                _ReplyStatusIndicator(widget: widget),
+              _MainBubble(
+                widget: widget,
+                bubbleColor: bubbleColor,
+                replyBorderColor: replyBorderColor,
+                replyBackgroundColor: replyBackgroundColor,
+                isReplyFromMe: isReplyFromMe,
+                currentUserId: currentUserId,
+              ),
+            ],
+          ),
+        ),
+        if (isPinned)
+          Positioned(
+            right: 16.w,
+            child: Icon(Icons.push_pin, size: 18, color: Colors.amber[600]),
+          ),
+      ],
     );
   }
 }
@@ -562,7 +558,7 @@ class _MainBubble extends StatelessWidget {
             nip: widget.isSent ? BubbleNip.rightTop : BubbleNip.leftTop,
             color: bubbleColor,
             child: SizedBox(
-              width: 270.w,
+              width: 280.w,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -600,7 +596,7 @@ class _UserAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChatAvatar(
+    return CachedChatAvatar(
       size: 26.h,
       name: messageData?.sender?.name ?? '',
       imageUrl: messageData?.sender?.imageUrl,
@@ -622,7 +618,7 @@ class _SenderName extends StatelessWidget {
           style: TextStyle(
             fontSize: 11.sp,
             fontWeight: FontWeight.w600,
-            color: Colors.grey,
+            color: getColorFromName(name),
           ),
         ),
         SizedBox(height: 2.h),
@@ -630,6 +626,24 @@ class _SenderName extends StatelessWidget {
     );
   }
 }
+
+Color getColorFromName(String name) {
+  final int hash = name.hashCode;
+  final int index = hash % nameColors.length;
+  return nameColors[index];
+}
+
+final List<Color> nameColors = [
+  Colors.red,
+  Colors.orange,
+  Colors.blue,
+  Colors.green,
+  Colors.purple,
+  Colors.teal,
+  Colors.pink,
+  Colors.indigo,
+  Colors.amber,
+];
 
 class _InlineReplyPreview extends StatelessWidget {
   final ChatBubbleMessage widget;
@@ -671,7 +685,7 @@ class _InlineReplyPreview extends StatelessWidget {
               FutureBuilder(
                 future: AuthUtils.instance.readUserData(),
                 builder: (context, asyncSnapshot) {
-                  log(
+                  dev.log(
                     "ID =- =-= ${widget.replyToMessage?.senderId == asyncSnapshot.data?.result?.userId}. ${widget.replyToMessage?.senderId}. ${asyncSnapshot.data?.result?.userId}",
                   );
                   return Text(
@@ -937,7 +951,6 @@ class _TimestampWithStatus extends StatelessWidget {
   }
 }
 
-// Bottom sheet remains the same but extracted for clarity
 class MessageOptionsBottomSheet extends StatelessWidget {
   final String message;
   final bool isSent;
@@ -995,7 +1008,6 @@ class MessageOptionsBottomSheet extends StatelessWidget {
               ),
             ),
 
-            // Header with message preview
             if (message.isNotEmpty) ...[
               Container(
                 width: double.infinity,
@@ -1182,7 +1194,6 @@ class MessageOptionsBottomSheet extends StatelessWidget {
   }
 }
 
-// Optimized media preview widgets
 class OptimizedMediaPreview extends StatelessWidget {
   final ChatMedias? media;
   final bool isInChatBubble;
@@ -1246,34 +1257,34 @@ class MediaContainer extends StatelessWidget {
   }
 }
 
-class _PinnedStatusIndicator extends StatelessWidget {
-  final ChatBubbleMessage widget;
+// class _PinnedStatusIndicator extends StatelessWidget {
+//   final ChatBubbleMessage widget;
 
-  const _PinnedStatusIndicator({required this.widget});
+//   const _PinnedStatusIndicator({required this.widget});
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.only(
-        left: widget.isSent ? 0 : 50.w,
-        right: widget.isSent ? 50.w : 0,
-        bottom: 4.h,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.push_pin, size: 14, color: Colors.amber[700]),
-          SizedBox(width: 4.w),
-          Text(
-            'Pinned Message',
-            style: TextStyle(
-              fontSize: 11.sp,
-              color: Colors.amber[700],
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//       margin: EdgeInsets.only(
+//         left: widget.isSent ? 0 : 50.w,
+//         right: widget.isSent ? 50.w : 0,
+//         bottom: 4.h,
+//       ),
+//       child: Row(
+//         mainAxisSize: MainAxisSize.min,
+//         children: [
+//           Icon(Icons.push_pin, size: 14, color: Colors.amber[700]),
+//           SizedBox(width: 4.w),
+//           Text(
+//             'Pinned Message',
+//             style: TextStyle(
+//               fontSize: 11.sp,
+//               color: Colors.amber[700],
+//               fontWeight: FontWeight.w600,
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }

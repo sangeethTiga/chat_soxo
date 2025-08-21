@@ -359,9 +359,9 @@ class ChatContent extends StatefulWidget {
   final Map<String, dynamic>? data;
   final VoidCallback onToggleTap;
   final Animation<double> arrowAnimation;
-  final ScrollController? scrollController; // Add this
-  final Map<String, GlobalKey>? messageKeys; // Add this
-  final Function(Entry)? onPinnedMessageTap; // Add this callback
+  final ScrollController? scrollController;
+  final Map<String, GlobalKey>? messageKeys;
+  final Function(Entry)? onPinnedMessageTap;
 
   const ChatContent({
     super.key,
@@ -456,8 +456,8 @@ class _ChatContentState extends State<ChatContent>
                   currentReplyingTo: chatState.replyingTo,
                   isReplying: chatState.isReplying ?? false,
                   chatData: widget.data,
-                  scrollController: widget.scrollController, // Pass controller
-                  messageKeys: widget.messageKeys, // Pass keys
+                  scrollController: widget.scrollController,
+                  messageKeys: widget.messageKeys,
                 ),
               ),
 
