@@ -410,7 +410,6 @@ PreferredSizeWidget buildAppBarWithProfile(
                                     )
                                   : Row(
                                       children: [
-                                        8.horizontalSpace,
                                         Container(
                                           height: 8.h,
                                           width: 8.w,

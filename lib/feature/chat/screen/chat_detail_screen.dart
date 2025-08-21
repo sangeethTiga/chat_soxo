@@ -121,8 +121,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   }
 
   void _highlightMessage(String messageId) {
-    // You can implement a brief highlight animation here
-    // This is optional but provides nice user feedback
     log('✨ Highlighting message: $messageId');
   }
 
