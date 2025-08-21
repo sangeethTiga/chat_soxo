@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -318,7 +320,6 @@ PreferredSizeWidget buildSeamlessAppBar(
   );
 }
 
-// Updated main AppBar with better participant display
 PreferredSizeWidget buildAppBarWithProfile(
   BuildContext context,
   Map<String, dynamic>? arguments, {
@@ -376,7 +377,7 @@ PreferredSizeWidget buildAppBarWithProfile(
                   child: BlocBuilder<ChatCubit, ChatState>(
                     builder: (context, state) {
                       final userChats = state.chatEntry?.userChats ?? [];
-
+                      log("WHAT IS ${userChats.length}");
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -393,8 +394,7 @@ PreferredSizeWidget buildAppBarWithProfile(
                           // Participants and status
                           Row(
                             children: [
-                              // Participants list
-                              userChats.length > 3
+                              userChats.length > 2
                                   ? Expanded(
                                       child: userChats.isNotEmpty
                                           ? _buildParticipantsWithCount(

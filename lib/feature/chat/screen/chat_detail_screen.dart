@@ -10,8 +10,6 @@ import 'package:soxo_chat/feature/chat/screen/widgets/enhanced_widget.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/opmiized_card.dart';
 import 'package:soxo_chat/shared/widgets/animated_divider/animated_divider.dart';
 import 'package:soxo_chat/shared/widgets/appbar/appbar.dart';
-// Complete ChatDetailScreen implementation with scroll-to-pinned functionality
-// Complete ChatDetailScreen implementation with scroll-to-pinned functionality
 
 class ChatDetailScreen extends StatefulWidget {
   final Map<String, dynamic>? data;
@@ -28,7 +26,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   late Animation<double> _arrowRotationAnimation;
   late Animation<double> _contentFadeAnimation;
 
-  // Add these for scroll functionality
   final ScrollController _messageScrollController = ScrollController();
   final Map<String, GlobalKey> _messageKeys = {};
 
@@ -41,16 +38,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   void _initializeAnimations() {
     context.read<ChatCubit>().resetChatState();
     _loadChatData();
-
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-
     _arrowRotationAnimation = Tween<double>(begin: 0.0, end: 0.5).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
-
     _contentFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
     );
@@ -59,7 +53,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   @override
   void dispose() {
     _animationController.dispose();
-    _messageScrollController.dispose(); // Dispose scroll controller
+    _messageScrollController.dispose();
     super.dispose();
   }
 
@@ -81,24 +75,20 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     }
   }
 
-  // Add method to scroll to specific pinned message
   void _scrollToPinnedMessage(Entry pinnedMessage) {
     log('🎯 Attempting to scroll to pinned message: ${pinnedMessage.id}');
 
     final chatCubit = context.read<ChatCubit>();
 
-    // Switch to chat view if currently in group view
     if (chatCubit.state.isArrow) {
       log('📱 Switching from group view to chat view');
       chatCubit.arrowSelected();
       _animationController.reverse();
 
-      // Wait for view transition animation to complete
       Future.delayed(const Duration(milliseconds: 350), () {
         _performScroll(pinnedMessage);
       });
     } else {
-      // Already in chat view, scroll immediately
       _performScroll(pinnedMessage);
     }
   }
@@ -115,13 +105,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
         curve: Curves.easeInOut,
         alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtStart,
       ).then((_) {
-        // Optional: Add a brief highlight effect
         _highlightMessage(pinnedMessage.id.toString());
       });
     } else {
       log('❌ Message key not found for message: ${pinnedMessage.id}');
 
-      // Fallback: Try to scroll to bottom and show a message
       if (_messageScrollController.hasClients) {
         _messageScrollController.animateTo(
           _messageScrollController.position.maxScrollExtent,
@@ -129,14 +117,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
           curve: Curves.easeOut,
         );
       }
-
-      // Show feedback to user
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Scrolling to pinned message...'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
     }
   }
 
@@ -214,8 +194,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                             onToggleTap: _handleViewToggle,
                             arrowAnimation: _arrowRotationAnimation,
                             contentAnimation: _contentFadeAnimation,
-                            onPinnedMessageTap:
-                                _scrollToPinnedMessage, // Pass callback
+                            onPinnedMessageTap: _scrollToPinnedMessage,
                           )
                         : ChatContent(
                             onPinnedMessageTap: _scrollToPinnedMessage,
@@ -223,9 +202,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                             data: widget.data,
                             onToggleTap: _handleViewToggle,
                             arrowAnimation: _arrowRotationAnimation,
-                            scrollController:
-                                _messageScrollController, // Pass controller
-                            messageKeys: _messageKeys, // Pass keys map
+                            scrollController: _messageScrollController,
+                            messageKeys: _messageKeys,
                           ),
                   );
                 },
@@ -238,13 +216,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   }
 }
 
-// Updated GroupContent to handle pinned message taps
 class GroupContent extends StatefulWidget {
   final VoidCallback onToggleTap;
   final Animation<double> arrowAnimation;
   final Animation<double> contentAnimation;
   final Map<String, dynamic>? data;
-  final Function(Entry)? onPinnedMessageTap; // Add this callback
+  final Function(Entry)? onPinnedMessageTap;
 
   const GroupContent({
     super.key,
@@ -252,7 +229,7 @@ class GroupContent extends StatefulWidget {
     required this.arrowAnimation,
     required this.contentAnimation,
     required this.data,
-    this.onPinnedMessageTap, // Add this parameter
+    this.onPinnedMessageTap,
   });
 
   @override
@@ -304,7 +281,7 @@ class _GroupContentState extends State<GroupContent>
             .toList();
         return Column(
           children: [
-            _buildGroupList(pinnedList ?? []), // Pass pinned list
+            _buildGroupList(pinnedList ?? []),
             AnimatedDividerCard(
               count: pinnedList?.length.toString(),
               onArrowTap: widget.onToggleTap,
@@ -412,7 +389,7 @@ class _ChatContentState extends State<ChatContent>
     context.read<ChatCubit>().startReply(message);
     _replyAnimationController.forward();
     HapticFeedback.lightImpact();
-    log('🔄 Started reply to message: ${message.id}');
+    log(' Started reply to message: ${message.id}');
   }
 
   void _cancelReply() {
