@@ -27,7 +27,8 @@ class ChatBubbleMessage extends StatefulWidget {
   final VoidCallback? onScrollToReply;
   final String? chatId;
   final String? chatEntryId;
-
+  final ScrollController? scrollController; // Add this
+  final Map<String, GlobalKey>? messageKeys; // Add this
   const ChatBubbleMessage({
     super.key,
     this.type,
@@ -44,6 +45,8 @@ class ChatBubbleMessage extends StatefulWidget {
     this.onScrollToReply,
     this.chatEntryId,
     this.chatId,
+    this.scrollController, // Add this parameter
+    this.messageKeys, // Add this parameter
   });
 
   @override
@@ -69,10 +72,13 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
   late final Color _replyBorderColor;
   late final Color _replyBackgroundColor;
   final bool _isReplyFromMe = false;
-
+  final Set<int> _pinnedMessageIds = {};
+  late Map<String, GlobalKey> _messageKeys;
   @override
   void initState() {
     super.initState();
+    _messageKeys = widget.messageKeys ?? {};
+
     _initializeAnimations();
     _initializeColors();
     _loadCurrentUserId();
@@ -423,6 +429,11 @@ class _MessageContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isPinned = widget.isPinned;
+    final pinnedBorderColor = isPinned ? Colors.amber[600]! : null;
+    final pinnedBackgroundColor = isPinned
+        ? Colors.amber.withOpacity(0.1)
+        : null;
     return Container(
       padding: widget.isBeingRepliedTo ? EdgeInsets.all(6.w) : EdgeInsets.zero,
       decoration: BoxDecoration(
@@ -432,6 +443,8 @@ class _MessageContainer extends StatelessWidget {
         borderRadius: BorderRadius.circular(16.r),
         border: widget.isBeingRepliedTo
             ? Border.all(color: Colors.blue.withOpacity(0.6), width: 2.w)
+            : isPinned
+            ? Border.all(color: pinnedBorderColor!, width: 2.w)
             : null,
         boxShadow: widget.isBeingRepliedTo
             ? [
@@ -439,6 +452,14 @@ class _MessageContainer extends StatelessWidget {
                   color: Colors.blue.withOpacity(0.3),
                   blurRadius: 8,
                   spreadRadius: 2,
+                ),
+              ]
+            : isPinned
+            ? [
+                BoxShadow(
+                  color: Colors.amber.withOpacity(0.3),
+                  blurRadius: 8,
+                  spreadRadius: 1,
                 ),
               ]
             : null,
@@ -1220,6 +1241,38 @@ class MediaContainer extends StatelessWidget {
           maxWidth: width,
           maxHeight: height,
         ),
+      ),
+    );
+  }
+}
+
+class _PinnedStatusIndicator extends StatelessWidget {
+  final ChatBubbleMessage widget;
+
+  const _PinnedStatusIndicator({required this.widget});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.only(
+        left: widget.isSent ? 0 : 50.w,
+        right: widget.isSent ? 50.w : 0,
+        bottom: 4.h,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.push_pin, size: 14, color: Colors.amber[700]),
+          SizedBox(width: 4.w),
+          Text(
+            'Pinned Message',
+            style: TextStyle(
+              fontSize: 11.sp,
+              color: Colors.amber[700],
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1539,7 +1539,7 @@ class ChatCubit extends Cubit<ChatState> {
                 chatId: req.chatId,
                 senderId:
                     int.tryParse(user?.result?.userId.toString() ?? '') ?? 0,
-                type: 'N',
+                type: 'CN',
                 typeValue: 0,
                 messageType: 'voice',
                 content: 'Voice message',
@@ -1759,7 +1759,7 @@ class ChatCubit extends Cubit<ChatState> {
     );
   }
 
-  void pinnedTongle(Entry message) {
+  void pinnedTongle(Entry message, int chatId, int userId) async {
     final messageId = message.id;
     if (messageId == null) {
       emit(state.copyWith(errorMessage: 'Cannot pin message: Invalid ID'));
@@ -1776,12 +1776,32 @@ class ChatCubit extends Cubit<ChatState> {
       }
       return entry;
     }).toList();
+
+    await createChat(
+      AddChatEntryRequest(
+        chatId: chatId,
+        senderId: userId,
+        type: 'CN',
+        typeValue: 0,
+        messageType: message.messageType ?? 'text',
+        content: message.content ?? '',
+        source: 'mobile',
+        attachedFiles: [],
+        otherDetails1: message.otherDetails1 ?? '',
+        pinned: newPinStatus,
+      ),
+      files: state.selectedFiles,
+    );
     emit(
       state.copyWith(
         chatEntry: state.chatEntry?.copyWith(entries: updatedEntries),
         isPinned: newPinStatus,
       ),
     );
+  }
+
+  initPinnedClear() {
+    emit(state.copyWith(isPinned: null, isMakeItNull: true));
   }
 
   void sendTextMessage(String message, AddChatEntryRequest req) async {

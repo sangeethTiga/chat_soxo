@@ -66,13 +66,11 @@ class ChatSignalRService {
   Future<void> initializeConnection() async {
     log('🔗 SignalR: initializeConnection called');
 
-    // Check if already connected
     if (_hubConnection != null && _isConnected) {
       log('✅ SignalR: Already connected');
       return;
     }
 
-    // Handle concurrent attempts with timeout
     if (_isConnecting) {
       log('⏳ Connection in progress, waiting with timeout...');
 
@@ -82,7 +80,7 @@ class ChatSignalRService {
             _maxConnectionWait,
             onTimeout: () {
               log('⏰ Connection wait timed out, forcing reset');
-              _forceResetConnectionState();
+              // _forceResetConnectionState();
               throw TimeoutException(
                 'Connection wait timeout',
                 _maxConnectionWait,
@@ -92,53 +90,50 @@ class ChatSignalRService {
           return;
         } catch (e) {
           log('❌ Error waiting for connection: $e');
-          _forceResetConnectionState();
+          // _forceResetConnectionState();
         }
       }
     }
 
-    // Increment attempt counter and check limit
     _connectionAttempts++;
     if (_connectionAttempts > _maxConcurrentAttempts) {
       log('❌ Too many connection attempts ($_connectionAttempts), resetting');
-      await _forceResetConnectionState();
+      // await _forceResetConnectionState();
       _connectionAttempts = 0;
     }
 
-    // Start connection attempt
     _isConnecting = true;
     _connectionCompleter = Completer<void>();
 
-    // Set up timeout timer
     _connectionTimeoutTimer?.cancel();
     _connectionTimeoutTimer = Timer(_maxConnectionWait, () {
-      if (_isConnecting) {
-        log('⏰ Connection attempt timed out');
-        _handleConnectionTimeout();
-      }
+      // if (_isConnecting) {
+      //   log('⏰ Connection attempt timed out');
+      //   _handleConnectionTimeout();
+      // }
     });
 
     try {
-      log('🚀 Starting new connection attempt #$_connectionAttempts');
+      log(' Starting new connection attempt #$_connectionAttempts');
       await _performConnection();
 
-      _connectionAttempts = 0; // Reset on success
+      _connectionAttempts = 0;
       log('✅ Connection successful, reset attempt counter');
     } catch (e) {
       log('❌ Connection attempt #$_connectionAttempts failed: $e');
-      _handleConnectionFailure(e);
+      // _handleConnectionFailure(e);
       rethrow;
     } finally {
       _connectionTimeoutTimer?.cancel();
     }
   }
 
-  void _handleConnectionTimeout() {
-    log('⏰ Connection timeout reached');
-    _handleConnectionFailure(
-      TimeoutException('Connection timeout', _maxConnectionWait),
-    );
-  }
+  // void _handleConnectionTimeout() {
+  //   log('⏰ Connection timeout reached');
+  //   _handleConnectionFailure(
+  //     TimeoutException('Connection timeout', _maxConnectionWait),
+  //   );
+  // }
 
   Future<void> _performConnection() async {
     final user = await AuthUtils.instance.readUserData();
@@ -165,16 +160,15 @@ class ChatSignalRService {
     for (final baseUrl in baseUrls) {
       final transportStrategies = [
         HttpTransportType.LongPolling,
-        HttpTransportType.WebSockets,
-        HttpTransportType.ServerSentEvents,
+        // HttpTransportType.WebSockets,
+        // HttpTransportType.ServerSentEvents,
       ];
 
       for (final transport in transportStrategies) {
         try {
-          log('🔄 Trying $baseUrl with transport: $transport');
+          log('Trying $baseUrl with transport: $transport');
           await _attemptConnection(token, baseUrl, transport);
 
-          // Success - complete the completer and update state
           _isConnected = true;
           _isConnecting = false;
 
@@ -184,23 +178,22 @@ class ChatSignalRService {
           }
 
           onConnected?.call();
-          _startActivityTracking();
+          // _startActivityTracking();
 
           log('✅ Successfully connected with $transport to $baseUrl');
           return;
         } catch (e) {
           lastError = e is Exception ? e : Exception(e.toString());
-          log('❌ $transport on $baseUrl failed: $e');
+          log(' $transport on $baseUrl failed: $e');
 
-          await _cleanupFailedConnection();
+          // await _cleanupFailedConnection();
 
-          // Skip HTTPS if SSL/TLS errors
-          if (baseUrl.startsWith('https://') && _isSSLError(e)) {
-            log(
-              '⚠️ SSL/TLS error detected, skipping remaining transports for HTTPS',
-            );
-            break;
-          }
+          // if (baseUrl.startsWith('https://') && _isSSLError(e)) {
+          //   log(
+          //     '⚠️ SSL/TLS error detected, skipping remaining transports for HTTPS',
+          //   );
+          //   break;
+          // }
         }
       }
     }
@@ -208,83 +201,83 @@ class ChatSignalRService {
     throw lastError ?? Exception('All connection attempts failed');
   }
 
-  bool _isSSLError(dynamic error) {
-    final errorString = error.toString().toLowerCase();
-    return errorString.contains('handshakeexception') ||
-        errorString.contains('wrong_version_number') ||
-        errorString.contains('tls') ||
-        errorString.contains('ssl');
-  }
+  // bool _isSSLError(dynamic error) {
+  //   final errorString = error.toString().toLowerCase();
+  //   return errorString.contains('handshakeexception') ||
+  //       errorString.contains('wrong_version_number') ||
+  //       errorString.contains('tls') ||
+  //       errorString.contains('ssl');
+  // }
 
-  void _handleConnectionFailure(dynamic error) {
-    log('❌ Handling connection failure: $error');
+  // void _handleConnectionFailure(dynamic error) {
+  //   log('❌ Handling connection failure: $error');
 
-    _connectionTimeoutTimer?.cancel();
+  //   _connectionTimeoutTimer?.cancel();
 
-    if (_connectionCompleter != null && !_connectionCompleter!.isCompleted) {
-      _connectionCompleter!.completeError(error);
-    }
+  //   if (_connectionCompleter != null && !_connectionCompleter!.isCompleted) {
+  //     _connectionCompleter!.completeError(error);
+  //   }
 
-    _isConnecting = false;
-    _connectionCompleter = null;
-    _isConnected = false;
+  //   _isConnecting = false;
+  //   _connectionCompleter = null;
+  //   _isConnected = false;
 
-    unawaited(_cleanupFailedConnection());
-    onError?.call(error is Exception ? error : Exception(error.toString()));
-  }
+  //   unawaited(_cleanupFailedConnection());
+  //   onError?.call(error is Exception ? error : Exception(error.toString()));
+  // }
 
-  Future<void> _forceResetConnectionState() async {
-    log('🔄 Force resetting connection state');
+  // Future<void> _forceResetConnectionState() async {
+  //   log('🔄 Force resetting connection state');
 
-    _connectionTimeoutTimer?.cancel();
+  //   _connectionTimeoutTimer?.cancel();
 
-    if (_connectionCompleter != null && !_connectionCompleter!.isCompleted) {
-      _connectionCompleter!.completeError(Exception('Connection force reset'));
-    }
+  //   if (_connectionCompleter != null && !_connectionCompleter!.isCompleted) {
+  //     _connectionCompleter!.completeError(Exception('Connection force reset'));
+  //   }
 
-    _isConnecting = false;
-    _connectionCompleter = null;
+  //   _isConnecting = false;
+  //   _connectionCompleter = null;
 
-    if (_hubConnection != null && !_isConnected) {
-      try {
-        await _hubConnection!.stop();
-      } catch (e) {
-        log('⚠️ Error stopping connection during reset: $e');
-      }
-      _hubConnection = null;
-    }
+  //   if (_hubConnection != null && !_isConnected) {
+  //     try {
+  //       await _hubConnection!.stop();
+  //     } catch (e) {
+  //       log('⚠️ Error stopping connection during reset: $e');
+  //     }
+  //     _hubConnection = null;
+  //   }
 
-    _isConnected = false;
-    log('✅ Connection state force reset complete');
-  }
+  //   _isConnected = false;
+  //   log('✅ Connection state force reset complete');
+  // }
 
-  Future<void> _cleanupFailedConnection() async {
-    try {
-      if (_hubConnection != null) {
-        await _hubConnection!.stop().timeout(
-          Duration(seconds: 5),
-          onTimeout: () {
-            log('⚠️ Connection stop timeout during cleanup');
-          },
-        );
-      }
-    } catch (e) {
-      log('⚠️ Error during cleanup: $e');
-    } finally {
-      _hubConnection = null;
-      _isConnected = false;
-    }
-  }
+  // Future<void> _cleanupFailedConnection() async {
+  //   try {
+  //     if (_hubConnection != null) {
+  //       await _hubConnection!.stop().timeout(
+  //         Duration(seconds: 5),
+  //         onTimeout: () {
+  //           log('⚠️ Connection stop timeout during cleanup');
+  //         },
+  //       );
+  //     }
+  //   } catch (e) {
+  //     log('⚠️ Error during cleanup: $e');
+  //   } finally {
+  //     _hubConnection = null;
+  //     _isConnected = false;
+  //   }
+  // }
 
-  void _startActivityTracking() {
-    _activityTimer?.cancel();
-    _activityTimer = Timer.periodic(Duration(seconds: 30), (timer) {
-      if (_isConnected) {
-        _lastActivity = DateTime.now();
-        log('📊 SignalR activity tracked: $_lastActivity');
-      }
-    });
-  }
+  // void _startActivityTracking() {
+  //   _activityTimer?.cancel();
+  //   _activityTimer = Timer.periodic(Duration(seconds: 30), (timer) {
+  //     if (_isConnected) {
+  //       _lastActivity = DateTime.now();
+  //       log('📊 SignalR activity tracked: $_lastActivity');
+  //     }
+  //   });
+  // }
 
   bool get isComingBackFromInactivity {
     if (_lastActivity == null) return false;
@@ -311,18 +304,15 @@ class ChatSignalRService {
         log('SignalR: Providing access token...');
         return token;
       },
-      transport: transport,
-      skipNegotiation: transport == HttpTransportType.WebSockets,
-      logMessageContent: true,
+      transport: HttpTransportType.LongPolling,
     );
 
     _hubConnection = HubConnectionBuilder()
         .withUrl(baseUrl, options: connectionOptions)
-        .withAutomaticReconnect(
-          retryDelays: [1000, 2000, 5000, 10000, 15000, 30000],
-        )
+        .withAutomaticReconnect()
         .build();
-
+    _hubConnection?.serverTimeoutInMilliseconds = 90 * 1000;
+    _hubConnection?.keepAliveIntervalInMilliseconds = 15 * 1000;
     _setupEventHandlers();
 
     try {
@@ -349,7 +339,7 @@ class ChatSignalRService {
     } catch (error) {
       _isConnected = false;
       log('SignalR: ❌ Connection failed with $transport: $error');
-      await _cleanupFailedConnection();
+      // await _cleanupFailedConnection();
       rethrow;
     }
   }
@@ -857,7 +847,6 @@ class ChatSignalRService {
     _connectionTimeoutTimer?.cancel();
     _activityTimer?.cancel();
     _connectionAttempts = 0;
-    await _forceResetConnectionState();
     log('✅ SignalR service force reset complete');
   }
 

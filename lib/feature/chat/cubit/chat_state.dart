@@ -100,6 +100,7 @@ class ChatState extends Equatable {
     Entry? selectedReplyMessage,
     int? currentUserId,
     bool? isUserLoaded,
+    bool? isMakeItNull = false,
   }) {
     return ChatState(
       isArrow: isArrow ?? this.isArrow,
@@ -124,7 +125,7 @@ class ChatState extends Equatable {
       isLoadingMedia: isLoadingMedia ?? this.isLoadingMedia,
       replyingTo: replyingTo ?? this.replyingTo,
       isReplying: isReplying ?? this.isReplying,
-      isPinned: isPinned ?? this.isPinned,
+      isPinned: isMakeItNull == true ? null : isPinned ?? this.isPinned,
 
       highlightedMessageId: highlightedMessageId ?? this.highlightedMessageId,
       scrollToMessageId: scrollToMessageId ?? this.scrollToMessageId,
@@ -194,6 +195,7 @@ class InitialChatState extends ChatState {
         fileUrls: {},
         fileTypes: {},
         isArrow: false,
+        isPinned: null,
       );
 }
 

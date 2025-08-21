@@ -108,13 +108,14 @@ class _EnhancedUnifiedMessageInputState
       _handleGroupMessage(messageText);
       return;
     }
-
+    if (chatCubit.state.isPinned != null) {
+      chatCubit.initPinnedClear();
+    }
     final selectedFiles = chatCubit.state.selectedFiles ?? [];
     if (messageText.isEmpty && selectedFiles.isEmpty) return;
 
     _messageController.clear();
     setState(() => _hasText = false);
-
     if ((isReply ?? false) && replyingTo != null) {
       final baseRequest = AddChatEntryRequest(
         chatId: widget.chatData?['chat_id'],
@@ -137,7 +138,7 @@ class _EnhancedUnifiedMessageInputState
       final request = AddChatEntryRequest(
         chatId: widget.chatData?['chat_id'],
         senderId: int.tryParse(user?.result?.userId.toString() ?? '1'),
-        type: 'N',
+        type: 'CN',
         typeValue: 0,
         messageType: 'text',
         content: messageText.isNotEmpty ? messageText : 'File attachment',

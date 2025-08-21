@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:go_router/go_router.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/user_data.dart';
-import 'package:soxo_chat/shared/routes/routes.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
 
 class AnimatedDividerCard extends StatelessWidget {
@@ -66,68 +64,133 @@ class AnimatedDividerCard extends StatelessWidget {
   }
 }
 
+// class GroupCardWidget extends StatelessWidget {
+//   final String? title;
+//   final String? imageUrl;
+//   final int? chatId;
+//   const GroupCardWidget({super.key, this.title, this.imageUrl, this.chatId});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return InkWell(
+//       onTap: () {
+//         _navigateToSingleChat(context);
+//       },
+//       child: Container(
+//         padding: const EdgeInsets.all(12),
+//         margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+
+//         child: Row(
+//           children: [
+//             ChatAvatar(name: title ?? '', size: 30, imageUrl: imageUrl),
+
+//             12.horizontalSpace,
+//             Expanded(
+//               child: Column(
+//                 crossAxisAlignment: CrossAxisAlignment.start,
+//                 children: [
+//                   Row(
+//                     children: [
+//                       Text(
+//                         title ?? '',
+//                         style: FontPalette.hW700S14.copyWith(
+//                           color: Colors.black87,
+//                         ),
+//                       ),
+//                       5.horizontalSpace,
+//                       Text(
+//                         'send request to case review',
+//                         style: FontPalette.hW500S14.copyWith(
+//                           color: Colors.grey[600],
+//                         ),
+//                       ),
+//                     ],
+//                   ),
+//                   4.verticalSpace,
+//                   Text(
+//                     '3 Replied 4 Pending',
+//                     style: FontPalette.hW500S12.copyWith(
+//                       color: Color(0XFF166FF6),
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//             ),
+//             SvgPicture.asset('assets/icons/clock.svg'),
+//             3.horizontalSpace,
+//             const Text('45 min'),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+
+//   void _navigateToSingleChat(BuildContext context) {
+//     context.push(routeSingleChat, extra: {"title": title, 'chat_id': chatId});
+//   }
+// }
 class GroupCardWidget extends StatelessWidget {
   final String? title;
   final String? imageUrl;
   final int? chatId;
-  const GroupCardWidget({super.key, this.title, this.imageUrl, this.chatId});
+  final VoidCallback? onTap; // Add this callback
+
+  const GroupCardWidget({
+    super.key,
+    this.title,
+    this.imageUrl,
+    this.chatId,
+    this.onTap, // Add this parameter
+  });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () {
-        _navigateToSingleChat(context);
-      },
+        onTap == null ? null : onTap!();
+      }, // Add tap functionality
       child: Container(
-        padding: const EdgeInsets.all(12),
-        margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
-
+        margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+        padding: EdgeInsets.all(12.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12.r),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
         child: Row(
           children: [
-            ChatAvatar(name: title ?? '', size: 30, imageUrl: imageUrl),
-
-            12.horizontalSpace,
+            // Your existing avatar and title implementation
+            ChatAvatar(size: 40.h, name: title ?? '', imageUrl: imageUrl),
+            SizedBox(width: 12.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Text(
-                        title ?? '',
-                        style: FontPalette.hW700S14.copyWith(
-                          color: Colors.black87,
-                        ),
-                      ),
-                      5.horizontalSpace,
-                      Text(
-                        'send request to case review',
-                        style: FontPalette.hW500S14.copyWith(
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                  4.verticalSpace,
                   Text(
-                    '3 Replied 4 Pending',
-                    style: FontPalette.hW500S12.copyWith(
-                      color: Color(0XFF166FF6),
+                    title ?? 'Unknown User',
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
                     ),
+                  ),
+                  Text(
+                    'Pinned Message',
+                    style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
                   ),
                 ],
               ),
             ),
-            SvgPicture.asset('assets/icons/clock.svg'),
-            3.horizontalSpace,
-            const Text('45 min'),
+            Icon(Icons.push_pin, size: 16.sp, color: Colors.blue[600]),
           ],
         ),
       ),
     );
-  }
-
-  void _navigateToSingleChat(BuildContext context) {
-    context.push(routeSingleChat, extra: {"title": title, 'chat_id': chatId});
   }
 }

@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
-import 'package:soxo_chat/feature/chat/domain/models/add_chat/add_chatentry_request.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_entry/chat_entry_response.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/chat_bubble_widget.dart';
 import 'package:soxo_chat/shared/animation/empty_chat.dart';
@@ -15,12 +14,14 @@ import 'package:soxo_chat/shared/app/list/helper.dart';
 import 'package:soxo_chat/shared/utils/auth/auth_utils.dart';
 import 'package:soxo_chat/shared/widgets/shimmer/shimmer_category.dart';
 
+// Fixed OptimizedChatMessagesLists with proper key management
 class OptimizedChatMessagesLists extends StatefulWidget {
   final Function(Entry)? onReplyMessage;
-  final Map<String, dynamic>? chatData; // Add this line
-
-  final Entry? currentReplyingTo; // ✅ NEW: Current reply target
-  final bool isReplying; // ✅ NEW: Reply state
+  final Map<String, dynamic>? chatData;
+  final Entry? currentReplyingTo;
+  final bool isReplying;
+  final ScrollController? scrollController;
+  final Map<String, GlobalKey>? messageKeys;
 
   const OptimizedChatMessagesLists({
     super.key,
@@ -28,6 +29,8 @@ class OptimizedChatMessagesLists extends StatefulWidget {
     this.currentReplyingTo,
     this.isReplying = false,
     this.chatData,
+    this.scrollController,
+    this.messageKeys,
   });
 
   @override
@@ -40,14 +43,13 @@ class _OptimizedChatMessagesListsState
   late ScrollController _scrollController;
   List<Entry>? _previousEntries;
   int _previousEntriesHash = 0;
-
-  final Set<int> _pinnedMessageIds = {};
-  final Map<String, GlobalKey> _messageKeys = {};
+  late Map<String, GlobalKey> _messageKeys;
 
   @override
   void initState() {
     super.initState();
-    _scrollController = ScrollController();
+    _scrollController = widget.scrollController ?? ScrollController();
+    _messageKeys = widget.messageKeys ?? {};
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
@@ -56,60 +58,24 @@ class _OptimizedChatMessagesListsState
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    if (widget.scrollController == null) {
+      _scrollController.dispose();
+    }
     super.dispose();
   }
 
   void _togglePin(Entry message) async {
-    try {
-      // Get user data
-      final user = await AuthUtils.instance.readUserData();
-
-      // Toggle pin status locally first for immediate UI feedback
-      context.read<ChatCubit>().pinnedTongle(message);
-
-      // Determine new pinned status
-      String newPinnedStatus = _isPinned(message) ? 'N' : 'Y';
-
-      // Create the updated message request
-      await context.read<ChatCubit>().createChat(
-        AddChatEntryRequest(
-          chatId: widget
-              .chatData?['chat_id'], // You need to pass chatData to this widget
-          senderId: int.tryParse(user?.result?.userId.toString() ?? '1'),
-          type: 'N', // Normal message type
-          typeValue: 0,
-          messageType: message.messageType ?? 'text',
-          content: message.content ?? '',
-          source: 'mobile',
-          attachedFiles: [],
-          otherDetails1:
-              message.otherDetails1 ?? '', // Preserve existing details
-          pinned: newPinnedStatus,
-        ),
-        files: [],
-      );
-
-      log(
-        '📌 Message ${_isPinned(message) ? 'unpinned' : 'pinned'}: ${message.id}',
-      );
-    } catch (e) {
-      log('❌ Error toggling pin: $e');
-      // Optionally show error message to user
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Failed to ${_isPinned(message) ? 'unpin' : 'pin'} message',
-          ),
-        ),
-      );
-    }
+    final user = await AuthUtils.instance.readUserData();
+    context.read<ChatCubit>().pinnedTongle(
+      message,
+      widget.chatData?['chat_id'],
+      user?.result?.userId ?? 0,
+    );
   }
 
   bool _isPinned(Entry message) {
-    return message.pinned?.toLowerCase() == 'y';
+    return message.pinned == 'Y';
   }
-  // // Enhanced reply detection with better error handling
 
   Entry? _getReplyMessage(Entry message, List<Entry> allEntries) {
     final String? detailsStr = message.otherDetails1;
@@ -154,12 +120,9 @@ class _OptimizedChatMessagesListsState
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
         );
-        _highlightMessage(replyMessage.id.toString());
       }
     }
   }
-
-  void _highlightMessage(String messageId) {}
 
   void _scrollToBottom({bool animate = true}) {
     if (_scrollController.hasClients) {
@@ -205,8 +168,6 @@ class _OptimizedChatMessagesListsState
         final hashChanged =
             previous.chatEntry?.entries?.hashCode !=
             current.chatEntry?.entries?.hashCode;
-
-        // ✅ Listen to reply state changes
         final replyStateChanged =
             previous.isReplying != current.isReplying ||
             previous.replyingTo?.id != current.replyingTo?.id;
@@ -230,8 +191,6 @@ class _OptimizedChatMessagesListsState
             previous.chatEntry?.entries?.hashCode !=
             current.chatEntry?.entries?.hashCode;
         final errorChanged = previous.errorMessage != current.errorMessage;
-
-        // ✅ Rebuild when reply state changes
         final replyStateChanged =
             previous.isReplying != current.isReplying ||
             previous.replyingTo?.id != current.replyingTo?.id;
@@ -262,7 +221,6 @@ class _OptimizedChatMessagesListsState
     );
   }
 
-  // ✅ Enhanced message builder with reply state
   Widget _buildMessagesList(List<Entry> entries, ChatState chatState) {
     final pinnedList = entries.where((e) => e.messageType != 'html').toList();
 
@@ -271,6 +229,19 @@ class _OptimizedChatMessagesListsState
       final bTime = DateTime.tryParse(b.createdAt ?? '') ?? DateTime.now();
       return aTime.compareTo(bTime);
     });
+
+    // CRITICAL FIX: Pre-create GlobalKeys for all messages BEFORE building ListView
+    for (final messageData in pinnedList) {
+      final messageId = messageData.id.toString();
+      // Only create a new key if one doesn't exist
+      if (!_messageKeys.containsKey(messageId)) {
+        _messageKeys[messageId] = GlobalKey();
+        log('🔑 Created new key for message: $messageId');
+      }
+    }
+
+    log('📋 Total message keys available: ${_messageKeys.keys.length}');
+    log('📋 Message IDs: ${_messageKeys.keys.toList()}');
 
     return FutureBuilder(
       future: AuthUtils.instance.readUserData(),
@@ -299,8 +270,14 @@ class _OptimizedChatMessagesListsState
           itemCount: pinnedList.length,
           itemBuilder: (context, index) {
             final messageData = pinnedList[index];
-            final messageKey = GlobalKey();
-            _messageKeys[messageData.id.toString()] = messageKey;
+            final messageId = messageData.id.toString();
+
+            // CRITICAL FIX: Use existing key instead of creating new one
+            final messageKey = _messageKeys[messageId]!;
+
+            log(
+              '🎯 Building message $messageId with key: ${messageKey.hashCode}',
+            );
 
             final originalMessage = _getReplyMessage(messageData, pinnedList);
             final isBeingRepliedTo =
@@ -308,7 +285,7 @@ class _OptimizedChatMessagesListsState
                 chatState.replyingTo?.id == messageData.id;
 
             return ChatBubbleMessage(
-              key: messageKey,
+              key: messageKey, // Use the pre-created key
               type: messageData.messageType,
               message: messageData.content ?? '',
               timestamp: getFormattedDate(messageData.createdAt ?? ''),
@@ -319,9 +296,9 @@ class _OptimizedChatMessagesListsState
               isPinned: _isPinned(messageData),
               chatEntryId: messageData.id.toString(),
               chatId: messageData.chatId.toString(),
-
               isBeingRepliedTo: isBeingRepliedTo,
-
+              scrollController: _scrollController,
+              messageKeys: _messageKeys,
               onReply: () => _startReply(messageData),
               onPin: () => _togglePin(messageData),
               onScrollToReply: () => _scrollToReply(messageData, pinnedList),
