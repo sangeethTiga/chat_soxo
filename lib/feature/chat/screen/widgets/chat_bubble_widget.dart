@@ -567,7 +567,12 @@ class _MainBubble extends StatelessWidget {
                 children: [
                   if (!widget.isSent &&
                       widget.messageData?.sender?.name != null)
-                    _SenderName(name: widget.messageData!.sender!.name!),
+                    Padding(
+                      padding: EdgeInsets.only(left: 3.w, bottom: 3.h),
+                      child: _SenderName(
+                        name: widget.messageData!.sender!.name!,
+                      ),
+                    ),
                   if (widget.replyToMessage != null)
                     _InlineReplyPreview(
                       widget: widget,
@@ -804,9 +809,12 @@ class _TextContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SelectableText(
-      message,
-      style: const TextStyle(fontSize: 14, color: Colors.black87),
+    return Padding(
+      padding: EdgeInsets.only(left: 4.w),
+      child: SelectableText(
+        message,
+        style: const TextStyle(fontSize: 14, color: Colors.black87),
+      ),
     );
   }
 }
