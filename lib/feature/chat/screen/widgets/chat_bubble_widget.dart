@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:developer' as dev;
+import 'dart:io';
 
 import 'package:bubble/bubble.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +13,7 @@ import 'package:soxo_chat/feature/chat/screen/widgets/chat_card.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/htm_Card.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/user_data.dart';
 import 'package:soxo_chat/shared/utils/auth/auth_utils.dart';
+import 'package:soxo_chat/shared/widgets/media/media_cache.dart';
 
 class ChatBubbleMessage extends StatefulWidget {
   final String? type;
@@ -558,7 +561,7 @@ class _MainBubble extends StatelessWidget {
             nip: widget.isSent ? BubbleNip.rightTop : BubbleNip.leftTop,
             color: bubbleColor,
             child: SizedBox(
-              width: 280.w,
+              // width: 280.w,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -808,44 +811,41 @@ class _TextContent extends StatelessWidget {
   }
 }
 
-class _MediaAttachments extends StatelessWidget {
-  final List<ChatMedias> chatMedias;
+// class _MediaAttachments extends StatelessWidget {
+//   final List<ChatMedias> chatMedias;
 
-  const _MediaAttachments({required this.chatMedias});
+//   const _MediaAttachments({required this.chatMedias});
 
-  @override
-  Widget build(BuildContext context) {
-    if (chatMedias.isEmpty) return const SizedBox.shrink();
+//   @override
+//   Widget build(BuildContext context) {
+//     if (chatMedias.isEmpty) return const SizedBox.shrink();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (chatMedias.length > 1)
-          _MediaGrid(chatMedias: chatMedias)
-        else
-          _SingleMedia(media: chatMedias.first),
-      ],
-    );
-  }
-}
+//     return Column(
+//       crossAxisAlignment: CrossAxisAlignment.start,
+//       children: [
+//         if (chatMedias.length > 1)
+//           _MediaGrid(chatMedias: chatMedias)
+//         else
+//           _SingleMedia(media: chatMedias.first),
+//       ],
+//     );
+//   }
+// }
 
-class _SingleMedia extends StatelessWidget {
-  final ChatMedias media;
+// class _SingleMedia extends StatelessWidget {
+//   final ChatMedias media;
 
-  const _SingleMedia({required this.media});
+//   const _SingleMedia({required this.media});
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: BoxConstraints(maxWidth: 200.w, maxHeight: 200.h),
-      child: OptimizedMediaPreview(media: media, isInChatBubble: true),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return OptimizedMediaPreview(media: media, isInChatBubble: true);
+//   }
+// }
 
 class _MediaGrid extends StatelessWidget {
   final List<ChatMedias> chatMedias;
-  static const int maxDisplayCount = 3;
+  static const int maxDisplayCount = 4;
 
   const _MediaGrid({required this.chatMedias});
 
@@ -856,32 +856,801 @@ class _MediaGrid extends StatelessWidget {
         ? maxDisplayCount
         : mediaCount;
 
+    // Filter only image media
+    final imageMedias = chatMedias
+        .where((media) => _isImageMedia(media))
+        .toList();
+    final imageCount = imageMedias.length;
+
+    if (imageCount == 0) {
+      // Fallback to original implementation for non-images
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ...List.generate(displayCount, (index) {
+            final media = chatMedias[index];
+            final isLast = index == displayCount - 1;
+
+            return Container(
+              margin: EdgeInsets.only(bottom: isLast ? 0 : 8.h),
+              child: OptimizedMediaPreview(media: media, isInChatBubble: true),
+            );
+          }),
+          if (mediaCount > maxDisplayCount) ...[
+            SizedBox(height: 8.h),
+            _MediaCountIndicator(totalCount: mediaCount),
+          ],
+        ],
+      );
+    }
+
+    return _buildImageGrid(context, imageMedias, mediaCount);
+  }
+
+  bool _isImageMedia(ChatMedias media) {
+    final mediaType = media.mediaType?.toLowerCase() ?? '';
+    final mediaUrl = media.mediaUrl?.toLowerCase() ?? '';
+
+    return mediaType.contains('image') ||
+        mediaUrl.endsWith('.jpg') ||
+        mediaUrl.endsWith('.jpeg') ||
+        mediaUrl.endsWith('.png') ||
+        mediaUrl.endsWith('.gif') ||
+        mediaUrl.endsWith('.webp');
+  }
+
+  Widget _buildImageGrid(
+    BuildContext context,
+    List<ChatMedias> imageMedias,
+    int totalMediaCount,
+  ) {
+    final imageCount = imageMedias.length;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ...List.generate(displayCount, (index) {
-          final media = chatMedias[index];
-          final isLast = index == displayCount - 1;
+        if (imageCount == 1)
+          _buildSingleImage(context, imageMedias[0])
+        else if (imageCount == 2)
+          _buildTwoImages(context, imageMedias)
+        else if (imageCount == 3)
+          _buildThreeImages(context, imageMedias)
+        else
+          _buildFourOrMoreImages(context, imageMedias),
 
-          return Container(
-            margin: EdgeInsets.only(bottom: isLast ? 0 : 8.h),
-            constraints: BoxConstraints(
-              maxHeight: 120.h,
-              maxWidth: double.infinity,
-            ),
-            child: OptimizedMediaPreview(
-              media: media,
-              isInChatBubble: true,
-              maxHeight: 120.h,
-            ),
-          );
-        }),
-        if (mediaCount > maxDisplayCount) ...[
+        if (totalMediaCount > imageCount) ...[
           SizedBox(height: 8.h),
-          _MediaCountIndicator(totalCount: mediaCount),
+          _MediaCountIndicator(totalCount: totalMediaCount - imageCount),
         ],
       ],
     );
+  }
+
+  Widget _buildSingleImage(BuildContext context, ChatMedias media) {
+    return GestureDetector(
+      onTap: () => _showImageViewer(context, [media], 0),
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: 250.w,
+          maxHeight: 300.h,
+          minWidth: 120.w,
+          minHeight: 80.h,
+        ),
+        child: Hero(
+          tag: 'image_${media.id}',
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12.r),
+            child: _FixedSizeImageWrapper(
+              media: media,
+              width: null,
+              height: null,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTwoImages(BuildContext context, List<ChatMedias> imageMedias) {
+    return Container(
+      height: 180.h,
+      constraints: BoxConstraints(minWidth: 200.w),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _showImageViewer(context, imageMedias, 0),
+              child: Hero(
+                tag: 'image_${imageMedias[0].id}',
+                child: ClipRRect(
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(12.r),
+                    bottomLeft: Radius.circular(12.r),
+                  ),
+                  child: _FixedSizeImageWrapper(
+                    media: imageMedias[0],
+                    width: double.infinity,
+                    height: double.infinity,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          SizedBox(width: 2.w),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _showImageViewer(context, imageMedias, 1),
+              child: Hero(
+                tag: 'image_${imageMedias[1].id}',
+                child: ClipRRect(
+                  borderRadius: BorderRadius.only(
+                    topRight: Radius.circular(12.r),
+                    bottomRight: Radius.circular(12.r),
+                  ),
+                  child: _FixedSizeImageWrapper(
+                    media: imageMedias[1],
+                    width: double.infinity,
+                    height: double.infinity,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThreeImages(BuildContext context, List<ChatMedias> imageMedias) {
+    return Container(
+      height: 180.h,
+      constraints: BoxConstraints(minWidth: 200.w),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 1,
+            child: GestureDetector(
+              onTap: () => _showImageViewer(context, imageMedias, 0),
+              child: Hero(
+                tag: 'image_${imageMedias[0].id}',
+                child: ClipRRect(
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(12.r),
+                    bottomLeft: Radius.circular(12.r),
+                  ),
+                  child: _FixedSizeImageWrapper(
+                    media: imageMedias[0],
+                    width: double.infinity,
+                    height: double.infinity,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          SizedBox(width: 2.w),
+          Expanded(
+            flex: 1,
+            child: Column(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => _showImageViewer(context, imageMedias, 1),
+                    child: Hero(
+                      tag: 'image_${imageMedias[1].id}',
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.only(
+                          topRight: Radius.circular(12.r),
+                        ),
+                        child: _FixedSizeImageWrapper(
+                          media: imageMedias[1],
+                          width: double.infinity,
+                          height: double.infinity,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 2.h),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => _showImageViewer(context, imageMedias, 2),
+                    child: Hero(
+                      tag: 'image_${imageMedias[2].id}',
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.only(
+                          bottomRight: Radius.circular(12.r),
+                        ),
+                        child: _FixedSizeImageWrapper(
+                          media: imageMedias[2],
+                          width: double.infinity,
+                          height: double.infinity,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFourOrMoreImages(
+    BuildContext context,
+    List<ChatMedias> imageMedias,
+  ) {
+    final hasMoreImages = imageMedias.length > 4;
+
+    return Container(
+      height: 180.h,
+      constraints: BoxConstraints(minWidth: 200.w),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => _showImageViewer(context, imageMedias, 0),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(12.r),
+                      ),
+                      child: _FixedSizeImageWrapper(
+                        media: imageMedias[0],
+                        width: double.infinity,
+                        height: double.infinity,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 2.h),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => _showImageViewer(context, imageMedias, 1),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(12.r),
+                      ),
+                      child: _FixedSizeImageWrapper(
+                        media: imageMedias[1],
+                        width: double.infinity,
+                        height: double.infinity,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: 2.w),
+          Expanded(
+            child: Column(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => _showImageViewer(context, imageMedias, 2),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.only(
+                        topRight: Radius.circular(12.r),
+                      ),
+                      child: _FixedSizeImageWrapper(
+                        media: imageMedias[2],
+                        width: double.infinity,
+                        height: double.infinity,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 2.h),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: hasMoreImages
+                        ? () => _showImageGallery(context, imageMedias)
+                        : () => _showImageViewer(context, imageMedias, 3),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.only(
+                        bottomRight: Radius.circular(12.r),
+                      ),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          _FixedSizeImageWrapper(
+                            media: imageMedias[3],
+                            width: double.infinity,
+                            height: double.infinity,
+                          ),
+                          if (hasMoreImages)
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.6),
+                                borderRadius: BorderRadius.only(
+                                  bottomRight: Radius.circular(12.r),
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '+${imageMedias.length - 4}',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16.sp,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showImageViewer(
+    BuildContext context,
+    List<ChatMedias> images,
+    int initialIndex,
+  ) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            ImageViewerScreen(images: images, initialIndex: initialIndex),
+      ),
+    );
+  }
+
+  void _showImageGallery(BuildContext context, List<ChatMedias> images) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ImageGalleryScreen(images: images),
+      ),
+    );
+  }
+}
+
+// Create a new screen for viewing all images
+class ImageGalleryScreen extends StatelessWidget {
+  final List<ChatMedias> images;
+
+  const ImageGalleryScreen({super.key, required this.images});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: Text(
+          '${images.length} Photos',
+          style: const TextStyle(color: Colors.white),
+        ),
+      ),
+      body: GridView.builder(
+        padding: EdgeInsets.all(16.w),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 8.w,
+          mainAxisSpacing: 8.h,
+        ),
+        itemCount: images.length,
+        itemBuilder: (context, index) {
+          return GestureDetector(
+            onTap: () => _openImageViewer(context, index),
+            child: Hero(
+              tag: 'image_${images[index].id}',
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8.r),
+                child: _EnhancedImagePreview(
+                  media: images[index],
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _openImageViewer(BuildContext context, int index) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            ImageViewerScreen(images: images, initialIndex: index),
+      ),
+    );
+  }
+}
+
+// Create a screen for viewing individual images with swipe
+class ImageViewerScreen extends StatefulWidget {
+  final List<ChatMedias> images;
+  final int initialIndex;
+
+  const ImageViewerScreen({
+    super.key,
+    required this.images,
+    required this.initialIndex,
+  });
+
+  @override
+  State<ImageViewerScreen> createState() => _ImageViewerScreenState();
+}
+
+class _ImageViewerScreenState extends State<ImageViewerScreen> {
+  late PageController _pageController;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+    _pageController = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: Text(
+          '${_currentIndex + 1} of ${widget.images.length}',
+          style: const TextStyle(color: Colors.white),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share, color: Colors.white),
+            onPressed: () => _shareImage(widget.images[_currentIndex]),
+          ),
+          IconButton(
+            icon: const Icon(Icons.download, color: Colors.white),
+            onPressed: () => _downloadImage(widget.images[_currentIndex]),
+          ),
+        ],
+      ),
+      body: PageView.builder(
+        controller: _pageController,
+        onPageChanged: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        itemCount: widget.images.length,
+        itemBuilder: (context, index) {
+          return Center(
+            child: Hero(
+              tag: 'image_${widget.images[index].id}',
+              child: InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 3.0,
+                child: _EnhancedImagePreview(
+                  media: widget.images[index],
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+      bottomNavigationBar: Container(
+        color: Colors.black,
+        padding: EdgeInsets.symmetric(vertical: 16.h),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (int i = 0; i < widget.images.length && i < 10; i++)
+              Container(
+                margin: EdgeInsets.symmetric(horizontal: 2.w),
+                width: 6.w,
+                height: 6.w,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: i == _currentIndex ? Colors.white : Colors.grey,
+                ),
+              ),
+            if (widget.images.length > 10)
+              const Text(' ...', style: TextStyle(color: Colors.grey)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _shareImage(ChatMedias image) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Share functionality would be implemented here'),
+      ),
+    );
+  }
+
+  void _downloadImage(ChatMedias image) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Download functionality would be implemented here'),
+      ),
+    );
+  }
+}
+
+// New wrapper widget to handle fixed sizing and proper image fitting
+class _FixedSizeImageWrapper extends StatelessWidget {
+  final ChatMedias media;
+  final double? width;
+  final double? height;
+
+  const _FixedSizeImageWrapper({required this.media, this.width, this.height});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: Colors.grey[100], 
+      ),
+      child: RepaintBoundary(
+        child: MediaPreviewWidget(
+          key: ValueKey('media_${media.id}'),
+          media: media,
+          isInChatBubble: true,
+          maxWidth: width,
+          maxHeight: height,
+        ),
+      ),
+    );
+  }
+}
+
+// Enhanced image preview with better fitting
+class _EnhancedImagePreview extends StatelessWidget {
+  final ChatMedias media;
+  final BoxFit fit;
+
+  const _EnhancedImagePreview({required this.media, this.fit = BoxFit.cover});
+
+  @override
+  Widget build(BuildContext context) {
+    final cubit = context.watch<ChatCubit>();
+    final fileUrl = cubit.getFileUrl(media.id.toString());
+    final isLoading = cubit.isFileLoading(media.id.toString());
+
+    if (fileUrl != null && !MediaCache.isLoading(media.id.toString())) {
+      return _buildImage(fileUrl);
+    }
+
+    if (fileUrl == null &&
+        !isLoading &&
+        !MediaCache.isLoading(media.id.toString())) {
+      if (media.mediaUrl != null && media.mediaUrl!.isNotEmpty) {
+        return _buildImage(media.mediaUrl!);
+      }
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          context.read<ChatCubit>().loadMediaFile(media);
+        }
+      });
+
+      MediaCache.setLoading(media.id.toString());
+    }
+
+    // Show loading placeholder with proper size
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      color: Colors.grey[200],
+      child: Center(
+        child: SizedBox(
+          width: 20.w,
+          height: 20.w,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.grey[400]!),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImage(String imageUrl) {
+    if (imageUrl.startsWith('data:')) {
+      return FutureBuilder<Uint8List?>(
+        future: _decodeBase64Image(imageUrl),
+        builder: (context, snapshot) {
+          if (snapshot.hasData && snapshot.data != null) {
+            return Image.memory(
+              snapshot.data!,
+              fit: fit,
+              width: double.infinity,
+              height: double.infinity,
+            );
+          }
+          return _buildErrorPlaceholder();
+        },
+      );
+    }
+
+    if (imageUrl.startsWith('http')) {
+      return Image.network(
+        imageUrl,
+        fit: fit,
+        width: double.infinity,
+        height: double.infinity,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return _buildLoadingPlaceholder();
+        },
+        errorBuilder: (context, error, stackTrace) {
+          return _buildErrorPlaceholder();
+        },
+      );
+    }
+
+    // Local file
+    return FutureBuilder<bool>(
+      future: File(imageUrl).exists(),
+      builder: (context, snapshot) {
+        if (snapshot.hasData && snapshot.data == true) {
+          return Image.file(
+            File(imageUrl),
+            fit: fit,
+            width: double.infinity,
+            height: double.infinity,
+          );
+        }
+        return _buildErrorPlaceholder();
+      },
+    );
+  }
+
+  Widget _buildLoadingPlaceholder() {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      color: Colors.grey[200],
+      child: Center(
+        child: SizedBox(
+          width: 20.w,
+          height: 20.w,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.grey[400]!),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorPlaceholder() {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      color: Colors.grey[100],
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.broken_image, size: 24.sp, color: Colors.grey[400]),
+          SizedBox(height: 4.h),
+          Text(
+            'Image unavailable',
+            style: TextStyle(fontSize: 10.sp, color: Colors.grey[500]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<Uint8List?> _decodeBase64Image(String dataUrl) async {
+    try {
+      final base64Data = dataUrl.contains(',')
+          ? dataUrl.split(',').last
+          : dataUrl;
+      return base64Decode(base64Data);
+    } catch (e) {
+      return null;
+    }
+  }
+}
+
+class OptimizedMediaPreview extends StatelessWidget {
+  final ChatMedias? media;
+  final bool isInChatBubble;
+  final double? maxWidth;
+  final double? maxHeight;
+
+  const OptimizedMediaPreview({
+    super.key,
+    this.media,
+    this.isInChatBubble = true,
+    this.maxWidth,
+    this.maxHeight,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (media == null) return const SizedBox.shrink();
+
+    return RepaintBoundary(
+      child: MediaPreviewWidget(
+        key: ValueKey('media_${media!.id}'),
+        media: media,
+        isInChatBubble: isInChatBubble,
+        maxWidth: maxWidth ?? double.infinity,
+        maxHeight: maxHeight,
+      ),
+    );
+  }
+}
+
+// Also update the _MediaAttachments widget to handle mixed media better
+class _MediaAttachments extends StatelessWidget {
+  final List<ChatMedias> chatMedias;
+
+  const _MediaAttachments({required this.chatMedias});
+
+  @override
+  Widget build(BuildContext context) {
+    if (chatMedias.isEmpty) return const SizedBox.shrink();
+
+    // Separate images from other media
+    final imageMedias = chatMedias
+        .where((media) => _isImageMedia(media))
+        .toList();
+    final otherMedias = chatMedias
+        .where((media) => !_isImageMedia(media))
+        .toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Show images in grid if there are any
+        if (imageMedias.isNotEmpty) _MediaGrid(chatMedias: imageMedias),
+
+        // Show other media types individually
+        if (otherMedias.isNotEmpty) ...[
+          if (imageMedias.isNotEmpty) SizedBox(height: 8.h),
+          ...otherMedias.map(
+            (media) => Container(
+              margin: EdgeInsets.only(bottom: 8.h),
+              child: OptimizedMediaPreview(media: media, isInChatBubble: true),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  bool _isImageMedia(ChatMedias media) {
+    final mediaType = media.mediaType?.toLowerCase() ?? '';
+    final mediaUrl = media.mediaUrl?.toLowerCase() ?? '';
+
+    return mediaType.contains('image') ||
+        mediaUrl.endsWith('.jpg') ||
+        mediaUrl.endsWith('.jpeg') ||
+        mediaUrl.endsWith('.png') ||
+        mediaUrl.endsWith('.gif') ||
+        mediaUrl.endsWith('.webp');
   }
 }
 
@@ -1194,33 +1963,33 @@ class MessageOptionsBottomSheet extends StatelessWidget {
   }
 }
 
-class OptimizedMediaPreview extends StatelessWidget {
-  final ChatMedias? media;
-  final bool isInChatBubble;
-  final double? maxWidth;
-  final double? maxHeight;
+// class OptimizedMediaPreview extends StatelessWidget {
+//   final ChatMedias? media;
+//   final bool isInChatBubble;
+//   final double? maxWidth;
+//   final double? maxHeight;
 
-  const OptimizedMediaPreview({
-    super.key,
-    this.media,
-    this.isInChatBubble = true,
-    this.maxWidth,
-    this.maxHeight,
-  });
+//   const OptimizedMediaPreview({
+//     super.key,
+//     this.media,
+//     this.isInChatBubble = true,
+//     this.maxWidth,
+//     this.maxHeight,
+//   });
 
-  @override
-  Widget build(BuildContext context) {
-    if (media == null) return const SizedBox.shrink();
+//   @override
+//   Widget build(BuildContext context) {
+//     if (media == null) return const SizedBox.shrink();
 
-    return MediaPreviewWidget(
-      key: ValueKey('media_${media!.id}'),
-      media: media,
-      isInChatBubble: isInChatBubble,
-      maxWidth: maxWidth,
-      maxHeight: maxHeight,
-    );
-  }
-}
+//     return MediaPreviewWidget(
+//       key: ValueKey('media_${media!.id}'),
+//       media: media,
+//       isInChatBubble: isInChatBubble,
+//       maxWidth: double.infinity,
+//       maxHeight: maxHeight,
+//     );
+//   }
+// }
 
 class MediaContainer extends StatelessWidget {
   final ChatMedias media;
@@ -1256,35 +2025,3 @@ class MediaContainer extends StatelessWidget {
     );
   }
 }
-
-// class _PinnedStatusIndicator extends StatelessWidget {
-//   final ChatBubbleMessage widget;
-
-//   const _PinnedStatusIndicator({required this.widget});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Container(
-//       margin: EdgeInsets.only(
-//         left: widget.isSent ? 0 : 50.w,
-//         right: widget.isSent ? 50.w : 0,
-//         bottom: 4.h,
-//       ),
-//       child: Row(
-//         mainAxisSize: MainAxisSize.min,
-//         children: [
-//           Icon(Icons.push_pin, size: 14, color: Colors.amber[700]),
-//           SizedBox(width: 4.w),
-//           Text(
-//             'Pinned Message',
-//             style: TextStyle(
-//               fontSize: 11.sp,
-//               color: Colors.amber[700],
-//               fontWeight: FontWeight.w600,
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
