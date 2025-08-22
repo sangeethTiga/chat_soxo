@@ -553,6 +553,7 @@ class _MainBubble extends StatelessWidget {
         ],
         Flexible(
           child: Bubble(
+            padding: BubbleEdges.only(left: 3, right: 3),
             margin: BubbleEdges.only(top: 6),
             alignment: widget.isSent ? Alignment.topRight : Alignment.topLeft,
             nipWidth: 18,
@@ -561,7 +562,6 @@ class _MainBubble extends StatelessWidget {
             nip: widget.isSent ? BubbleNip.rightTop : BubbleNip.leftTop,
             color: bubbleColor,
             child: SizedBox(
-              // width: 280.w,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -811,38 +811,6 @@ class _TextContent extends StatelessWidget {
   }
 }
 
-// class _MediaAttachments extends StatelessWidget {
-//   final List<ChatMedias> chatMedias;
-
-//   const _MediaAttachments({required this.chatMedias});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     if (chatMedias.isEmpty) return const SizedBox.shrink();
-
-//     return Column(
-//       crossAxisAlignment: CrossAxisAlignment.start,
-//       children: [
-//         if (chatMedias.length > 1)
-//           _MediaGrid(chatMedias: chatMedias)
-//         else
-//           _SingleMedia(media: chatMedias.first),
-//       ],
-//     );
-//   }
-// }
-
-// class _SingleMedia extends StatelessWidget {
-//   final ChatMedias media;
-
-//   const _SingleMedia({required this.media});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return OptimizedMediaPreview(media: media, isInChatBubble: true);
-//   }
-// }
-
 class _MediaGrid extends StatelessWidget {
   final List<ChatMedias> chatMedias;
   static const int maxDisplayCount = 4;
@@ -856,14 +824,12 @@ class _MediaGrid extends StatelessWidget {
         ? maxDisplayCount
         : mediaCount;
 
-    // Filter only image media
     final imageMedias = chatMedias
         .where((media) => _isImageMedia(media))
         .toList();
     final imageCount = imageMedias.length;
 
     if (imageCount == 0) {
-      // Fallback to original implementation for non-images
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -931,9 +897,9 @@ class _MediaGrid extends StatelessWidget {
       onTap: () => _showImageViewer(context, [media], 0),
       child: Container(
         constraints: BoxConstraints(
-          maxWidth: 250.w,
+          maxWidth: double.infinity,
           maxHeight: 300.h,
-          minWidth: 120.w,
+          minWidth: double.infinity,
           minHeight: 80.h,
         ),
         child: Hero(
@@ -1218,7 +1184,6 @@ class _MediaGrid extends StatelessWidget {
   }
 }
 
-// Create a new screen for viewing all images
 class ImageGalleryScreen extends StatelessWidget {
   final List<ChatMedias> images;
 
@@ -1274,7 +1239,6 @@ class ImageGalleryScreen extends StatelessWidget {
   }
 }
 
-// Create a screen for viewing individual images with swipe
 class ImageViewerScreen extends StatefulWidget {
   final List<ChatMedias> images;
   final int initialIndex;
@@ -1393,7 +1357,6 @@ class _ImageViewerScreenState extends State<ImageViewerScreen> {
   }
 }
 
-// New wrapper widget to handle fixed sizing and proper image fitting
 class _FixedSizeImageWrapper extends StatelessWidget {
   final ChatMedias media;
   final double? width;
@@ -1406,9 +1369,7 @@ class _FixedSizeImageWrapper extends StatelessWidget {
     return Container(
       width: width,
       height: height,
-      decoration: BoxDecoration(
-        color: Colors.grey[100], 
-      ),
+      decoration: BoxDecoration(color: Colors.grey[100]),
       child: RepaintBoundary(
         child: MediaPreviewWidget(
           key: ValueKey('media_${media.id}'),
@@ -1422,7 +1383,6 @@ class _FixedSizeImageWrapper extends StatelessWidget {
   }
 }
 
-// Enhanced image preview with better fitting
 class _EnhancedImagePreview extends StatelessWidget {
   final ChatMedias media;
   final BoxFit fit;
@@ -1455,7 +1415,6 @@ class _EnhancedImagePreview extends StatelessWidget {
       MediaCache.setLoading(media.id.toString());
     }
 
-    // Show loading placeholder with proper size
     return Container(
       width: double.infinity,
       height: double.infinity,
@@ -1507,7 +1466,6 @@ class _EnhancedImagePreview extends StatelessWidget {
       );
     }
 
-    // Local file
     return FutureBuilder<bool>(
       future: File(imageUrl).exists(),
       builder: (context, snapshot) {
@@ -1603,7 +1561,6 @@ class OptimizedMediaPreview extends StatelessWidget {
   }
 }
 
-// Also update the _MediaAttachments widget to handle mixed media better
 class _MediaAttachments extends StatelessWidget {
   final List<ChatMedias> chatMedias;
 
@@ -1613,7 +1570,6 @@ class _MediaAttachments extends StatelessWidget {
   Widget build(BuildContext context) {
     if (chatMedias.isEmpty) return const SizedBox.shrink();
 
-    // Separate images from other media
     final imageMedias = chatMedias
         .where((media) => _isImageMedia(media))
         .toList();
@@ -1624,10 +1580,7 @@ class _MediaAttachments extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Show images in grid if there are any
         if (imageMedias.isNotEmpty) _MediaGrid(chatMedias: imageMedias),
-
-        // Show other media types individually
         if (otherMedias.isNotEmpty) ...[
           if (imageMedias.isNotEmpty) SizedBox(height: 8.h),
           ...otherMedias.map(
@@ -1962,34 +1915,6 @@ class MessageOptionsBottomSheet extends StatelessWidget {
     );
   }
 }
-
-// class OptimizedMediaPreview extends StatelessWidget {
-//   final ChatMedias? media;
-//   final bool isInChatBubble;
-//   final double? maxWidth;
-//   final double? maxHeight;
-
-//   const OptimizedMediaPreview({
-//     super.key,
-//     this.media,
-//     this.isInChatBubble = true,
-//     this.maxWidth,
-//     this.maxHeight,
-//   });
-
-//   @override
-//   Widget build(BuildContext context) {
-//     if (media == null) return const SizedBox.shrink();
-
-//     return MediaPreviewWidget(
-//       key: ValueKey('media_${media!.id}'),
-//       media: media,
-//       isInChatBubble: isInChatBubble,
-//       maxWidth: double.infinity,
-//       maxHeight: maxHeight,
-//     );
-//   }
-// }
 
 class MediaContainer extends StatelessWidget {
   final ChatMedias media;
