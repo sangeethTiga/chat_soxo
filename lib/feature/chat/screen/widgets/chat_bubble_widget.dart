@@ -580,6 +580,9 @@ class _MainBubble extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (widget.messageData?.type == 'CFVD') ...{
+                    forwardIndicatorWhatsApp(),
+                  },
                   if (!widget.isSent &&
                       widget.messageData?.sender?.name != null)
                     Padding(
@@ -610,6 +613,30 @@ class _MainBubble extends StatelessWidget {
       ],
     );
   }
+}
+
+Widget forwardIndicatorWhatsApp() {
+  return Container(
+    margin: EdgeInsets.only(left: 5, bottom: 4),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Transform.rotate(
+          angle: 3.14159,
+          child: Icon(Icons.reply, size: 13, color: Colors.blue[600]),
+        ),
+        SizedBox(width: 4),
+        Text(
+          'Forwarded',
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _UserAvatar extends StatelessWidget {
