@@ -71,7 +71,7 @@ class _FilePickerBottomSheet extends StatelessWidget {
         title: 'Gallery',
         onTap: () => _handleOptionTap(
           context,
-          () => chatCubit.selectImageFromGallery(context),
+          () => chatCubit.selectMultipleImagesFromGallery(),
         ),
       ),
       _FileOption(

@@ -1928,6 +1928,8 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   ///=-=-=-=-=-=-=-=-=  File Selection Methods - INSTANT UPDATES
+
+  // Your existing selectFiles method already supports multiple selection ✅
   Future<void> selectFiles() async {
     if (_isDisposed) return;
 
@@ -1935,7 +1937,7 @@ class ChatCubit extends Cubit<ChatState> {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png', 'gif'],
-        allowMultiple: true,
+        allowMultiple: true, // ✅ Already supports multiple
       );
 
       if (result != null && !_isDisposed) {
@@ -1943,7 +1945,6 @@ class ChatCubit extends Cubit<ChatState> {
         final currentFiles = state.selectedFiles ?? [];
         final updatedFiles = [...currentFiles, ...files];
 
-        ///=-=-=-=-=-=-=-=-=  INSTANT UI UPDATE
         emit(state.copyWith(selectedFiles: updatedFiles));
         log('Selected ${files.length} files');
       }
@@ -1954,7 +1955,31 @@ class ChatCubit extends Cubit<ChatState> {
       log('Error selecting files: $e');
     }
   }
+Future<void> selectMultipleImagesFromGallery() async {
+  if (_isDisposed) return;
 
+  try {
+    final images = await _imagePicker.pickMultipleMedia(
+      maxWidth: 1920,
+      maxHeight: 1080,
+      imageQuality: 85,
+    );
+
+    if (images.isNotEmpty && !_isDisposed) {
+      final files = images.map((image) => File(image.path)).toList();
+      final currentFiles = state.selectedFiles ?? [];
+      final updatedFiles = [...currentFiles, ...files];
+
+      emit(state.copyWith(selectedFiles: updatedFiles));
+      log('Selected ${files.length} images from gallery');
+    }
+  } catch (e) {
+    if (!_isDisposed) {
+      emit(state.copyWith(errorMessage: 'Error selecting images: $e'));
+    }
+    log('Error selecting multiple images: $e');
+  }
+}
   Future<void> selectImageFromGallery(BuildContext context) async {
     if (_isDisposed) return;
 
@@ -1974,6 +1999,36 @@ class ChatCubit extends Cubit<ChatState> {
       if (!_isDisposed) {
         emit(state.copyWith(errorMessage: 'Error selecting image: $e'));
       }
+    }
+  }
+
+
+
+  // ✅ ALTERNATIVE: Using FilePicker for multiple images
+  Future<void> selectMultipleImagesWithFilePicker() async {
+    if (_isDisposed) return;
+
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: true,
+        // Optional: Compress images
+        withData: false, // Don't load data immediately for better performance
+      );
+
+      if (result != null && !_isDisposed) {
+        final files = result.paths.map((path) => File(path!)).toList();
+        final currentFiles = state.selectedFiles ?? [];
+        final updatedFiles = [...currentFiles, ...files];
+
+        emit(state.copyWith(selectedFiles: updatedFiles));
+        log('Selected ${files.length} images via FilePicker');
+      }
+    } catch (e) {
+      if (!_isDisposed) {
+        emit(state.copyWith(errorMessage: 'Error selecting images: $e'));
+      }
+      log('Error selecting images with FilePicker: $e');
     }
   }
 
