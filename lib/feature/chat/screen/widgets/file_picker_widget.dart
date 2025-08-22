@@ -78,10 +78,8 @@ class _FilePickerBottomSheet extends StatelessWidget {
         icon: Icons.camera_alt,
         color: Colors.blue,
         title: 'Camera',
-        onTap: () => _handleOptionTap(
-          context,
-          () => chatCubit.selectImageFromCamera(), // Fixed method name
-        ),
+        onTap: () =>
+            _handleOptionTap(context, () => chatCubit.selectImageFromCamera()),
       ),
       _FileOption(
         icon: Icons.folder,
