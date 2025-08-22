@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soxo_chat/feature/auth/screen/auth_screen.dart';
+import 'package:soxo_chat/feature/chat/domain/models/chat_entry/chat_entry_response.dart';
 import 'package:soxo_chat/feature/chat/screen/chat_detail_screen.dart';
 import 'package:soxo_chat/feature/chat/screen/chat_screen.dart';
+import 'package:soxo_chat/feature/chat/screen/forward_screen.dart';
 import 'package:soxo_chat/feature/chat/screen/single_chat_screen.dart';
 import 'package:soxo_chat/feature/group/screen/group_screen.dart';
 import 'package:soxo_chat/feature/notifcation/screen/notification_screen.dart';
@@ -57,6 +59,18 @@ class RouteGenerator {
             );
           },
         ),
+        // GoRoute(
+        //   path: routeSingleChat,
+        //   pageBuilder: (context, state) {
+        //     final data = state.extra as Entry;
+        //     return CustomTransitions.slideFade(
+        //       context,
+        //       state,
+        //       ForwardChatSelectionScreen(messageToForward: data),
+        //       begin: const Offset(1.0, 0.0),
+        //     );
+        //   },
+        // ),
         GoRoute(
           path: routeNotification,
           builder: (context, state) => NotificationScreen(),

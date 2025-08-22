@@ -7,3 +7,4 @@ const String routeSingleChat = '/singleChat';
 const String routeSignIn = '/signIn';
 const String routeSplash = '/splash';
 const String routeChat = '/chatlist';
+const String routeForward = '/forward';

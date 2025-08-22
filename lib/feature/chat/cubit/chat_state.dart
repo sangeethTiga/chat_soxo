@@ -33,6 +33,11 @@ class ChatState extends Equatable {
   final Entry? selectedReplyMessage;
   final int? currentUserId;
   final bool isUserLoaded;
+  //=-=-=-FORWAORD
+  final bool isForwarding;
+  final Entry? forwardingMessage;
+  final List<ChatListResponse>? selectedChatsForForward;
+  final bool isSelectingChatsForForward;
   const ChatState({
     this.isArrow = false,
     this.isRecording = false,
@@ -65,6 +70,10 @@ class ChatState extends Equatable {
     this.selectedReplyMessage,
     this.currentUserId,
     this.isUserLoaded = false,
+    this.isForwarding = false,
+    this.forwardingMessage,
+    this.selectedChatsForForward,
+    this.isSelectingChatsForForward = false,
   });
 
   ChatState copyWith({
@@ -101,6 +110,11 @@ class ChatState extends Equatable {
     int? currentUserId,
     bool? isUserLoaded,
     bool? isMakeItNull = false,
+    bool? isForwarding,
+    Entry? forwardingMessage,
+    List<ChatListResponse>? selectedChatsForForward,
+    bool? isSelectingChatsForForward,
+    bool? clearForwardingMessage,
   }) {
     return ChatState(
       isArrow: isArrow ?? this.isArrow,
@@ -139,6 +153,14 @@ class ChatState extends Equatable {
           selectedReplyMessage ?? this.selectedReplyMessage, // ✅ NEW
       currentUserId: currentUserId ?? this.currentUserId,
       isUserLoaded: isUserLoaded ?? this.isUserLoaded,
+      isForwarding: isForwarding ?? this.isForwarding,
+      forwardingMessage: clearForwardingMessage == true
+          ? null
+          : (forwardingMessage ?? this.forwardingMessage),
+      selectedChatsForForward:
+          selectedChatsForForward ?? this.selectedChatsForForward,
+      isSelectingChatsForForward:
+          isSelectingChatsForForward ?? this.isSelectingChatsForForward,
     );
   }
 
@@ -174,6 +196,10 @@ class ChatState extends Equatable {
     selectedReplyMessageId, // ✅ NEW
     selectedReplyMessage,
     currentUserId, isUserLoaded,
+    isForwarding,
+    forwardingMessage,
+    selectedChatsForForward,
+    isSelectingChatsForForward,
   ];
 }
 

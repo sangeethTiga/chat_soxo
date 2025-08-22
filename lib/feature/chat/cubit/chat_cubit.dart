@@ -9,6 +9,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:injectable/injectable.dart';
+import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
@@ -1205,181 +1206,8 @@ class ChatCubit extends Cubit<ChatState> {
     _isFirstLoad = true;
   }
 
-  // // Enhanced refresh method for comeback scenarios
-  // Future<void> refreshAfterComeback() async {
-  //   log('🔄 Refreshing chat after comeback...');
-
-  //   if (_currentChatId == null) {
-  //     log('⚠️ No current chat ID for refresh');
-  //     return;
-  //   }
-
-  //   try {
-  //     // Clear all cached data
-  //     _chatCache.clear();
-  //     _chatCacheTimestamps.clear();
-
-  //     // Reset state
-  //     _isFirstLoad = true;
-  //     _hasPendingUpdates = false;
-  //     _batchUpdateTimer?.cancel();
-
-  //     // Force disconnect and reconnect SignalR
-  //     await _forceSignalRReconnection();
-
-  //     // Reload chat data
-  //     await getChatEntry(chatId: _currentChatId);
-
-  //     log('✅ Successfully refreshed after comeback');
-  //   } catch (e) {
-  //     log('❌ Error during comeback refresh: $e');
-  //     emit(
-  //       state.copyWith(
-  //         isChatEntry: ApiFetchStatus.failed,
-  //         errorMessage: 'Failed to refresh chat: $e',
-  //       ),
-  //     );
-  //   }
-  // }
-
-  // Force SignalR reconnection
-  Future<void> _forceSignalRReconnection() async {
-    try {
-      log('🔄 Forcing SignalR reconnection...');
-
-      // Disconnect completely
-      if (_signalRService.isConnected) {
-        await _signalRService.disconnect();
-        await Future.delayed(Duration(milliseconds: 1000));
-      }
-
-      // Reconnect with retry logic
-      final connected = await _connectSignalRWithRetry();
-
-      if (connected) {
-        log('✅ SignalR force reconnection successful');
-      } else {
-        log('❌ SignalR force reconnection failed');
-      }
-    } catch (e) {
-      log('❌ Error during SignalR force reconnection: $e');
-    }
-  }
-
-  // Add these properties to your ChatCubit class
   int? _previousSignalRChatId;
   bool _isFirstLoad = true;
-
-  // Enhanced connection monitoring
-  void _startConnectionMonitoring() {
-    Timer.periodic(Duration(seconds: 30), (timer) {
-      if (_isDisposed) {
-        timer.cancel();
-        return;
-      }
-
-      if (!_signalRService.isConnected && _currentChatId != null) {
-        log('⚠️ SignalR connection lost, attempting reconnection...');
-        _establishSignalRConnection(_currentChatId!);
-      }
-    });
-  }
-  // Future<void> getChatEntry({int? chatId}) async {
-  //   final currentChatId = chatId ?? 0;
-  //   log('📱 Getting chat entry for chatId: $currentChatId');
-
-  //   final previousChatId = _currentChatId;
-  //   _currentChatId = currentChatId;
-  //   emit(
-  //     state.copyWith(
-  //       isChatEntry: ApiFetchStatus.loading,
-  //       chatEntry: null,
-  //       errorMessage: null,
-  //     ),
-  //   );
-
-  //   if (_isDisposed) return;
-
-  //   if (previousChatId != null && previousChatId != currentChatId) {
-  //     log('🔄 Switching chats: $previousChatId -> $currentChatId');
-  //   }
-
-  //   if (_signalRService.isConnected) {
-  //     await _signalRService.joinChatGroup(currentChatId.toString());
-  //     log('🔗 Joining SignalR group for chat $currentChatId');
-
-  //     log('📡 Requested SignalR updates for chat $currentChatId');
-  //   } else {
-  //     log('⚠️ SignalR not connected, cannot join group');
-  //   }
-
-  //   final cachedData = _chatCache[currentChatId];
-  //   final cacheTimestamp = _chatCacheTimestamps[currentChatId];
-  //   final isCacheValid =
-  //       cachedData != null &&
-  //       cacheTimestamp != null &&
-  //       DateTime.now().difference(cacheTimestamp) < _chatCacheExpiration;
-
-  //   if (isCacheValid) {
-  //     log('💾 Using cached data for chat $currentChatId');
-  //     await Future.delayed(const Duration(milliseconds: 400));
-
-  //     if (_isDisposed) return;
-
-  //     emit(
-  //       state.copyWith(
-  //         chatEntry: cachedData,
-  //         isChatEntry: ApiFetchStatus.success,
-  //       ),
-  //     );
-
-  //     if (cachedData.entries?.isNotEmpty == true) {
-  //       _loadMediaInBackground(cachedData.entries!);
-  //     }
-  //     return;
-  //   }
-
-  //   try {
-  //     log('🌐 Making API call for chat $currentChatId');
-  //     final res = await _chatRepositories.chatEntry(currentChatId);
-
-  //     if (_isDisposed) return;
-
-  //     if (res.data != null) {
-  //       _chatCache[currentChatId] = res.data!;
-  //       _chatCacheTimestamps[currentChatId] = DateTime.now();
-
-  //       log('✅ Successfully loaded chat entry for chat $currentChatId');
-  //       log('📊 Loaded ${res.data!.entries?.length ?? 0} entries');
-
-  //       emit(
-  //         state.copyWith(
-  //           chatEntry: res.data,
-  //           isChatEntry: ApiFetchStatus.success,
-  //         ),
-  //       );
-
-  //       if (res.data?.entries != null && res.data!.entries!.isNotEmpty) {
-  //         _loadMediaInBackground(res.data!.entries!);
-  //       }
-  //     } else {
-  //       log('⚠️ No data received for chat $currentChatId');
-  //       emit(
-  //         state.copyWith(isChatEntry: ApiFetchStatus.success, chatEntry: null),
-  //       );
-  //     }
-  //   } catch (e) {
-  //     log('❌ Error getting chat entry for chat $currentChatId: $e');
-  //     if (!_isDisposed) {
-  //       emit(
-  //         state.copyWith(
-  //           isChatEntry: ApiFetchStatus.failed,
-  //           errorMessage: e.toString(),
-  //         ),
-  //       );
-  //     }
-  //   }
-  // }
 
   void debugSignalRState() {
     log('🔍 ===== SignalR Debug State =====');
@@ -1634,7 +1462,7 @@ class ChatCubit extends Cubit<ChatState> {
       chatId: baseRequest.chatId,
       otherDetails1: jsonEncode([
         {
-          "InitialChatEntryId": originalMessage.id.toString(),
+          // "InitialChatEntryId": originalMessage.id.toString(),
           "ReplayChatEntryId": originalMessage.id.toString(),
         },
       ]),
@@ -1667,7 +1495,7 @@ class ChatCubit extends Cubit<ChatState> {
         // ✅ Include reply details for backend
         otherDetails1: jsonEncode([
           {
-            "InitialChatEntryId": originalMessage.id.toString(),
+            // "InitialChatEntryId": originalMessage.id.toString(),
             "ReplayChatEntryId": originalMessage.id.toString(),
           },
         ]),
@@ -2127,40 +1955,6 @@ class ChatCubit extends Cubit<ChatState> {
     }
   }
 
-  // void addOptimisticMessage(Entry optimisticEntry) {
-  //   final currentEntries = List<Entry>.from(state.chatEntry?.entries ?? []);
-  //   currentEntries.add(optimisticEntry);
-
-  //   emit(
-  //     state.copyWith(
-  //       chatEntry: state.chatEntry?.copyWith(entries: currentEntries),
-  //     ),
-  //   );
-  // }
-
-  // void updateOptimisticMessage({
-  //   required String tempId,
-  //   Entry? realEntry,
-  //   bool remove = false,
-  // }) {
-  //   final currentEntries = List<Entry>.from(state.chatEntry?.entries ?? []);
-  //   final index = currentEntries.indexWhere((e) => e.id.toString() == tempId);
-
-  //   if (index != -1) {
-  //     if (remove) {
-  //       currentEntries.removeAt(index);
-  //     } else if (realEntry != null) {
-  //       currentEntries[index] = realEntry;
-  //     }
-
-  //     emit(
-  //       state.copyWith(
-  //         chatEntry: state.chatEntry?.copyWith(entries: currentEntries),
-  //       ),
-  //     );
-  //   }
-  // }
-
   Future<void> selectImageFromGallery(BuildContext context) async {
     if (_isDisposed) return;
 
@@ -2418,213 +2212,10 @@ class ChatCubit extends Cubit<ChatState> {
 
   //=-=-======================
   // Add these properties to your class
-  bool _isConnecting = false;
+  final bool _isConnecting = false;
   Completer<bool>? _connectionCompleter;
   static const Duration _connectionTimeout = Duration(seconds: 10);
 
-  // Enhanced SignalR connection with proper state management
-  // Future<bool> _establishSignalRConnection(int chatId) async {
-  //   log('🔗 Establishing SignalR connection for chat: $chatId');
-
-  //   try {
-  //     // Check if already connected to avoid unnecessary work
-  //     if (_signalRService.isConnected) {
-  //       log('✅ SignalR already connected, switching groups only');
-  //       await _switchSignalRGroups(chatId);
-  //       return true;
-  //     }
-
-  //     // If connection is in progress, wait for it
-  //     if (_isConnecting && _connectionCompleter != null) {
-  //       log('⏳ Connection in progress, waiting for completion...');
-  //       return await _connectionCompleter!.future;
-  //     }
-
-  //     // Start new connection attempt
-  //     return await _connectSignalRWithRetry();
-  //   } catch (e) {
-  //     log('❌ Error establishing SignalR connection: $e');
-  //     return false;
-  //   }
-  // }
-
-  // // Fixed SignalR connection with timeout and proper state management
-  // Future<bool> _connectSignalRWithRetry({int maxRetries = 3}) async {
-  //   // Prevent concurrent connection attempts
-  //   if (_isConnecting) {
-  //     log('⏳ Connection already in progress, waiting for completion...');
-  //     return _connectionCompleter?.future ?? Future.value(false);
-  //   }
-
-  //   _isConnecting = true;
-  //   _connectionCompleter = Completer<bool>();
-
-  //   try {
-  //     for (int attempt = 1; attempt <= maxRetries; attempt++) {
-  //       try {
-  //         log('🔄 SignalR connection attempt $attempt/$maxRetries');
-
-  //         // Ensure clean state before connecting
-  //         if (_signalRService.isConnected) {
-  //           await _signalRService.disconnect();
-  //           await Future.delayed(Duration(milliseconds: 500));
-  //         }
-
-  //         // Attempt connection with timeout
-  //         final connectionFuture = _signalRService.initializeConnection();
-  //         final timeoutFuture = Future.delayed(_connectionTimeout);
-
-  //         await Future.any([
-  //           connectionFuture,
-  //           timeoutFuture.then((_) => throw TimeoutException(
-  //             'SignalR connection timeout after ${_connectionTimeout.inSeconds}s',
-  //             _connectionTimeout,
-  //           )),
-  //         ]);
-
-  //         // Verify connection with shorter timeout
-  //         await Future.delayed(Duration(milliseconds: 500));
-
-  //         if (_signalRService.isConnected) {
-  //           log('✅ SignalR connected successfully on attempt $attempt');
-  //           _connectionCompleter?.complete(true);
-  //           return true;
-  //         } else {
-  //           log('⚠️ SignalR connection attempt $attempt failed - not connected after initialization');
-  //         }
-  //       } catch (e) {
-  //         if (e is TimeoutException) {
-  //           log('⏰ SignalR connection attempt $attempt timed out: $e');
-  //         } else {
-  //           log('❌ SignalR connection attempt $attempt failed: $e');
-  //         }
-  //       }
-
-  //       // Wait before retry (exponential backoff)
-  //       if (attempt < maxRetries) {
-  //         final delayMs = 1000 * attempt; // 1s, 2s, 3s
-  //         log('⏳ Waiting ${delayMs}ms before retry...');
-  //         await Future.delayed(Duration(milliseconds: delayMs));
-  //       }
-  //     }
-
-  //     log('❌ All SignalR connection attempts failed');
-  //     _connectionCompleter?.complete(false);
-  //     return false;
-  //   } finally {
-  //     _isConnecting = false;
-  //     _connectionCompleter = null;
-  //   }
-  // }
-
-  // Add cleanup method to reset connection state
-  void _resetConnectionState() {
-    _isConnecting = false;
-    _connectionCompleter?.complete(false);
-    _connectionCompleter = null;
-  }
-
-  // Enhanced getChatEntry with better error handling
-  // Future<void> getChatEntry({int? chatId}) async {
-  //   final currentChatId = chatId ?? 0;
-  //   log('📱 🔄 Getting chat entry for chatId: $currentChatId');
-
-  //   final previousChatId = _currentChatId;
-  //   _currentChatId = currentChatId;
-
-  //   // Always clear state when switching chats or coming back
-  //   emit(
-  //     state.copyWith(
-  //       isChatEntry: ApiFetchStatus.loading,
-  //       chatEntry: null,
-  //       errorMessage: null,
-  //     ),
-  //   );
-
-  //   if (_isDisposed) return;
-
-  //   try {
-  //     // Handle different scenarios
-  //     if (previousChatId != null && previousChatId != currentChatId) {
-  //       log('🔄 Switching chats: $previousChatId -> $currentChatId');
-  //       await _handleChatSwitch(previousChatId, currentChatId);
-  //     } else if (previousChatId == currentChatId) {
-  //       log('🔄 Returning to same chat: $currentChatId (comeback scenario)');
-  //       await _handleChatComeback(currentChatId);
-  //     } else {
-  //       log('🔄 First time opening chat: $currentChatId');
-  //       await _handleFirstTimeChat(currentChatId);
-  //     }
-
-  //     // Establish proper SignalR connection with timeout
-  //     final connectionFuture = _establishSignalRConnection(currentChatId);
-  //     final timeoutFuture = Future.delayed(Duration(seconds: 15));
-
-  //     bool signalRConnected = false;
-  //     try {
-  //       signalRConnected = await Future.any([
-  //         connectionFuture,
-  //         timeoutFuture.then((_) => false),
-  //       ]);
-  //     } catch (e) {
-  //       log('⚠️ SignalR connection failed: $e');
-  //       signalRConnected = false;
-  //     }
-
-  //     if (!signalRConnected) {
-  //       log('⚠️ SignalR connection failed/timed out, continuing with API call...');
-  //       // Reset connection state to allow future attempts
-  //       _resetConnectionState();
-  //     }
-
-  //     // Check cache validity
-  //     final shouldUseCache = _shouldUseCachedData(
-  //       currentChatId,
-  //       previousChatId,
-  //     );
-
-  //     if (shouldUseCache) {
-  //       await _loadFromCache(currentChatId);
-  //     } else {
-  //       await _loadFromAPI(currentChatId);
-  //     }
-
-  //     // Final sync with SignalR only if connected
-  //     if (signalRConnected) {
-  //       await _finalizeSignalRConnection(currentChatId);
-  //     }
-  //   } catch (e) {
-  //     log('❌ Error in getChatEntry for chat $currentChatId: $e');
-  //     _resetConnectionState(); // Cleanup on error
-
-  //     if (!_isDisposed) {
-  //       emit(
-  //         state.copyWith(
-  //           isChatEntry: ApiFetchStatus.failed,
-  //           errorMessage: e.toString(),
-  //         ),
-  //       );
-  //     }
-  //   }
-  // }
-
-  // Enhanced comeback handling with connection reset
-  // Future<void> _handleChatComeback(int chatId) async {
-  //   log('🔄 Handling comeback to chat: $chatId');
-
-  //   // Clear any stale state
-  //   _batchUpdateTimer?.cancel();
-  //   _hasPendingUpdates = false;
-
-  //   // Force cache invalidation for comeback scenario
-  //   _chatCacheTimestamps.remove(chatId);
-
-  //   // Reset connection state to ensure fresh connection
-  //   _resetConnectionState();
-  //   _isFirstLoad = true;
-
-  //   log('🗑️ Cleared cache, reset connection state, and reset flags for comeback scenario');
-  // }
   //=-=-======================
   String _getMimeTypeForFile(String fileType) {
     switch (fileType) {
@@ -2638,6 +2229,359 @@ class ChatCubit extends Cubit<ChatState> {
         return 'video/mp4';
       default:
         return 'application/octet-stream';
+    }
+  }
+  //=-=-=-=-= FORWARD MESSAGE
+
+  void startForward(Entry message) {
+    emit(
+      state.copyWith(
+        isForwarding: true,
+        forwardingMessage: message,
+        isSelectingChatsForForward: true,
+        selectedChatsForForward: [],
+      ),
+    );
+    log('🔄 Started forwarding message: ${message.id}');
+  }
+
+  // Cancel forwarding
+  void cancelForward() {
+    emit(
+      state.copyWith(
+        isForwarding: false,
+        clearForwardingMessage: true,
+        isSelectingChatsForForward: false,
+        selectedChatsForForward: [],
+      ),
+    );
+    log('❌ Cancelled forwarding');
+  }
+
+  void toggleChatForForward(ChatListResponse chat) {
+    final currentSelected = List<ChatListResponse>.from(
+      state.selectedChatsForForward ?? [],
+    );
+
+    final isAlreadySelected = currentSelected.any(
+      (selected) => selected.chatId == chat.chatId,
+    );
+
+    if (isAlreadySelected) {
+      currentSelected.removeWhere((selected) => selected.chatId == chat.chatId);
+    } else {
+      currentSelected.add(chat);
+    }
+
+    emit(state.copyWith(selectedChatsForForward: currentSelected));
+    log(
+      '🔄 Toggled chat ${chat.chatId} for forwarding. Selected: ${currentSelected.length}',
+    );
+  }
+
+  Future<void> forwardMessageToSelectedChats() async {
+    if (state.forwardingMessage == null ||
+        state.selectedChatsForForward?.isEmpty != false) {
+      emit(
+        state.copyWith(
+          errorMessage: 'No message or chats selected for forwarding',
+        ),
+      );
+      return;
+    }
+
+    try {
+      final user = await AuthUtils.instance.readUserData();
+      final userId = int.tryParse(user?.result?.userId.toString() ?? '') ?? 0;
+      final originalMessage = state.forwardingMessage!;
+      final selectedChats = state.selectedChatsForForward!;
+
+      emit(state.copyWith(isForwarding: true));
+
+      for (final chat in selectedChats) {
+        List<File> filesToForward = [];
+
+        if (originalMessage.chatMedias?.isNotEmpty == true) {
+          log(
+            'Processing ${originalMessage.chatMedias!.length} media files for forwarding',
+          );
+
+          for (final media in originalMessage.chatMedias!) {
+            if (media.mediaUrl != null && media.id != null) {
+              try {
+                final downloadedFile = await _downloadMediaAsFile(media);
+                if (downloadedFile != null) {
+                  filesToForward.add(downloadedFile);
+                  log('Downloaded file for forwarding: ${downloadedFile.path}');
+                }
+              } catch (e) {
+                log('Failed to download media ${media.id}: $e');
+              }
+            }
+          }
+        }
+
+        final forwardRequest = AddChatEntryRequest(
+          chatId: chat.chatId,
+          senderId: userId,
+          type: 'CFVD',
+          typeValue: originalMessage.id ?? 0,
+          messageType: originalMessage.messageType ?? 'text',
+          content: originalMessage.content ?? '',
+          attachedFiles: filesToForward,
+          source: 'Mobile',
+          otherDetails1: jsonEncode([
+            {
+              "InitialChatEntryId": originalMessage.id.toString(),
+              "IsForwarded": "True",
+            },
+          ]),
+        );
+
+        final res = await _chatRepositories.addChatEntry(
+          req: forwardRequest,
+          files: filesToForward,
+        );
+
+        if (res.data == null) {
+          throw Exception('Failed to forward to chat ${chat.title}');
+        }
+
+        log('Forwarded message to chat: ${chat.title}');
+
+        _cleanupTempFiles(filesToForward);
+      }
+
+      emit(
+        state.copyWith(
+          isForwarding: false,
+          clearForwardingMessage: true,
+          isSelectingChatsForForward: false,
+          selectedChatsForForward: [],
+          errorMessage: null,
+        ),
+      );
+
+      log('Successfully forwarded message to ${selectedChats.length} chats');
+    } catch (e) {
+      log('Error forwarding message: $e');
+      emit(
+        state.copyWith(
+          isForwarding: false,
+          errorMessage: 'Failed to forward message: $e',
+        ),
+      );
+    }
+  }
+
+  Future<File?> _downloadMediaAsFile(ChatMedias media) async {
+    try {
+      if (media.mediaUrl == null || media.id == null) return null;
+      final cachedData = _fileUrls[media.id.toString()];
+      if (cachedData != null) {
+        log('Using cached data for media: ${media.id}');
+        return await _createFileFromBase64(cachedData, media);
+      }
+      log('Downloading media from API: ${media.id}');
+      final fileData = await _chatRepositories.getFileFromApi(media.mediaUrl!);
+
+      if (fileData['data'] != null && fileData['data'].toString().isNotEmpty) {
+        _fileUrls[media.id.toString()] = fileData['data'];
+        _fileTypes[media.id.toString()] = fileData['type'] ?? 'unknown';
+
+        return await _createFileFromBase64(fileData['data'], media);
+      }
+
+      return null;
+    } catch (e) {
+      log('Error downloading media ${media.id}: $e');
+      return null;
+    }
+  }
+
+  Future<File?> _createFileFromBase64(
+    String base64Data,
+    ChatMedias media,
+  ) async {
+    try {
+      String cleanBase64 = base64Data;
+      if (base64Data.contains(',')) {
+        cleanBase64 = base64Data.split(',').last;
+      }
+      final bytes = base64Decode(cleanBase64);
+      final tempDir = await getTemporaryDirectory();
+      final fileName =
+          _extractFileName(media) ??
+          'temp_${media.id}_${DateTime.now().millisecondsSinceEpoch}';
+      final tempFile = File('${tempDir.path}/$fileName');
+      await tempFile.writeAsBytes(bytes);
+      log('Created temp file: ${tempFile.path}');
+      return tempFile;
+    } catch (e) {
+      log('Error creating file from base64: $e');
+      return null;
+    }
+  }
+
+  String? _extractFileName(ChatMedias media) {
+    try {
+      if (media.mediaUrl != null) {
+        final uri = Uri.parse(media.mediaUrl!);
+        final fileName = path.basename(uri.path);
+        if (fileName.isNotEmpty && fileName != '/') {
+          return fileName;
+        }
+      }
+      final extension = _getExtensionFromMediaType(media.mediaType);
+      return 'media_${media.id}$extension';
+    } catch (e) {
+      log('Error extracting filename: $e');
+      return null;
+    }
+  }
+
+  String _getExtensionFromMediaType(String? mediaType) {
+    if (mediaType == null) return '';
+
+    switch (mediaType.toLowerCase()) {
+      case 'image':
+        return '.jpg';
+      case 'video':
+        return '.mp4';
+      case 'audio':
+        return '.mp3';
+      case 'document':
+        return '.pdf';
+      case 'voice':
+        return '.m4a';
+      default:
+        return '';
+    }
+  }
+
+  // Cleanup temporary files
+  void _cleanupTempFiles(List<File> files) {
+    for (final file in files) {
+      try {
+        if (file.existsSync()) {
+          file.deleteSync();
+          log('Cleaned up temp file: ${file.path}');
+        }
+      } catch (e) {
+        log('Failed to cleanup temp file: $e');
+      }
+    }
+  }
+
+  Future<void> forwardTextOnlyMessage() async {
+    if (state.forwardingMessage == null ||
+        state.selectedChatsForForward?.isEmpty != false) {
+      emit(
+        state.copyWith(
+          errorMessage: 'No message or chats selected for forwarding',
+        ),
+      );
+      return;
+    }
+
+    try {
+      final user = await AuthUtils.instance.readUserData();
+      final userId = int.tryParse(user?.result?.userId.toString() ?? '') ?? 0;
+      final originalMessage = state.forwardingMessage!;
+      final selectedChats = state.selectedChatsForForward!;
+
+      emit(state.copyWith(isForwarding: true));
+
+      for (final chat in selectedChats) {
+        final forwardRequest = AddChatEntryRequest(
+          chatId: chat.chatId,
+          senderId: userId,
+          type: 'CFVD',
+          typeValue: originalMessage.id ?? 0,
+          messageType: 'text',
+          content: originalMessage.content ?? '',
+          attachedFiles: [],
+          source: 'Mobile',
+          otherDetails1: jsonEncode([
+            {
+              "InitialChatEntryId": originalMessage.id.toString(),
+              "IsForwarded": "True",
+            },
+          ]),
+        );
+
+        final res = await _chatRepositories.addChatEntry(
+          req: forwardRequest,
+          files: [],
+        );
+
+        if (res.data == null) {
+          throw Exception('Failed to forward to chat ${chat.title}');
+        }
+
+        log('Forwarded text-only message to chat: ${chat.title}');
+      }
+
+      emit(
+        state.copyWith(
+          isForwarding: false,
+          clearForwardingMessage: true,
+          isSelectingChatsForForward: false,
+          selectedChatsForForward: [],
+          errorMessage: null,
+        ),
+      );
+
+      log(
+        'Successfully forwarded text-only message to ${selectedChats.length} chats',
+      );
+    } catch (e) {
+      log('Error forwarding text-only message: $e');
+      emit(
+        state.copyWith(
+          isForwarding: false,
+          errorMessage: 'Failed to forward message: $e',
+        ),
+      );
+    }
+  }
+
+  // Quick forward to a specific chat (bypassing selection screen)
+  Future<void> quickForwardMessage(Entry message, int targetChatId) async {
+    try {
+      final user = await AuthUtils.instance.readUserData();
+      final userId = int.tryParse(user?.result?.userId.toString() ?? '') ?? 0;
+
+      final forwardRequest = AddChatEntryRequest(
+        chatId: targetChatId,
+        senderId: userId,
+        type: 'CFVD',
+        typeValue: message.id ?? 0,
+        messageType: message.messageType ?? 'text',
+        content: message.content ?? '',
+        source: 'Mobile',
+        attachedFiles: state.selectedFiles,
+        otherDetails1: jsonEncode({
+          'forwardedFrom': message.chatId,
+          'originalMessageId': message.id,
+          'originalSender': message.senderId,
+          'forwardedAt': DateTime.now().toIso8601String(),
+        }),
+      );
+
+      final res = await _chatRepositories.addChatEntry(
+        req: forwardRequest,
+        files: state.selectedFiles,
+      );
+
+      if (res.data != null) {
+        log('✅ Quick forwarded message to chat: $targetChatId');
+      } else {
+        throw Exception('Failed to forward message');
+      }
+    } catch (e) {
+      log('❌ Error in quick forward: $e');
+      emit(state.copyWith(errorMessage: 'Failed to forward message: $e'));
     }
   }
 
@@ -2661,47 +2605,46 @@ class ChatCubit extends Cubit<ChatState> {
 
     return super.close();
   }
-}
 
-// Initial state class
+  // Initial state class
 
-// Helper function for fire-and-forget futures
-void unawaited(Future<void> future) {
-  future.catchError((error) {
-    log('Unawaited future error: $error');
-  });
-}
-
-class ChatPageManager {
-  static bool _isPageVisible = true;
-  static DateTime? _pageHiddenTime;
-
-  static void onPageVisible() {
-    final wasHidden = !_isPageVisible;
-    _isPageVisible = true;
-
-    if (wasHidden && _pageHiddenTime != null) {
-      final hiddenDuration = DateTime.now().difference(_pageHiddenTime!);
-      log('📱 Page became visible after ${hiddenDuration.inSeconds}s');
-
-      // If hidden for more than 30 seconds, refresh chat
-      if (hiddenDuration.inSeconds > 30) {
-        _handlePageComeback();
-      }
-    }
-  }
-
-  static void onPageHidden() {
-    _isPageVisible = false;
-    _pageHiddenTime = DateTime.now();
-    log('📱 Page became hidden');
-  }
-
-  static void _handlePageComeback() {
-    log('🔄 Handling page comeback - refreshing chat...');
-
-    // Get the current chat cubit and refresh
-    // You'll need to access your cubit here
-    // context.read<ChatCubit>().refreshAfterComeback();
+  // Helper function for fire-and-forget futures
+  void unawaited(Future<void> future) {
+    future.catchError((error) {
+      log('Unawaited future error: $error');
+    });
   }
 }
+// class ChatPageManager {
+//   static bool _isPageVisible = true;
+//   static DateTime? _pageHiddenTime;
+
+//   static void onPageVisible() {
+//     final wasHidden = !_isPageVisible;
+//     _isPageVisible = true;
+
+//     if (wasHidden && _pageHiddenTime != null) {
+//       final hiddenDuration = DateTime.now().difference(_pageHiddenTime!);
+//       log('📱 Page became visible after ${hiddenDuration.inSeconds}s');
+
+//       // If hidden for more than 30 seconds, refresh chat
+//       if (hiddenDuration.inSeconds > 30) {
+//         _handlePageComeback();
+//       }
+//     }
+//   }
+
+//   static void onPageHidden() {
+//     _isPageVisible = false;
+//     _pageHiddenTime = DateTime.now();
+//     log('📱 Page became hidden');
+//   }
+
+//   static void _handlePageComeback() {
+//     log('🔄 Handling page comeback - refreshing chat...');
+
+//     // Get the current chat cubit and refresh
+//     // You'll need to access your cubit here
+//     // context.read<ChatCubit>().refreshAfterComeback();
+//   }
+// }

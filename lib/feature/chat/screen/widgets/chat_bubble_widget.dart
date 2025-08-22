@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_entry/chat_entry_response.dart';
+import 'package:soxo_chat/feature/chat/screen/forward_screen.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/chat_card.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/htm_Card.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/user_data.dart';
@@ -279,6 +280,20 @@ class _ChatBubbleMessageState extends State<ChatBubbleMessage>
         clearChat: () {
           Navigator.pop(context);
           _showClearChatDialog();
+        },
+        onforward: () {
+          Navigator.pop(context);
+
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (context) {
+              return WhatsAppForwardBottomSheet(
+                messageToForward: widget.messageData ?? Entry(),
+              );
+            },
+          );
         },
       ),
     );
@@ -1692,6 +1707,7 @@ class MessageOptionsBottomSheet extends StatelessWidget {
   final VoidCallback? onDelete;
   final VoidCallback? onDeleteEveryOne;
   final VoidCallback? clearChat;
+  final VoidCallback? onforward;
 
   const MessageOptionsBottomSheet({
     super.key,
@@ -1705,6 +1721,7 @@ class MessageOptionsBottomSheet extends StatelessWidget {
     this.onDelete,
     this.onDeleteEveryOne,
     this.clearChat,
+    this.onforward,
   });
 
   @override
@@ -1793,6 +1810,11 @@ class MessageOptionsBottomSheet extends StatelessWidget {
                         icon: Icons.content_copy_rounded,
                         title: 'Copy Text',
                         onTap: onCopy,
+                      ),
+                      _buildOption(
+                        icon: Icons.content_copy_rounded,
+                        title: 'Forward',
+                        onTap: onforward,
                       ),
 
                       Divider(
