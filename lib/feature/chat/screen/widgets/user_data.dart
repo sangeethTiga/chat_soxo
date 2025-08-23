@@ -65,8 +65,11 @@ class ChatColorGenerator {
 
   static String generateInitials(String name) {
     if (name.isEmpty) return '';
+    String noBrackets = name.replaceAll(RegExp(r'[\(\[\{].*?[\)\]\}]'), '');
+    String cleanName = noBrackets
+        .replaceAll(RegExp(r'[^a-zA-Z0-9\s]'), '')
+        .trim();
 
-    String cleanName = name.trim();
     if (cleanName.isEmpty) return '';
 
     List<String> words = cleanName

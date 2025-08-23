@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -228,24 +230,36 @@ class GroupScreen extends StatelessWidget {
                           ),
                           14.verticalSpace,
                           Expanded(
-                            child: ListView.builder(
-                              shrinkWrap: true,
-                              itemCount: state.personList?.length,
-                              itemBuilder: (context, i) {
-                                final data = state.personList?[i];
-                                final isSelected = state.isUserSelected(
-                                  data?.id ?? 0,
-                                );
+                            child: FutureBuilder(
+                              future: AuthUtils.instance.readUserData(),
+                              builder: (context, asyncSnapshot) {
+                                final userId =
+                                    asyncSnapshot.data?.result?.userId;
+                                log("USER ID$userId");
+                                final list = state.personList
+                                    ?.where((e) => e.id != userId)
+                                    .toList();
+                                return ListView.builder(
+                                  shrinkWrap: true,
+                                  itemCount: list?.length,
+                                  itemBuilder: (context, i) {
+                                    final data = list?[i];
+                                    final isSelected = state.isUserSelected(
+                                      data?.id ?? 0,
+                                    );
 
-                                return buildChatContacts(
-                                  data?.name ?? '',
-                                  () {
-                                    context
-                                        .read<PersonListsCubit>()
-                                        .toggleUserSelection(data!);
+                                    return buildChatContacts(
+                                      image: data?.otherDetails ?? '',
+                                      data?.name ?? '',
+                                      () {
+                                        context
+                                            .read<PersonListsCubit>()
+                                            .toggleUserSelection(data!);
+                                      },
+                                      isShow: false,
+                                      isSelected: isSelected,
+                                    );
                                   },
-                                  isShow: false,
-                                  isSelected: isSelected,
                                 );
                               },
                             ),

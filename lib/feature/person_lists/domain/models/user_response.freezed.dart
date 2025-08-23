@@ -25,7 +25,7 @@ mixin _$UserResponse {
   int? get id => throw _privateConstructorUsedError;
   @JsonKey(name: "name")
   String? get name => throw _privateConstructorUsedError;
-  @JsonKey(name: "otherDetails")
+  @JsonKey(name: "otherDetails1")
   String? get otherDetails => throw _privateConstructorUsedError;
   @JsonKey(name: "role")
   String? get role => throw _privateConstructorUsedError;
@@ -54,7 +54,7 @@ abstract class $UserResponseCopyWith<$Res> {
   $Res call({
     @JsonKey(name: "id") int? id,
     @JsonKey(name: "name") String? name,
-    @JsonKey(name: "otherDetails") String? otherDetails,
+    @JsonKey(name: "otherDetails1") String? otherDetails,
     @JsonKey(name: "role") String? role,
     @JsonKey(name: "type") String? type,
     @JsonKey(name: "userId") int? userId,
@@ -127,7 +127,7 @@ abstract class _$$UserResponseImplCopyWith<$Res>
   $Res call({
     @JsonKey(name: "id") int? id,
     @JsonKey(name: "name") String? name,
-    @JsonKey(name: "otherDetails") String? otherDetails,
+    @JsonKey(name: "otherDetails1") String? otherDetails,
     @JsonKey(name: "role") String? role,
     @JsonKey(name: "type") String? type,
     @JsonKey(name: "userId") int? userId,
@@ -192,7 +192,7 @@ class _$UserResponseImpl implements _UserResponse {
   const _$UserResponseImpl({
     @JsonKey(name: "id") this.id,
     @JsonKey(name: "name") this.name,
-    @JsonKey(name: "otherDetails") this.otherDetails,
+    @JsonKey(name: "otherDetails1") this.otherDetails,
     @JsonKey(name: "role") this.role,
     @JsonKey(name: "type") this.type,
     @JsonKey(name: "userId") this.userId,
@@ -208,7 +208,7 @@ class _$UserResponseImpl implements _UserResponse {
   @JsonKey(name: "name")
   final String? name;
   @override
-  @JsonKey(name: "otherDetails")
+  @JsonKey(name: "otherDetails1")
   final String? otherDetails;
   @override
   @JsonKey(name: "role")
@@ -262,7 +262,7 @@ abstract class _UserResponse implements UserResponse {
   const factory _UserResponse({
     @JsonKey(name: "id") final int? id,
     @JsonKey(name: "name") final String? name,
-    @JsonKey(name: "otherDetails") final String? otherDetails,
+    @JsonKey(name: "otherDetails1") final String? otherDetails,
     @JsonKey(name: "role") final String? role,
     @JsonKey(name: "type") final String? type,
     @JsonKey(name: "userId") final int? userId,
@@ -278,7 +278,7 @@ abstract class _UserResponse implements UserResponse {
   @JsonKey(name: "name")
   String? get name;
   @override
-  @JsonKey(name: "otherDetails")
+  @JsonKey(name: "otherDetails1")
   String? get otherDetails;
   @override
   @JsonKey(name: "role")

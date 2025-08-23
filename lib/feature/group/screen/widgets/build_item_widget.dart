@@ -10,6 +10,7 @@ Widget buildChatContacts(
   VoidCallback? onTap, {
   bool? isShow = false,
   bool isSelected = false,
+  String? image,
 }) {
   return InkWell(
     onTap: onTap,
@@ -22,7 +23,7 @@ Widget buildChatContacts(
       ),
       child: Row(
         children: [
-          ChatAvatar(name: name ?? '', size: 46),
+          CachedChatAvatar(name: name ?? '', size: 46, imageUrl: image),
 
           12.horizontalSpace,
           Expanded(child: Text(name, style: FontPalette.hW600S14)),
