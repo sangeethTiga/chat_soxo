@@ -538,4 +538,19 @@ class ChatService implements ChatRepositories {
       throw Error();
     }
   }
+
+  @override
+  Future<ResponseResult> pinnedMessage({String? chatId, String? pinned}) async {
+    final res = await NetworkProvider().put(
+      ApiEndpoints.pinnedChats(chatId ?? '', pinned ?? ''),
+    );
+
+    switch (res.statusCode) {
+      case 200:
+      case 201:
+        return ResponseResult(data: res.data);
+      default:
+        throw Error();
+    }
+  }
 }

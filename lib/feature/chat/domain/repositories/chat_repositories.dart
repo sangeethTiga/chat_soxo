@@ -21,4 +21,9 @@ abstract class ChatRepositories {
     String? chatId,
     String? chatEntryId,
   });
+
+  Future<ResponseResult<dynamic>> pinnedMessage({
+    String? chatId,
+    String? pinned,
+  });
 }

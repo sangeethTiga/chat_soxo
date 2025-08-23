@@ -1587,46 +1587,46 @@ class ChatCubit extends Cubit<ChatState> {
     );
   }
 
-  void pinnedTongle(Entry message, int chatId, int userId) async {
-    final messageId = message.id;
-    if (messageId == null) {
-      emit(state.copyWith(errorMessage: 'Cannot pin message: Invalid ID'));
-      return;
-    }
+  // void pinnedTongle(Entry message, int chatId, int userId) async {
+  //   final messageId = message.id;
+  //   if (messageId == null) {
+  //     emit(state.copyWith(errorMessage: 'Cannot pin message: Invalid ID'));
+  //     return;
+  //   }
 
-    final isPinned = message.pinned?.toLowerCase() == 'y';
-    final newPinStatus = isPinned ? 'N' : 'Y';
+  //   final isPinned = message.psinned?.toLowerCase() == 'y';
+  //   final newPinStatus = isPinned ? 'N' : 'Y';
 
-    final currentEntries = List<Entry>.from(state.chatEntry?.entries ?? []);
-    final updatedEntries = currentEntries.map((entry) {
-      if (entry.id == messageId) {
-        return entry.copyWith(pinned: newPinStatus);
-      }
-      return entry;
-    }).toList();
+  //   final currentEntries = List<Entry>.from(state.chatEntry?.entries ?? []);
+  //   final updatedEntries = currentEntries.map((entry) {
+  //     if (entry.id == messageId) {
+  //       return entry.copyWith(pinned: newPinStatus);
+  //     }
+  //     return entry;
+  //   }).toList();
 
-    await createChat(
-      AddChatEntryRequest(
-        chatId: chatId,
-        senderId: userId,
-        type: 'CN',
-        typeValue: 0,
-        messageType: message.messageType ?? 'text',
-        content: message.content ?? '',
-        source: 'mobile',
-        attachedFiles: [],
-        otherDetails1: message.otherDetails1 ?? '',
-        pinned: newPinStatus,
-      ),
-      files: state.selectedFiles,
-    );
-    emit(
-      state.copyWith(
-        chatEntry: state.chatEntry?.copyWith(entries: updatedEntries),
-        isPinned: newPinStatus,
-      ),
-    );
-  }
+  //   await createChat(
+  //     AddChatEntryRequest(
+  //       chatId: chatId,
+  //       senderId: userId,
+  //       type: 'CN',
+  //       typeValue: 0,
+  //       messageType: message.messageType ?? 'text',
+  //       content: message.content ?? '',
+  //       source: 'mobile',
+  //       attachedFiles: [],
+  //       otherDetails1: message.otherDetails1 ?? '',
+  //       pinned: newPinStatus,
+  //     ),
+  //     files: state.selectedFiles,
+  //   );
+  //   emit(
+  //     state.copyWith(
+  //       chatEntry: state.chatEntry?.copyWith(entries: updatedEntries),
+  //       isPinned: newPinStatus,
+  //     ),
+  //   );
+  // }
 
   initPinnedClear() {
     emit(state.copyWith(isPinned: null, isMakeItNull: true));
@@ -2640,7 +2640,36 @@ class ChatCubit extends Cubit<ChatState> {
     }
   }
 
+  Future<void> pinnedMessage({
+    String? chatEntryId,
+    String? pinned,
+    Entry? message,
+  }) async {
+    final messageId = message?.id;
+    final res = await _chatRepositories.pinnedMessage(
+      chatId: chatEntryId,
+      pinned: pinned,
+    );
+    if (res.data != null) {
+      final isPinned = message?.pinned?.toLowerCase() == 'y';
+      final newPinStatus = isPinned ? 'N' : 'Y';
 
+      final currentEntries = List<Entry>.from(state.chatEntry?.entries ?? []);
+      final updatedEntries = currentEntries.map((entry) {
+        if (entry.id == messageId) {
+          return entry.copyWith(pinned: newPinStatus);
+        }
+        return entry;
+      }).toList();
+      emit(
+        state.copyWith(
+          chatEntry: state.chatEntry?.copyWith(entries: updatedEntries),
+          isPinned: newPinStatus,
+        ),
+      );
+      log("Success Pinned Message");
+    }
+  }
 
   @override
   Future<void> close() {

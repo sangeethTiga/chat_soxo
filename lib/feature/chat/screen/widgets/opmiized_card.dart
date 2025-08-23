@@ -64,12 +64,11 @@ class _OptimizedChatMessagesListsState
     super.dispose();
   }
 
-  void _togglePin(Entry message) async {
-    final user = await AuthUtils.instance.readUserData();
-    context.read<ChatCubit>().pinnedTongle(
-      message,
-      widget.chatData?['chat_id'],
-      user?.result?.userId ?? 0,
+  void _togglePin(Entry message) {
+    context.read<ChatCubit>().pinnedMessage(
+      message: message,
+      chatEntryId: message.id.toString(),
+      pinned: 'N',
     );
   }
 

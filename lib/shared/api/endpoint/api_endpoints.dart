@@ -12,4 +12,7 @@ class ApiEndpoints {
 
   static String deleteCHat(String chatId, String chatEntryId, String mode) =>
       'ChatEntry?chatid=$chatId&chatentryid=$chatEntryId&mode=$mode';
+
+  static String pinnedChats(String chatEntryId, String pinned) =>
+      'ChatEntry/pin?chatentryid=$chatEntryId&pinned=$pinned';
 }
