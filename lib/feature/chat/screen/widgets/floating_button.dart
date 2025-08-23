@@ -94,6 +94,7 @@ class FlatingWidget extends StatelessWidget {
           backgroundColor: kPrimaryColor,
           heroTag: null,
           onPressed: () {
+            context.read<PersonListsCubit>().initStateOfClear();
             context.push(
               routeGroup,
               extra: {

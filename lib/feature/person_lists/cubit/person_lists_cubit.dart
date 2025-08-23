@@ -102,7 +102,8 @@ class PersonListsCubit extends Cubit<PersonListsState> {
   Future<void> initStateOfClear() async {
     emit(
       state.copyWith(
-        selectedUsers: [],
+        isMakeItNull: true,
+        selectedUsers: null,
         isSelectionMode: false,
         isCreate: ApiFetchStatus.idle,
         isUser: ApiFetchStatus.idle,

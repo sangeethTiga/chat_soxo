@@ -24,11 +24,14 @@ class PersonListsState extends Equatable {
     bool? isSelectionMode,
     ApiFetchStatus? isCreate,
     ChatListResponse? chatListResponse,
+    bool? isMakeItNull = false,
   }) {
     return PersonListsState(
       personList: personList ?? this.personList,
       isUser: isUser ?? this.isUser,
-      selectedUsers: selectedUsers ?? this.selectedUsers,
+      selectedUsers: isMakeItNull == true
+          ? null
+          : selectedUsers ?? this.selectedUsers,
       isSelectionMode: isSelectionMode ?? this.isSelectionMode,
       isCreate: isCreate ?? this.isCreate,
       chatListResponse: chatListResponse ?? this.chatListResponse,

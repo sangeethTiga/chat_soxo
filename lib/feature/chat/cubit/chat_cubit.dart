@@ -1955,31 +1955,33 @@ class ChatCubit extends Cubit<ChatState> {
       log('Error selecting files: $e');
     }
   }
-Future<void> selectMultipleImagesFromGallery() async {
-  if (_isDisposed) return;
 
-  try {
-    final images = await _imagePicker.pickMultipleMedia(
-      maxWidth: 1920,
-      maxHeight: 1080,
-      imageQuality: 85,
-    );
+  Future<void> selectMultipleImagesFromGallery() async {
+    if (_isDisposed) return;
 
-    if (images.isNotEmpty && !_isDisposed) {
-      final files = images.map((image) => File(image.path)).toList();
-      final currentFiles = state.selectedFiles ?? [];
-      final updatedFiles = [...currentFiles, ...files];
+    try {
+      final images = await _imagePicker.pickMultipleMedia(
+        maxWidth: 1920,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
 
-      emit(state.copyWith(selectedFiles: updatedFiles));
-      log('Selected ${files.length} images from gallery');
+      if (images.isNotEmpty && !_isDisposed) {
+        final files = images.map((image) => File(image.path)).toList();
+        final currentFiles = state.selectedFiles ?? [];
+        final updatedFiles = [...currentFiles, ...files];
+
+        emit(state.copyWith(selectedFiles: updatedFiles));
+        log('Selected ${files.length} images from gallery');
+      }
+    } catch (e) {
+      if (!_isDisposed) {
+        emit(state.copyWith(errorMessage: 'Error selecting images: $e'));
+      }
+      log('Error selecting multiple images: $e');
     }
-  } catch (e) {
-    if (!_isDisposed) {
-      emit(state.copyWith(errorMessage: 'Error selecting images: $e'));
-    }
-    log('Error selecting multiple images: $e');
   }
-}
+
   Future<void> selectImageFromGallery(BuildContext context) async {
     if (_isDisposed) return;
 
@@ -2001,8 +2003,6 @@ Future<void> selectMultipleImagesFromGallery() async {
       }
     }
   }
-
-
 
   // ✅ ALTERNATIVE: Using FilePicker for multiple images
   Future<void> selectMultipleImagesWithFilePicker() async {
@@ -2640,16 +2640,15 @@ Future<void> selectMultipleImagesFromGallery() async {
     }
   }
 
+
+
   @override
   Future<void> close() {
     log('Closing ChatCubit...');
     _isDisposed = true;
-
     _recordingTimer?.cancel();
     _batchUpdateTimer?.cancel();
     _audioRecorder.dispose();
-
-    // Clean up caches
     _fileUrls.clear();
     _fileTypes.clear();
     _loadingFiles.clear();
@@ -2661,45 +2660,9 @@ Future<void> selectMultipleImagesFromGallery() async {
     return super.close();
   }
 
-  // Initial state class
-
-  // Helper function for fire-and-forget futures
   void unawaited(Future<void> future) {
     future.catchError((error) {
       log('Unawaited future error: $error');
     });
   }
 }
-// class ChatPageManager {
-//   static bool _isPageVisible = true;
-//   static DateTime? _pageHiddenTime;
-
-//   static void onPageVisible() {
-//     final wasHidden = !_isPageVisible;
-//     _isPageVisible = true;
-
-//     if (wasHidden && _pageHiddenTime != null) {
-//       final hiddenDuration = DateTime.now().difference(_pageHiddenTime!);
-//       log('📱 Page became visible after ${hiddenDuration.inSeconds}s');
-
-//       // If hidden for more than 30 seconds, refresh chat
-//       if (hiddenDuration.inSeconds > 30) {
-//         _handlePageComeback();
-//       }
-//     }
-//   }
-
-//   static void onPageHidden() {
-//     _isPageVisible = false;
-//     _pageHiddenTime = DateTime.now();
-//     log('📱 Page became hidden');
-//   }
-
-//   static void _handlePageComeback() {
-//     log('🔄 Handling page comeback - refreshing chat...');
-
-//     // Get the current chat cubit and refresh
-//     // You'll need to access your cubit here
-//     // context.read<ChatCubit>().refreshAfterComeback();
-//   }
-// }

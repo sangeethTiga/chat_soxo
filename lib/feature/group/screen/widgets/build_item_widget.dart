@@ -23,7 +23,7 @@ Widget buildChatContacts(
       ),
       child: Row(
         children: [
-          CachedChatAvatar(name: name ?? '', size: 46, imageUrl: image),
+          CachedChatAvatar(name: name, size: 46, imageUrl: image),
 
           12.horizontalSpace,
           Expanded(child: Text(name, style: FontPalette.hW600S14)),

@@ -324,7 +324,6 @@ class _AnimatedTabs extends StatelessWidget {
   }
 }
 
-// Individual tab item to prevent rebuilding all tabs when one changes
 class _TabItem extends StatelessWidget {
   final int index;
   final dynamic tab;
@@ -370,7 +369,6 @@ class _TabItem extends StatelessWidget {
   }
 }
 
-// Extracted chat list to prevent unnecessary rebuilds
 class _AnimatedChatList extends StatelessWidget {
   final AnimationController listAnimationController;
   final Animation<double> listSlideAnimation;
@@ -424,7 +422,6 @@ class _AnimatedChatList extends StatelessWidget {
   }
 }
 
-// Extracted ListView to prevent unnecessary rebuilds
 class _ChatListView extends StatelessWidget {
   final List<dynamic> filteredChats;
   final ScrollController scrollController;
@@ -459,7 +456,6 @@ class _ChatListView extends StatelessWidget {
   }
 }
 
-// Individual chat item to prevent rebuilding entire list
 class _ChatListItem extends StatelessWidget {
   final int index;
   final dynamic data;
