@@ -68,7 +68,7 @@ class _OptimizedChatMessagesListsState
     context.read<ChatCubit>().pinnedMessage(
       message: message,
       chatEntryId: message.id.toString(),
-      pinned: 'N',
+      pinned: 'Y',
     );
   }
 
@@ -229,15 +229,7 @@ class _OptimizedChatMessagesListsState
       return aTime.compareTo(bTime);
     });
 
-    // CRITICAL FIX: Pre-create GlobalKeys for all messages BEFORE building ListView
-    for (final messageData in pinnedList) {
-      final messageId = messageData.id.toString();
-      // Only create a new key if one doesn't exist
-      if (!_messageKeys.containsKey(messageId)) {
-        _messageKeys[messageId] = GlobalKey();
-        log('🔑 Created new key for message: $messageId');
-      }
-    }
+    _ensureKeysExist(pinnedList);
 
     log('📋 Total message keys available: ${_messageKeys.keys.length}');
     log('📋 Message IDs: ${_messageKeys.keys.toList()}');
@@ -306,6 +298,29 @@ class _OptimizedChatMessagesListsState
         );
       },
     );
+  }
+
+  void _ensureKeysExist(List<Entry> entries) {
+    log('🔧 Ensuring keys exist for ${entries.length} entries');
+    log('🔧 Current keys count: ${_messageKeys.length}');
+
+    for (final entry in entries) {
+      final messageId = entry.id.toString();
+
+      log(
+        '🔑 Processing entry ID: ${entry.id} (type: ${entry.id.runtimeType}) -> "$messageId"',
+      );
+
+      if (!_messageKeys.containsKey(messageId)) {
+        _messageKeys[messageId] = GlobalKey();
+        log('✅ Created new key for message: "$messageId"');
+      } else {
+        log('♻️ Key already exists for message: "$messageId"');
+      }
+    }
+
+    log('📊 Total keys after ensuring: ${_messageKeys.length}');
+    log('📊 Final key list: ${_messageKeys.keys.toList()}');
   }
 
   Widget _buildErrorState(String errorMessage) {
