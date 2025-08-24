@@ -27,7 +27,15 @@ class PersonListsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: buildAppBar(title: 'Person', context, {}, isLeading: true),
+      appBar: buildAppBar(
+        title: 'Person',
+        context,
+        {},
+        isLeading: true,
+        onNotificationTap: () {
+          context.push(routeNotification);
+        },
+      ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(

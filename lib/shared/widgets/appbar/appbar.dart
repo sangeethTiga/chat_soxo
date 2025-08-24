@@ -9,6 +9,7 @@ import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/user_data.dart';
 import 'package:soxo_chat/shared/app/list/helper.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
+import 'package:soxo_chat/shared/routes/routes.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
 import 'package:soxo_chat/shared/widgets/animated_divider/notification_anmation.dart';
 
@@ -249,7 +250,7 @@ PreferredSizeWidget buildSeamlessAppBar(
                   AnimatedNotificationBell(
                     notificationCount: 5,
                     onTap: () {
-                      context.push('/notifications');
+                      context.push(routeNotification);
                     },
                     autoAnimate: true,
                     animationInterval: const Duration(seconds: 3),

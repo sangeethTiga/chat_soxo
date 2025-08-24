@@ -76,7 +76,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     }
   }
 
-  // FIX: Ensure message keys are populated from chat entries
   void _ensureMessageKeysExist(List<Entry> entries) {
     log('🔧 Ensuring keys exist for ${entries.length} entries');
 
@@ -132,8 +131,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
       log(
         '❌ Message key context not available for message: ${pinnedMessage.id}',
       );
-
-      // IMPROVED FIX: Wait for widget to build and try multiple times
       _attemptScrollWithRetry(pinnedMessage, 0);
     }
   }
@@ -144,7 +141,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
       return;
     }
 
-    // Wait for next frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(Duration(milliseconds: 100 * (attempt + 1)), () {
         final messageKey = _messageKeys[pinnedMessage.id.toString()];
@@ -165,7 +161,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
         } else {
           log('🔄 Attempt ${attempt + 1} failed, retrying...');
 
-          // Try scrolling to approximate position first
           if (_messageScrollController.hasClients && attempt == 2) {
             _scrollToApproximatePosition(pinnedMessage);
           }
@@ -177,7 +172,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   }
 
   void _scrollToApproximatePosition(Entry pinnedMessage) {
-    // Get all entries and find the position of the target message
     final chatState = context.read<ChatCubit>().state;
     final entries =
         chatState.chatEntry?.entries
@@ -263,17 +257,17 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
 
   void _handleErrorMessage(BuildContext context, ChatState state) {
     if (state.errorMessage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(state.errorMessage!),
-          backgroundColor: Colors.red,
-          action: SnackBarAction(
-            label: 'Dismiss',
-            textColor: Colors.white,
-            onPressed: () => context.read<ChatCubit>().clearError(),
-          ),
-        ),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(
+      //     content: Text(state.errorMessage!),
+      //     backgroundColor: Colors.red,
+      //     action: SnackBarAction(
+      //       label: 'Dismiss',
+      //       textColor: Colors.white,
+      //       onPressed: () => context.read<ChatCubit>().clearError(),
+      //     ),
+      //   ),
+      // );
     }
   }
 
@@ -290,6 +284,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
         children: [
           Expanded(
             child: Container(
+              clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.only(

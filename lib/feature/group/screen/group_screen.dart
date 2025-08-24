@@ -11,6 +11,7 @@ import 'package:soxo_chat/feature/person_lists/cubit/person_lists_cubit.dart';
 import 'package:soxo_chat/feature/person_lists/domain/models/chat_request/chat_request.dart';
 import 'package:soxo_chat/shared/app/enums/api_fetch_status.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
+import 'package:soxo_chat/shared/routes/routes.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
 import 'package:soxo_chat/shared/utils/auth/auth_utils.dart';
 import 'package:soxo_chat/shared/widgets/appbar/appbar.dart';
@@ -33,6 +34,9 @@ class GroupScreen extends StatelessWidget {
         context,
         {},
         isLeading: true,
+        onNotificationTap: () {
+          context.push(routeNotification);
+        },
       ),
       body: Column(
         children: [
