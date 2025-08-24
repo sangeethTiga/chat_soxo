@@ -508,6 +508,7 @@ class _ChatListItem extends StatelessWidget {
       chatId: state.chatList?[index].chatId,
     );
     context.read<ChatCubit>().initStateClear();
+    context.read<ChatCubit>().getChatListBackground();
 
     context.push(
       routeChatDetail,

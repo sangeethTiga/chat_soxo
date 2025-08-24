@@ -2253,6 +2253,23 @@ class ChatCubit extends Cubit<ChatState> {
     }
   }
 
+  Future<void> getChatListBackground() async {
+    try {
+      final res = await _chatRepositories.chatList();
+
+      if (res.data != null) {
+        final updatedChats = res.data!.map((serverChat) {
+          if (serverChat.chatId == _currentChatId) {
+            return serverChat.copyWith(unreadCount: 0);
+          }
+          return serverChat;
+        }).toList();
+
+        emit(state.copyWith(chatList: updatedChats, allChats: updatedChats));
+      }
+    } catch (e) {}
+  }
+
   Future<void> loadCurrentUserId() async {
     try {
       final user = await AuthUtils.instance.readUserData();
