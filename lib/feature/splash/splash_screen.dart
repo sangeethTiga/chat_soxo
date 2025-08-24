@@ -42,7 +42,10 @@ class _SplashScreenState extends State<SplashScreen> {
     return Scaffold(
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: [SvgPicture.asset('assets/images/Group 616.svg')],
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Center(child: SvgPicture.asset('assets/images/Group 616.svg')),
+        ],
       ),
     );
   }

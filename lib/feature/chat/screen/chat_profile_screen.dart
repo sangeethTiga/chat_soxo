@@ -40,7 +40,7 @@ class _ChatProfileScreenState extends State<ChatProfileScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: buildAppBar(title: '', context, {}, isLeading: true),
+      appBar: buildAppBar(title: 'Info', context, {}, isLeading: true),
       body: BlocBuilder<ChatCubit, ChatState>(
         builder: (context, state) {
           return Container(
