@@ -69,9 +69,9 @@ class _ChatProfileScreenState extends State<ChatProfileScreen>
                           color: Colors.white,
                           child: TabBar(
                             controller: _tabController,
-                            labelColor: Colors.blue,
+                            labelColor: kPrimaryColor,
                             unselectedLabelColor: Colors.grey,
-                            indicatorColor: Colors.blue,
+                            indicatorColor: kPrimaryColor,
                             tabs: [
                               if (widget.chatData?["type"] == 'group') ...{
                                 Tab(text: 'Members'),
