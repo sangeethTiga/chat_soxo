@@ -1,15 +1,11 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_entry/chat_entry_response.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/chat_bubble_widget.dart';
-import 'package:soxo_chat/feature/chat/screen/widgets/pdf_viewer.dart';
+import 'package:soxo_chat/feature/chat/screen/widgets/chat_card.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/user_data.dart';
 import 'package:soxo_chat/shared/constants/colors.dart';
 import 'package:soxo_chat/shared/themes/font_palette.dart';
@@ -265,7 +261,10 @@ class _ChatProfileScreenState extends State<ChatProfileScreen>
       itemCount: documentEntries.length,
       itemBuilder: (context, index) {
         final document = documentEntries[index];
-        return _buildDocumentTile(document, state);
+        return Container(
+          margin: EdgeInsets.only(bottom: 10.h),
+          child: _buildDocumentTile(document, state),
+        );
       },
     );
   }
@@ -302,184 +301,32 @@ class _ChatProfileScreenState extends State<ChatProfileScreen>
     );
   }
 
+  // Fixed media tile - now uses MediaPreviewWidget
   Widget _buildMediaTile(ChatMedias media, ChatState state) {
-    final mediaId = media.id?.toString() ?? '';
-    final isLoaded = context.read<ChatCubit>().isFileLoaded(mediaId);
-    final isLoading = context.read<ChatCubit>().isFileLoading(mediaId);
-
-    return GestureDetector(
-      onTap: () {
-        if (isLoaded) {
-          final mediaEntries = _getMediaEntries(state);
-          final currentIndex = mediaEntries.indexWhere((m) => m.id == media.id);
-          _openImageViewer(
-            context,
-            currentIndex >= 0 ? currentIndex : 0,
-            mediaEntries,
-          );
-        } else {
-          context.read<ChatCubit>().loadMediaFile(media);
-        }
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.grey[200],
-          borderRadius: BorderRadius.circular(8.r),
-        ),
-        child: isLoading
-            ? Center(child: CircularProgressIndicator(strokeWidth: 2.w))
-            : isLoaded
-            ? _buildLoadedMediaContent(media, mediaId, state)
-            : _buildUnloadedMediaContent(media),
-      ),
-    );
-  }
-
-  Widget _buildLoadedMediaContent(
-    ChatMedias media,
-    String mediaId,
-    ChatState state,
-  ) {
-    final fileUrl = context.read<ChatCubit>().getFileUrl(mediaId);
-    final fileType = context.read<ChatCubit>().getFileType(mediaId);
-
-    if (fileUrl == null) return _buildUnloadedMediaContent(media);
-
-    switch (fileType) {
-      case 'image':
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(8.r),
-          child: Image.memory(
-            Uri.parse(fileUrl).data!.contentAsBytes(),
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
-          ),
-        );
-      case 'video':
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.black87,
-            borderRadius: BorderRadius.circular(8.r),
-          ),
-          child: Center(
-            child: Icon(
-              Icons.play_circle_outline,
-              color: Colors.white,
-              size: 32.w,
-            ),
-          ),
-        );
-      default:
-        return _buildUnloadedMediaContent(media);
-    }
-  }
-
-  Widget _buildUnloadedMediaContent(ChatMedias media) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            _getMediaIcon(media.mediaType),
-            size: 24.w,
-            color: Colors.grey[600],
-          ),
-          SizedBox(height: 4.h),
-          Text(
-            media.mediaType?.toUpperCase() ?? 'FILE',
-            style: TextStyle(fontSize: 10.sp, color: Colors.grey[600]),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDocumentTile(ChatMedias document, ChatState state) {
-    final mediaId = document.id?.toString() ?? '';
-    final isLoaded = context.read<ChatCubit>().isFileLoaded(mediaId);
-    final isLoading = context.read<ChatCubit>().isFileLoading(mediaId);
-
     return Container(
-      margin: EdgeInsets.only(bottom: 12.h),
-      padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: Offset(0, 2),
-          ),
-        ],
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(8.r),
       ),
-      child: Row(
-        children: [
-          Container(
-            padding: EdgeInsets.all(12.w),
-            decoration: BoxDecoration(
-              color: Colors.blue[50],
-              borderRadius: BorderRadius.circular(8.r),
-            ),
-            child: Icon(
-              _getDocumentIcon(document.mediaType),
-              color: Colors.blue,
-              size: 24.w,
-            ),
-          ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _extractFileName(document) ?? 'Document',
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                SizedBox(height: 4.h),
-                Row(
-                  children: [
-                    Text(
-                      document.mediaType?.toUpperCase() ?? 'PDF',
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    if (isLoading) ...[
-                      SizedBox(width: 8.w),
-                      SizedBox(
-                        width: 12.w,
-                        height: 12.w,
-                        child: CircularProgressIndicator(strokeWidth: 1.5),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
-            ),
-          ),
-          GestureDetector(
-            onTap: () => _openDocument(document),
-            child: Container(
-              padding: EdgeInsets.all(8.w),
-              decoration: BoxDecoration(
-                color: Colors.blue[50],
-                borderRadius: BorderRadius.circular(6.r),
-              ),
-              child: Icon(
-                isLoaded ? Icons.visibility : Icons.download,
-                color: Colors.blue,
-                size: 20.w,
-              ),
-            ),
-          ),
-        ],
+      child: MediaPreviewWidget(
+        media: media,
+        isInChatBubble: false,
+        maxWidth: double.infinity,
+        maxHeight: double.infinity,
+      ),
+    );
+  }
+
+  // Fixed document tile - simplified to use MediaPreviewWidget properly
+  Widget _buildDocumentTile(ChatMedias document, ChatState state) {
+    return SizedBox(
+      width: 320.w,
+      height: 60.h,
+      child: MediaPreviewWidget(
+        media: document,
+        isInChatBubble: false,
+        maxWidth: 60.w,
+        maxHeight: 40.h,
       ),
     );
   }
@@ -536,104 +383,6 @@ class _ChatProfileScreenState extends State<ChatProfileScreen>
         ],
       ),
     );
-  }
-
-  void _openDocument(ChatMedias document) {
-    _openPdfDirectly(document);
-  }
-
-  Future<void> _openPdfDirectly(ChatMedias document) async {
-    try {
-      final mediaId = document.id?.toString() ?? '';
-
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => Center(child: CircularProgressIndicator()),
-      );
-
-      String? filePath;
-      final cubit = context.read<ChatCubit>();
-      final existingUrl = cubit.getFileUrl(mediaId);
-
-      if (existingUrl != null &&
-          !existingUrl.startsWith('http') &&
-          !existingUrl.startsWith('data:')) {
-        if (await File(existingUrl).exists()) {
-          filePath = existingUrl;
-        }
-      }
-
-      if (filePath == null) {
-        if (document.mediaUrl != null) {
-          if (document.mediaUrl!.startsWith('data:')) {
-            filePath = await _saveBase64AsFile(document.mediaUrl!, mediaId);
-          } else if (document.mediaUrl!.startsWith('http')) {
-            await cubit.loadMediaFile(document);
-            await Future.delayed(Duration(seconds: 2));
-            final downloadedUrl = cubit.getFileUrl(mediaId);
-            if (downloadedUrl != null && await File(downloadedUrl).exists()) {
-              filePath = downloadedUrl;
-            }
-          } else {
-            if (await File(document.mediaUrl!).exists()) {
-              filePath = document.mediaUrl!;
-            }
-          }
-        }
-      }
-
-      Navigator.of(context).pop();
-
-      if (filePath != null && await File(filePath).exists()) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PdfViewScreen(
-              filePath: filePath!,
-              fileName: _extractFileName(document) ?? 'Document.pdf',
-            ),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Could not load PDF file'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      if (Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error opening PDF: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  Future<String?> _saveBase64AsFile(String base64Data, String mediaId) async {
-    try {
-      String cleanBase64 = base64Data;
-      if (base64Data.contains(',')) {
-        cleanBase64 = base64Data.split(',').last;
-      }
-
-      final bytes = base64Decode(cleanBase64);
-      final directory = await getApplicationDocumentsDirectory();
-      final file = File('${directory.path}/pdf_$mediaId.pdf');
-      await file.writeAsBytes(bytes);
-
-      return file.path;
-    } catch (e) {
-      print('Error saving base64 to file: $e');
-      return null;
-    }
   }
 
   void _openImageViewer(

@@ -285,7 +285,7 @@ class _MediaTypeDispatcher extends StatelessWidget {
 
       case 'document':
       case 'pdf':
-        return _InstantDocumentPreview(
+        return InstantDocumentPreview(
           fileUrl: fileUrl,
           mediaId: mediaId,
           isInChatBubble: isInChatBubble,
@@ -478,7 +478,7 @@ class CachedImageDisplay extends StatelessWidget {
   }
 }
 
-class _InstantDocumentPreview extends StatelessWidget {
+class InstantDocumentPreview extends StatelessWidget {
   final String fileUrl;
   final String mediaId;
   final bool isInChatBubble;
@@ -488,7 +488,7 @@ class _InstantDocumentPreview extends StatelessWidget {
   final ChatMedias media;
   final String? customFileName;
 
-  const _InstantDocumentPreview({
+  const InstantDocumentPreview({
     required this.fileUrl,
     required this.mediaId,
     required this.isInChatBubble,
