@@ -148,13 +148,22 @@ class PersonListsScreen extends StatelessWidget {
                                               .getChatEntry(
                                                 chatId: existingChatId!,
                                               );
-                                          context.push(
+
+                                          context.pushReplacement(
+                                            // Changed from context.push()
                                             routeChatDetail,
                                             extra: {
                                               "title": data?.name,
                                               "chat_id": existingChatId,
                                             },
                                           );
+                                          // context.push(
+                                          //   routeChatDetail,
+                                          //   extra: {
+                                          //     "title": data?.name,
+                                          //     "chat_id": existingChatId,
+                                          //   },
+                                          // );
                                         } else {
                                           final chatResponse = await context
                                               .read<PersonListsCubit>()
@@ -185,12 +194,21 @@ class PersonListsScreen extends StatelessWidget {
                                               );
 
                                           if (chatResponse?.chatId != null) {
-                                            context.push(
+                                            // context.push(
+                                            //   routeChatDetail,
+                                            //   extra: {
+                                            //     "title": data?.name,
+                                            //     "chat_id":
+                                            //         chatResponse!.chatId ?? 0,
+                                            //   },
+                                            // );
+
+                                            context.pushReplacement(
+                                              // Changed from context.push()
                                               routeChatDetail,
                                               extra: {
                                                 "title": data?.name,
-                                                "chat_id":
-                                                    chatResponse!.chatId ?? 0,
+                                                "chat_id": existingChatId,
                                               },
                                             );
                                           }
