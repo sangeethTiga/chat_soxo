@@ -255,7 +255,12 @@ class _OptimizedChatMessagesListsState
             0;
 
         return ListView.builder(
-          cacheExtent: 2000,
+          // FIXED: Much larger cache extent to keep more widgets in memory
+          cacheExtent: 10000,
+          // Keep widgets alive automatically
+          addAutomaticKeepAlives: true,
+          addRepaintBoundaries: true,
+          // Disable item extent for better caching
           controller: _scrollController,
           padding: EdgeInsets.symmetric(horizontal: 12.w),
           itemCount: pinnedList.length,
