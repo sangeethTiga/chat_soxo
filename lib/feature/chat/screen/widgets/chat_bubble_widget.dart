@@ -1331,14 +1331,14 @@ class _ImageViewerScreenState extends State<ImageViewerScreen> {
           style: const TextStyle(color: Colors.white),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.share, color: Colors.white),
-            onPressed: () => _shareImage(widget.images[_currentIndex]),
-          ),
-          IconButton(
-            icon: const Icon(Icons.download, color: Colors.white),
-            onPressed: () => _downloadImage(widget.images[_currentIndex]),
-          ),
+          // IconButton(
+          //   icon: const Icon(Icons.share, color: Colors.white),
+          //   onPressed: () => _shareImage(widget.images[_currentIndex]),
+          // ),
+          // IconButton(
+          //   icon: const Icon(Icons.download, color: Colors.white),
+          //   onPressed: () => _downloadImage(widget.images[_currentIndex]),
+          // ),
         ],
       ),
       body: PageView.builder(
