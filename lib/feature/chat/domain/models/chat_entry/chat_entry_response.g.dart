@@ -150,6 +150,7 @@ _$UserImpl _$$UserImplFromJson(Map<String, dynamic> json) => _$UserImpl(
   id: (json['id'] as num?)?.toInt(),
   name: json['name'] as String?,
   userChats: json['userChats'] as List<dynamic>?,
+  otherDetails1: json['otherDetails1'] as String?,
 );
 
 Map<String, dynamic> _$$UserImplToJson(_$UserImpl instance) =>
@@ -157,4 +158,5 @@ Map<String, dynamic> _$$UserImplToJson(_$UserImpl instance) =>
       'id': instance.id,
       'name': instance.name,
       'userChats': instance.userChats,
+      'otherDetails1': instance.otherDetails1,
     };

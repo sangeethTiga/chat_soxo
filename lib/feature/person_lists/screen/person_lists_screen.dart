@@ -101,7 +101,7 @@ class PersonListsScreen extends StatelessWidget {
                                     return buildChatContacts(
                                       image: data?.otherDetails ?? '',
                                       data?.name ?? '',
-                                      
+
                                       () async {
                                         final user = await AuthUtils.instance
                                             .readUserData();

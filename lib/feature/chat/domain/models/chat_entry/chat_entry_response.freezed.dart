@@ -1902,6 +1902,8 @@ mixin _$User {
   String? get name => throw _privateConstructorUsedError;
   @JsonKey(name: "userChats")
   List<dynamic>? get userChats => throw _privateConstructorUsedError;
+  @JsonKey(name: "otherDetails1")
+  String? get otherDetails1 => throw _privateConstructorUsedError;
 
   /// Serializes this User to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -1921,6 +1923,7 @@ abstract class $UserCopyWith<$Res> {
     @JsonKey(name: "id") int? id,
     @JsonKey(name: "name") String? name,
     @JsonKey(name: "userChats") List<dynamic>? userChats,
+    @JsonKey(name: "otherDetails1") String? otherDetails1,
   });
 }
 
@@ -1942,6 +1945,7 @@ class _$UserCopyWithImpl<$Res, $Val extends User>
     Object? id = freezed,
     Object? name = freezed,
     Object? userChats = freezed,
+    Object? otherDetails1 = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -1957,6 +1961,10 @@ class _$UserCopyWithImpl<$Res, $Val extends User>
                 ? _value.userChats
                 : userChats // ignore: cast_nullable_to_non_nullable
                       as List<dynamic>?,
+            otherDetails1: freezed == otherDetails1
+                ? _value.otherDetails1
+                : otherDetails1 // ignore: cast_nullable_to_non_nullable
+                      as String?,
           )
           as $Val,
     );
@@ -1975,6 +1983,7 @@ abstract class _$$UserImplCopyWith<$Res> implements $UserCopyWith<$Res> {
     @JsonKey(name: "id") int? id,
     @JsonKey(name: "name") String? name,
     @JsonKey(name: "userChats") List<dynamic>? userChats,
+    @JsonKey(name: "otherDetails1") String? otherDetails1,
   });
 }
 
@@ -1993,6 +2002,7 @@ class __$$UserImplCopyWithImpl<$Res>
     Object? id = freezed,
     Object? name = freezed,
     Object? userChats = freezed,
+    Object? otherDetails1 = freezed,
   }) {
     return _then(
       _$UserImpl(
@@ -2008,6 +2018,10 @@ class __$$UserImplCopyWithImpl<$Res>
             ? _value._userChats
             : userChats // ignore: cast_nullable_to_non_nullable
                   as List<dynamic>?,
+        otherDetails1: freezed == otherDetails1
+            ? _value.otherDetails1
+            : otherDetails1 // ignore: cast_nullable_to_non_nullable
+                  as String?,
       ),
     );
   }
@@ -2020,6 +2034,7 @@ class _$UserImpl implements _User {
     @JsonKey(name: "id") this.id,
     @JsonKey(name: "name") this.name,
     @JsonKey(name: "userChats") final List<dynamic>? userChats,
+    @JsonKey(name: "otherDetails1") this.otherDetails1,
   }) : _userChats = userChats;
 
   factory _$UserImpl.fromJson(Map<String, dynamic> json) =>
@@ -2043,8 +2058,12 @@ class _$UserImpl implements _User {
   }
 
   @override
+  @JsonKey(name: "otherDetails1")
+  final String? otherDetails1;
+
+  @override
   String toString() {
-    return 'User(id: $id, name: $name, userChats: $userChats)';
+    return 'User(id: $id, name: $name, userChats: $userChats, otherDetails1: $otherDetails1)';
   }
 
   @override
@@ -2057,7 +2076,9 @@ class _$UserImpl implements _User {
             const DeepCollectionEquality().equals(
               other._userChats,
               _userChats,
-            ));
+            ) &&
+            (identical(other.otherDetails1, otherDetails1) ||
+                other.otherDetails1 == otherDetails1));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -2067,6 +2088,7 @@ class _$UserImpl implements _User {
     id,
     name,
     const DeepCollectionEquality().hash(_userChats),
+    otherDetails1,
   );
 
   /// Create a copy of User
@@ -2088,6 +2110,7 @@ abstract class _User implements User {
     @JsonKey(name: "id") final int? id,
     @JsonKey(name: "name") final String? name,
     @JsonKey(name: "userChats") final List<dynamic>? userChats,
+    @JsonKey(name: "otherDetails1") final String? otherDetails1,
   }) = _$UserImpl;
 
   factory _User.fromJson(Map<String, dynamic> json) = _$UserImpl.fromJson;
@@ -2101,6 +2124,9 @@ abstract class _User implements User {
   @override
   @JsonKey(name: "userChats")
   List<dynamic>? get userChats;
+  @override
+  @JsonKey(name: "otherDetails1")
+  String? get otherDetails1;
 
   /// Create a copy of User
   /// with the given fields replaced by the non-null parameter values.

@@ -97,6 +97,7 @@ class User with _$User {
     @JsonKey(name: "id") int? id,
     @JsonKey(name: "name") String? name,
     @JsonKey(name: "userChats") List<dynamic>? userChats,
+    @JsonKey(name: "otherDetails1") String? otherDetails1,
   }) = _User;
 
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);

@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_entry/chat_entry_response.dart';
+import 'package:soxo_chat/feature/chat/screen/chat_profile_screen.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/enhanced_widget.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/opmiized_card.dart';
 import 'package:soxo_chat/shared/widgets/animated_divider/animated_divider.dart';
@@ -132,6 +133,23 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
         {},
         title: widget.data?['title'],
         image: widget.data?['image'],
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => ChatProfileScreen(
+                chatData:
+                    widget.data ??
+                    {
+                      'title': widget.data?['title'] ?? 'Unknown',
+                      'image': widget.data?['image'],
+                      'chat_id': widget.data?['chat_id'],
+                      'type': widget.data?['type'] ?? '',
+                      // ...additionalData,
+                    },
+              ),
+            ),
+          );
+        },
       ),
       body: BlocListener<ChatCubit, ChatState>(
         listenWhen: (previous, current) =>

@@ -325,166 +325,172 @@ PreferredSizeWidget buildAppBarWithProfile(
   Map<String, dynamic>? arguments, {
   final String? title,
   final String? image,
+  final Function? onTap,
 }) {
   return PreferredSize(
     preferredSize: Size.fromHeight(65.h),
     child: AppBar(
       elevation: 0,
       automaticallyImplyLeading: false,
-      flexibleSpace: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFB7E8CA), Color(0xFFF2F2F2)],
+      flexibleSpace: InkWell(
+        onTap: () {
+          onTap!();
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFFB7E8CA), Color(0xFFF2F2F2)],
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
-            child: Row(
-              children: [
-                // Back button
-                Container(
-                  padding: EdgeInsets.only(left: 5.w),
-                  alignment: Alignment.center,
-                  height: 39.h,
-                  width: 39.w,
-                  decoration: const BoxDecoration(
-                    color: kWhite,
-                    shape: BoxShape.circle,
+          child: SafeArea(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+              child: Row(
+                children: [
+                  // Back button
+                  Container(
+                    padding: EdgeInsets.only(left: 5.w),
+                    alignment: Alignment.center,
+                    height: 39.h,
+                    width: 39.w,
+                    decoration: const BoxDecoration(
+                      color: kWhite,
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      icon: const Icon(Icons.arrow_back_ios),
+                    ),
                   ),
-                  child: IconButton(
-                    padding: EdgeInsets.zero,
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    icon: const Icon(Icons.arrow_back_ios),
+                  6.horizontalSpace,
+
+                  // Chat avatar
+                  CachedChatAvatar(
+                    name: title ?? '',
+                    size: 40.h,
+                    imageUrl: image,
                   ),
-                ),
-                6.horizontalSpace,
+                  6.horizontalSpace,
 
-                // Chat avatar
-                CachedChatAvatar(
-                  name: title ?? '',
-                  size: 40.h,
-                  imageUrl: image,
-                ),
-                6.horizontalSpace,
+                  // Chat info section with improved participant display
+                  Expanded(
+                    child: BlocBuilder<ChatCubit, ChatState>(
+                      builder: (context, state) {
+                        final userChats = state.chatEntry?.userChats ?? [];
+                        log("WHAT IS ${userChats.length}");
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Chat title
+                            Text(
+                              title ?? '',
+                              style: FontPalette.hW400S18,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            2.verticalSpace,
 
-                // Chat info section with improved participant display
-                Expanded(
-                  child: BlocBuilder<ChatCubit, ChatState>(
-                    builder: (context, state) {
-                      final userChats = state.chatEntry?.userChats ?? [];
-                      log("WHAT IS ${userChats.length}");
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // Chat title
-                          Text(
-                            title ?? '',
-                            style: FontPalette.hW400S18,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          2.verticalSpace,
-
-                          // Participants and status
-                          Row(
-                            children: [
-                              userChats.length > 2
-                                  ? Expanded(
-                                      child: userChats.isNotEmpty
-                                          ? _buildParticipantsWithCount(
-                                              userChats,
-                                            )
-                                          : Text(
-                                              'No participants',
-                                              style: FontPalette.hW600S12
-                                                  .copyWith(
-                                                    color: Colors.grey[600],
-                                                  ),
+                            // Participants and status
+                            Row(
+                              children: [
+                                userChats.length > 2
+                                    ? Expanded(
+                                        child: userChats.isNotEmpty
+                                            ? _buildParticipantsWithCount(
+                                                userChats,
+                                              )
+                                            : Text(
+                                                'No participants',
+                                                style: FontPalette.hW600S12
+                                                    .copyWith(
+                                                      color: Colors.grey[600],
+                                                    ),
+                                              ),
+                                      )
+                                    : Row(
+                                        children: [
+                                          Container(
+                                            height: 8.h,
+                                            width: 8.w,
+                                            decoration: const BoxDecoration(
+                                              color: Color(0xFF68D391),
+                                              shape: BoxShape.circle,
                                             ),
-                                    )
-                                  : Row(
-                                      children: [
-                                        Container(
-                                          height: 8.h,
-                                          width: 8.w,
-                                          decoration: const BoxDecoration(
-                                            color: Color(0xFF68D391),
-                                            shape: BoxShape.circle,
                                           ),
-                                        ),
-                                        4.horizontalSpace,
-                                        Text(
-                                          'Online',
-                                          style: FontPalette.hW600S12,
-                                        ),
-                                      ],
-                                    ),
+                                          4.horizontalSpace,
+                                          Text(
+                                            'Online',
+                                            style: FontPalette.hW600S12,
+                                          ),
+                                        ],
+                                      ),
 
-                              // Online status indicator
-                            ],
-                          ),
-                        ],
-                      );
-                    },
+                                // Online status indicator
+                              ],
+                            ),
+                          ],
+                        );
+                      },
+                    ),
                   ),
-                ),
 
-                // // Menu button
-                // PopupMenuButton<String>(
-                //   icon: Icon(Icons.more_vert, color: Colors.grey[700]),
-                //   onSelected: (value) {
-                //     switch (value) {
-                //       case 'view_profile':
-                //         // Handle view profile
-                //         break;
-                //       case 'clear_chat':
-                //         // Handle clear chat
-                //         break;
-                //       case 'block':
-                //         // Handle block user
-                //         break;
-                //     }
-                //   },
-                //   itemBuilder: (context) => [
-                //     PopupMenuItem(
-                //       value: 'view_profile',
-                //       child: Row(
-                //         children: [
-                //           Icon(Icons.person, size: 20),
-                //           8.horizontalSpace,
-                //           Text('View Profile'),
-                //         ],
-                //       ),
-                //     ),
-                //     PopupMenuItem(
-                //       value: 'clear_chat',
-                //       child: Row(
-                //         children: [
-                //           Icon(Icons.clear_all, size: 20),
-                //           8.horizontalSpace,
-                //           Text('Clear Chat'),
-                //         ],
-                //       ),
-                //     ),
-                //     PopupMenuItem(
-                //       value: 'block',
-                //       child: Row(
-                //         children: [
-                //           Icon(Icons.block, size: 20, color: Colors.red),
-                //           8.horizontalSpace,
-                //           Text('Block', style: TextStyle(color: Colors.red)),
-                //         ],
-                //       ),
-                //     ),
-                //   ],
-                // ),
-              ],
+                  // // Menu button
+                  // PopupMenuButton<String>(
+                  //   icon: Icon(Icons.more_vert, color: Colors.grey[700]),
+                  //   onSelected: (value) {
+                  //     switch (value) {
+                  //       case 'view_profile':
+                  //         // Handle view profile
+                  //         break;
+                  //       case 'clear_chat':
+                  //         // Handle clear chat
+                  //         break;
+                  //       case 'block':
+                  //         // Handle block user
+                  //         break;
+                  //     }
+                  //   },
+                  //   itemBuilder: (context) => [
+                  //     PopupMenuItem(
+                  //       value: 'view_profile',
+                  //       child: Row(
+                  //         children: [
+                  //           Icon(Icons.person, size: 20),
+                  //           8.horizontalSpace,
+                  //           Text('View Profile'),
+                  //         ],
+                  //       ),
+                  //     ),
+                  //     PopupMenuItem(
+                  //       value: 'clear_chat',
+                  //       child: Row(
+                  //         children: [
+                  //           Icon(Icons.clear_all, size: 20),
+                  //           8.horizontalSpace,
+                  //           Text('Clear Chat'),
+                  //         ],
+                  //       ),
+                  //     ),
+                  //     PopupMenuItem(
+                  //       value: 'block',
+                  //       child: Row(
+                  //         children: [
+                  //           Icon(Icons.block, size: 20, color: Colors.red),
+                  //           8.horizontalSpace,
+                  //           Text('Block', style: TextStyle(color: Colors.red)),
+                  //         ],
+                  //       ),
+                  //     ),
+                  //   ],
+                  // ),
+                ],
+              ),
             ),
           ),
         ),
