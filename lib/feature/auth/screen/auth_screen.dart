@@ -64,73 +64,73 @@ class _SignInScreenState extends State<SignInScreen>
       vsync: this,
     );
 
-    // Logo animations
+    // Logo animations - smoother curves
     _logoController = AnimationController(
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
 
     _logoFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _logoController,
-        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+        curve: const Interval(0.0, 0.7, curve: Curves.easeOutQuart),
       ),
     );
 
     _logoSlideAnimation =
-        Tween<Offset>(begin: const Offset(0, -0.5), end: Offset.zero).animate(
+        Tween<Offset>(begin: const Offset(0, -0.3), end: Offset.zero).animate(
           CurvedAnimation(
             parent: _logoController,
-            curve: const Interval(0.0, 0.8, curve: Curves.elasticOut),
+            curve: const Interval(0.0, 0.8, curve: Curves.easeOutBack),
           ),
         );
 
-    _logoScaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
+    _logoScaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
       CurvedAnimation(
         parent: _logoController,
-        curve: const Interval(0.2, 1.0, curve: Curves.elasticOut),
+        curve: const Interval(0.2, 1.0, curve: Curves.easeOutBack),
       ),
     );
 
-    // Form animations
+    // Form animations - better timing
     _formController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1200),
       vsync: this,
     );
 
     _usernameFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _formController,
-        curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOutCubic),
       ),
     );
 
     _usernameSlideAnimation =
-        Tween<Offset>(begin: const Offset(-0.5, 0), end: Offset.zero).animate(
+        Tween<Offset>(begin: const Offset(-0.3, 0), end: Offset.zero).animate(
           CurvedAnimation(
             parent: _formController,
-            curve: const Interval(0.0, 0.5, curve: Curves.easeOutCubic),
+            curve: const Interval(0.0, 0.7, curve: Curves.easeOutCubic),
           ),
         );
 
     _passwordFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _formController,
-        curve: const Interval(0.2, 0.6, curve: Curves.easeOut),
+        curve: const Interval(0.3, 0.9, curve: Curves.easeOutCubic),
       ),
     );
 
     _passwordSlideAnimation =
-        Tween<Offset>(begin: const Offset(0.5, 0), end: Offset.zero).animate(
+        Tween<Offset>(begin: const Offset(0.3, 0), end: Offset.zero).animate(
           CurvedAnimation(
             parent: _formController,
-            curve: const Interval(0.2, 0.7, curve: Curves.easeOutCubic),
+            curve: const Interval(0.3, 1.0, curve: Curves.easeOutCubic),
           ),
         );
 
-    // Button animations
+    // Button animations - bouncy feel
     _buttonController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 600),
       vsync: this,
     );
 
@@ -142,35 +142,35 @@ class _SignInScreenState extends State<SignInScreen>
     );
 
     _buttonSlideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+        Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
           CurvedAnimation(
             parent: _buttonController,
-            curve: const Interval(0.0, 0.8, curve: Curves.easeOutCubic),
+            curve: const Interval(0.0, 0.8, curve: Curves.easeOutBack),
           ),
         );
 
-    _buttonScaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+    _buttonScaleAnimation = Tween<double>(begin: 0.9, end: 1.0).animate(
       CurvedAnimation(
         parent: _buttonController,
-        curve: const Interval(0.2, 1.0, curve: Curves.elasticOut),
+        curve: const Interval(0.2, 1.0, curve: Curves.easeOutBack),
       ),
     );
   }
 
   void _startAnimations() {
-    // Stagger the animations for a smooth sequence
+    // Better staggered timing
     _logoController.forward();
 
-    Future.delayed(const Duration(milliseconds: 400), () {
+    Future.delayed(const Duration(milliseconds: 300), () {
       if (mounted) _formController.forward();
     });
 
-    Future.delayed(const Duration(milliseconds: 900), () {
+    Future.delayed(const Duration(milliseconds: 600), () {
       if (mounted) _buttonController.forward();
     });
   }
 
-  // Success animation when login is successful
+  // Smoother success animation
   void _playSuccessAnimation() {
     _buttonController.reverse().then((_) {
       _formController.reverse();
@@ -184,6 +184,8 @@ class _SignInScreenState extends State<SignInScreen>
     _logoController.dispose();
     _formController.dispose();
     _buttonController.dispose();
+    userNameController.dispose();
+    passwordController.dispose();
     super.dispose();
   }
 
@@ -207,7 +209,7 @@ class _SignInScreenState extends State<SignInScreen>
                 service.initializeConnection();
 
                 // Delay navigation to show success animation
-                Future.delayed(const Duration(milliseconds: 500), () {
+                Future.delayed(const Duration(milliseconds: 800), () {
                   if (mounted) context.push(routeChat);
                 });
               });
@@ -301,11 +303,11 @@ class _SignInScreenState extends State<SignInScreen>
                         child: ScaleTransition(
                           scale: _buttonScaleAnimation,
                           child: TweenAnimationBuilder<double>(
-                            duration: const Duration(milliseconds: 200),
+                            duration: const Duration(milliseconds: 150),
                             tween: Tween<double>(
                               begin: 1.0,
                               end: state.isSignIn == ApiFetchStatus.loading
-                                  ? 0.95
+                                  ? 0.96
                                   : 1.0,
                             ),
                             builder: (context, scale, child) {
@@ -315,11 +317,6 @@ class _SignInScreenState extends State<SignInScreen>
                                   isLoading:
                                       state.isSignIn == ApiFetchStatus.loading,
                                   onPressed: () {
-                                    // Add button press animation
-                                    _buttonController.reverse().then((_) {
-                                      _buttonController.forward();
-                                    });
-
                                     context.read<AuthCubit>().authSignIn(
                                       userNameController.text,
                                       passwordController.text,

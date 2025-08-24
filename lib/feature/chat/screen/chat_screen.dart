@@ -248,8 +248,7 @@ class _LogoutDialog extends StatelessWidget {
             Navigator.of(context).pop(true);
             Helper().logout(context);
             if (context.mounted) {
-              context.go('/login');
-              
+              context.go(routeSignIn);
             }
           },
           style: ElevatedButton.styleFrom(
