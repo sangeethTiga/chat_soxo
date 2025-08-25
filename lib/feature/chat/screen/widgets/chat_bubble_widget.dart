@@ -1700,7 +1700,7 @@ class _TimestampWithStatus extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.end,
       children: [
         if (widget.isBeingRepliedTo) ...[
           Icon(Icons.reply, size: 10, color: Colors.blue.withOpacity(0.7)),
