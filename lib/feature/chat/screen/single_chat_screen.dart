@@ -7,6 +7,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:soxo_chat/feature/chat/cubit/chat_cubit.dart';
 import 'package:soxo_chat/feature/chat/domain/models/add_chat/add_chatentry_request.dart';
 import 'package:soxo_chat/feature/chat/domain/models/chat_entry/chat_entry_response.dart';
+import 'package:soxo_chat/feature/chat/screen/chat_profile_screen.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/chat_bubble_widget.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/file_picker_widget.dart';
 import 'package:soxo_chat/feature/chat/screen/widgets/record_dialog.dart';
@@ -78,10 +79,27 @@ class _SingleChatScreenState extends State<SingleChatScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: buildAppBarWithProfileSimple(
+      appBar: buildAppBarWithProfile(
         context,
         {},
         title: widget.data?['title'],
+        image: widget.data?['image'],
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => ChatProfileScreen(
+                chatData:
+                    widget.data ??
+                    {
+                      'title': widget.data?['title'] ?? 'Unknown',
+                      'image': widget.data?['image'],
+                      'chat_id': widget.data?['chat_id'],
+                      'type': widget.data?['type'] ?? '',
+                    },
+              ),
+            ),
+          );
+        },
       ),
       body: BlocListener<ChatCubit, ChatState>(
         listenWhen: (previous, current) =>

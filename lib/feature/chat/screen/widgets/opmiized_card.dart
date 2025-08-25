@@ -221,7 +221,12 @@ class _OptimizedChatMessagesListsState
   }
 
   Widget _buildMessagesList(List<Entry> entries, ChatState chatState) {
-    final pinnedList = entries.where((e) => e.messageType != 'html').toList();
+    final pinnedList = entries
+        .where(
+          (e) =>
+              e.messageType != 'html' && (e.thread != '' || e.thread != null),
+        )
+        .toList();
 
     pinnedList.sort((a, b) {
       final aTime = DateTime.tryParse(a.createdAt ?? '') ?? DateTime.now();

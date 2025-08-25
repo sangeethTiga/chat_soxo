@@ -146,7 +146,7 @@ class ChatService implements ChatRepositories {
           "chatMedias": chatMedias, // Always include array (empty if no files)
           "otherDetails1": req.otherDetails1,
           "pinned": req.pinned,
-          'thread': req.thread ?? '',
+          'thread': req.thread,
         };
 
         final jsonString = jsonEncode(requestMap);

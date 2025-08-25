@@ -470,6 +470,7 @@ class _MessageContainer extends StatelessWidget {
               if (widget.isBeingRepliedTo)
                 _ReplyStatusIndicator(widget: widget),
               _MainBubble(
+                isSend: widget.isSent,
                 widget: widget,
                 bubbleColor: bubbleColor,
                 replyBorderColor: replyBorderColor,
@@ -532,6 +533,7 @@ class _MainBubble extends StatelessWidget {
   final Color replyBackgroundColor;
   final bool isReplyFromMe;
   final int? currentUserId;
+  final bool? isSend;
 
   const _MainBubble({
     required this.widget,
@@ -540,6 +542,7 @@ class _MainBubble extends StatelessWidget {
     required this.replyBackgroundColor,
     required this.isReplyFromMe,
     required this.currentUserId,
+    required this.isSend,
   });
 
   @override
@@ -550,20 +553,24 @@ class _MainBubble extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Always show avatar for both sent and received messages
-        Padding(
-          padding: EdgeInsets.only(top: 6.h),
-          child: _UserAvatar(messageData: widget.messageData),
-        ),
+        if (widget.isSent == true)
+          Padding(
+            padding: EdgeInsets.only(top: 6.h),
+            child: _UserAvatar(messageData: widget.messageData),
+          ),
+
         SizedBox(width: 8.w),
         Flexible(
           child: Bubble(
             padding: BubbleEdges.only(left: 3, right: 3),
             margin: BubbleEdges.only(top: 6),
-            alignment: Alignment.topLeft, // Always left aligned
+            alignment: widget.isSent ? Alignment.topLeft : Alignment.topRight,
             nipWidth: 18,
             nipHeight: 10,
             radius: Radius.circular(12.r),
-            nip: BubbleNip.leftTop, // Always left nip
+            nip: widget.isSent
+                ? BubbleNip.leftTop
+                : BubbleNip.rightTop, // Always left nip
             color: bubbleColor,
             child: SizedBox(
               child: Column(
@@ -609,6 +616,11 @@ class _MainBubble extends StatelessWidget {
             ),
           ),
         ),
+        if (widget.isSent == false)
+          Padding(
+            padding: EdgeInsets.only(top: 6.h),
+            child: _UserAvatar(messageData: widget.messageData),
+          ),
       ],
     );
   }

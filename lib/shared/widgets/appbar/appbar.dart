@@ -442,54 +442,6 @@ PreferredSizeWidget buildAppBarWithProfile(
                   ),
 
                   // // Menu button
-                  // PopupMenuButton<String>(
-                  //   icon: Icon(Icons.more_vert, color: Colors.grey[700]),
-                  //   onSelected: (value) {
-                  //     switch (value) {
-                  //       case 'view_profile':
-                  //         // Handle view profile
-                  //         break;
-                  //       case 'clear_chat':
-                  //         // Handle clear chat
-                  //         break;
-                  //       case 'block':
-                  //         // Handle block user
-                  //         break;
-                  //     }
-                  //   },
-                  //   itemBuilder: (context) => [
-                  //     PopupMenuItem(
-                  //       value: 'view_profile',
-                  //       child: Row(
-                  //         children: [
-                  //           Icon(Icons.person, size: 20),
-                  //           8.horizontalSpace,
-                  //           Text('View Profile'),
-                  //         ],
-                  //       ),
-                  //     ),
-                  //     PopupMenuItem(
-                  //       value: 'clear_chat',
-                  //       child: Row(
-                  //         children: [
-                  //           Icon(Icons.clear_all, size: 20),
-                  //           8.horizontalSpace,
-                  //           Text('Clear Chat'),
-                  //         ],
-                  //       ),
-                  //     ),
-                  //     PopupMenuItem(
-                  //       value: 'block',
-                  //       child: Row(
-                  //         children: [
-                  //           Icon(Icons.block, size: 20, color: Colors.red),
-                  //           8.horizontalSpace,
-                  //           Text('Block', style: TextStyle(color: Colors.red)),
-                  //         ],
-                  //       ),
-                  //     ),
-                  //   ],
-                  // ),
                 ],
               ),
             ),
