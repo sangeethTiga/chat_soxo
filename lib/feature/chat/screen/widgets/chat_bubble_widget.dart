@@ -829,7 +829,14 @@ class _MessageContent extends StatelessWidget {
   Widget build(BuildContext context) {
     switch (type?.toLowerCase()) {
       case 'html':
-        return FixedSizeHtmlWidget(htmlContent: message);
+        return AutoHeightHtmlWidget(
+          minHeight: 100,
+          maxHeight: 800,
+          htmlContent: message,
+          onImageTap: (v) {
+            // showImagePreview(context, v);
+          },
+        );
       case 'voice':
       case 'file':
       case 'image':

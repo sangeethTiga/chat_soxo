@@ -12,8 +12,10 @@ class AddChatEntryRequest with _$AddChatEntryRequest {
     @JsonKey(name: "senderId") int? senderId,
     @JsonKey(name: "type") String? type,
     @JsonKey(name: "pinned") String? pinned,
+    @JsonKey(name: "thread") String? thread,
 
     @JsonKey(name: "typeValue") int? typeValue,
+
     @JsonKey(name: "messageType") String? messageType,
     @JsonKey(name: "content") String? content,
     @JsonKey(name: "source") String? source,

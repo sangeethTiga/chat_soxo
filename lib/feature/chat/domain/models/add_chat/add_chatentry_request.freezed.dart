@@ -29,6 +29,8 @@ mixin _$AddChatEntryRequest {
   String? get type => throw _privateConstructorUsedError;
   @JsonKey(name: "pinned")
   String? get pinned => throw _privateConstructorUsedError;
+  @JsonKey(name: "thread")
+  String? get thread => throw _privateConstructorUsedError;
   @JsonKey(name: "typeValue")
   int? get typeValue => throw _privateConstructorUsedError;
   @JsonKey(name: "messageType")
@@ -66,6 +68,7 @@ abstract class $AddChatEntryRequestCopyWith<$Res> {
     @JsonKey(name: "senderId") int? senderId,
     @JsonKey(name: "type") String? type,
     @JsonKey(name: "pinned") String? pinned,
+    @JsonKey(name: "thread") String? thread,
     @JsonKey(name: "typeValue") int? typeValue,
     @JsonKey(name: "messageType") String? messageType,
     @JsonKey(name: "content") String? content,
@@ -96,6 +99,7 @@ class _$AddChatEntryRequestCopyWithImpl<$Res, $Val extends AddChatEntryRequest>
     Object? senderId = freezed,
     Object? type = freezed,
     Object? pinned = freezed,
+    Object? thread = freezed,
     Object? typeValue = freezed,
     Object? messageType = freezed,
     Object? content = freezed,
@@ -121,6 +125,10 @@ class _$AddChatEntryRequestCopyWithImpl<$Res, $Val extends AddChatEntryRequest>
             pinned: freezed == pinned
                 ? _value.pinned
                 : pinned // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            thread: freezed == thread
+                ? _value.thread
+                : thread // ignore: cast_nullable_to_non_nullable
                       as String?,
             typeValue: freezed == typeValue
                 ? _value.typeValue
@@ -170,6 +178,7 @@ abstract class _$$AddChatEntryRequestImplCopyWith<$Res>
     @JsonKey(name: "senderId") int? senderId,
     @JsonKey(name: "type") String? type,
     @JsonKey(name: "pinned") String? pinned,
+    @JsonKey(name: "thread") String? thread,
     @JsonKey(name: "typeValue") int? typeValue,
     @JsonKey(name: "messageType") String? messageType,
     @JsonKey(name: "content") String? content,
@@ -199,6 +208,7 @@ class __$$AddChatEntryRequestImplCopyWithImpl<$Res>
     Object? senderId = freezed,
     Object? type = freezed,
     Object? pinned = freezed,
+    Object? thread = freezed,
     Object? typeValue = freezed,
     Object? messageType = freezed,
     Object? content = freezed,
@@ -224,6 +234,10 @@ class __$$AddChatEntryRequestImplCopyWithImpl<$Res>
         pinned: freezed == pinned
             ? _value.pinned
             : pinned // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        thread: freezed == thread
+            ? _value.thread
+            : thread // ignore: cast_nullable_to_non_nullable
                   as String?,
         typeValue: freezed == typeValue
             ? _value.typeValue
@@ -266,6 +280,7 @@ class _$AddChatEntryRequestImpl implements _AddChatEntryRequest {
     @JsonKey(name: "senderId") this.senderId,
     @JsonKey(name: "type") this.type,
     @JsonKey(name: "pinned") this.pinned,
+    @JsonKey(name: "thread") this.thread,
     @JsonKey(name: "typeValue") this.typeValue,
     @JsonKey(name: "messageType") this.messageType,
     @JsonKey(name: "content") this.content,
@@ -292,6 +307,9 @@ class _$AddChatEntryRequestImpl implements _AddChatEntryRequest {
   @override
   @JsonKey(name: "pinned")
   final String? pinned;
+  @override
+  @JsonKey(name: "thread")
+  final String? thread;
   @override
   @JsonKey(name: "typeValue")
   final int? typeValue;
@@ -332,7 +350,7 @@ class _$AddChatEntryRequestImpl implements _AddChatEntryRequest {
 
   @override
   String toString() {
-    return 'AddChatEntryRequest(chatId: $chatId, senderId: $senderId, type: $type, pinned: $pinned, typeValue: $typeValue, messageType: $messageType, content: $content, source: $source, chatMedias: $chatMedias, attachedFiles: $attachedFiles, otherDetails1: $otherDetails1)';
+    return 'AddChatEntryRequest(chatId: $chatId, senderId: $senderId, type: $type, pinned: $pinned, thread: $thread, typeValue: $typeValue, messageType: $messageType, content: $content, source: $source, chatMedias: $chatMedias, attachedFiles: $attachedFiles, otherDetails1: $otherDetails1)';
   }
 
   @override
@@ -345,6 +363,7 @@ class _$AddChatEntryRequestImpl implements _AddChatEntryRequest {
                 other.senderId == senderId) &&
             (identical(other.type, type) || other.type == type) &&
             (identical(other.pinned, pinned) || other.pinned == pinned) &&
+            (identical(other.thread, thread) || other.thread == thread) &&
             (identical(other.typeValue, typeValue) ||
                 other.typeValue == typeValue) &&
             (identical(other.messageType, messageType) ||
@@ -371,6 +390,7 @@ class _$AddChatEntryRequestImpl implements _AddChatEntryRequest {
     senderId,
     type,
     pinned,
+    thread,
     typeValue,
     messageType,
     content,
@@ -403,6 +423,7 @@ abstract class _AddChatEntryRequest implements AddChatEntryRequest {
     @JsonKey(name: "senderId") final int? senderId,
     @JsonKey(name: "type") final String? type,
     @JsonKey(name: "pinned") final String? pinned,
+    @JsonKey(name: "thread") final String? thread,
     @JsonKey(name: "typeValue") final int? typeValue,
     @JsonKey(name: "messageType") final String? messageType,
     @JsonKey(name: "content") final String? content,
@@ -428,6 +449,9 @@ abstract class _AddChatEntryRequest implements AddChatEntryRequest {
   @override
   @JsonKey(name: "pinned")
   String? get pinned;
+  @override
+  @JsonKey(name: "thread")
+  String? get thread;
   @override
   @JsonKey(name: "typeValue")
   int? get typeValue;

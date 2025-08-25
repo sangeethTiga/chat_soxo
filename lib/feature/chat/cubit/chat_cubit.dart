@@ -1852,6 +1852,7 @@ class ChatCubit extends Cubit<ChatState> {
         createdAt: DateTime.now().toIso8601String(),
         chatId: request.chatId,
         pinned: request.pinned,
+        thread: request.thread,
       );
 
       final currentEntries = state.chatEntry?.entries ?? <Entry>[];

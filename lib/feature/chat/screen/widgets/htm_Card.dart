@@ -4,41 +4,47 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
-class FixedSizeHtmlWidget extends StatefulWidget {
+class AutoHeightHtmlWidget extends StatefulWidget {
   final String htmlContent;
   final double width;
-  final double height;
+  final double? minHeight;
+  final double? maxHeight;
   final bool isSentMessage;
   final Function(Map<String, dynamic>)? onFormSubmit;
   final Function(String)? onLinkTap;
+  final Function(String)? onImageTap;
   final Function(String)? onError;
 
-  const FixedSizeHtmlWidget({
+  const AutoHeightHtmlWidget({
     super.key,
     required this.htmlContent,
     this.width = 350,
-    this.height = 400,
+    this.minHeight = 100,
+    this.maxHeight = 800,
     this.isSentMessage = false,
     this.onFormSubmit,
     this.onLinkTap,
+    this.onImageTap,
     this.onError,
   });
 
   @override
-  State<FixedSizeHtmlWidget> createState() => _FixedSizeHtmlWidgetState();
+  State<AutoHeightHtmlWidget> createState() => _AutoHeightHtmlWidgetState();
 }
 
-class _FixedSizeHtmlWidgetState extends State<FixedSizeHtmlWidget> {
+class _AutoHeightHtmlWidgetState extends State<AutoHeightHtmlWidget> {
   late final WebViewController controller;
   bool isLoading = true;
   bool hasError = false;
   String? errorMessage;
   String htmlType = 'unknown';
+  double currentHeight = 100;
 
   @override
   void initState() {
     super.initState();
     htmlType = _detectHtmlType(widget.htmlContent);
+    currentHeight = widget.minHeight ?? 100;
     _initializeController();
   }
 
@@ -84,6 +90,12 @@ class _FixedSizeHtmlWidgetState extends State<FixedSizeHtmlWidget> {
           _handleJavaScriptMessage(message.message);
         },
       )
+      ..addJavaScriptChannel(
+        'HeightChannel',
+        onMessageReceived: (JavaScriptMessage message) {
+          _handleHeightChange(message.message);
+        },
+      )
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {
@@ -100,7 +112,7 @@ class _FixedSizeHtmlWidgetState extends State<FixedSizeHtmlWidget> {
                 isLoading = false;
               });
             }
-            _setupFixedSizeHtml();
+            _setupAutoHeightHtml();
           },
           onWebResourceError: (WebResourceError error) {
             log('WebView Error: ${error.description}');
@@ -135,10 +147,38 @@ class _FixedSizeHtmlWidgetState extends State<FixedSizeHtmlWidget> {
     _loadProcessedHtml();
   }
 
+  void _handleHeightChange(String message) {
+    try {
+      final data = json.decode(message);
+      if (data['type'] == 'heightChange') {
+        double newHeight = data['height'].toDouble();
+
+        // Apply min/max constraints
+        if (widget.minHeight != null && newHeight < widget.minHeight!) {
+          newHeight = widget.minHeight!;
+        }
+        if (widget.maxHeight != null && newHeight > widget.maxHeight!) {
+          newHeight = widget.maxHeight!;
+        }
+
+        if (mounted && (newHeight - currentHeight).abs() > 5) {
+          setState(() {
+            currentHeight = newHeight;
+          });
+          log('Height updated to: $newHeight');
+        }
+      }
+    } catch (e) {
+      log('Error handling height change: $e');
+    }
+  }
+
   void _loadProcessedHtml() {
     try {
-      String processedHtml = _processFixedSizeHtml(widget.htmlContent);
-      log('Loading fixed-size HTML: $htmlType (${processedHtml.length} chars)');
+      String processedHtml = _processAutoHeightHtml(widget.htmlContent);
+      log(
+        'Loading auto-height HTML: $htmlType (${processedHtml.length} chars)',
+      );
       controller.loadHtmlString(processedHtml);
     } catch (e) {
       log('Error processing HTML: $e');
@@ -150,10 +190,10 @@ class _FixedSizeHtmlWidgetState extends State<FixedSizeHtmlWidget> {
     }
   }
 
-  String _processFixedSizeHtml(String htmlContent) {
+  String _processAutoHeightHtml(String htmlContent) {
     String content = htmlContent.trim().replaceAll('\r\n', '\n');
     content = _removeExternalResources(content);
-    return _wrapInFixedContainer(content);
+    return _wrapInAutoHeightContainer(content);
   }
 
   String _removeExternalResources(String html) {
@@ -170,9 +210,8 @@ class _FixedSizeHtmlWidgetState extends State<FixedSizeHtmlWidget> {
         .replaceAll(RegExp(r'<link[^>]*bootstrap[^>]*>'), '');
   }
 
-  String _wrapInFixedContainer(String content) {
+  String _wrapInAutoHeightContainer(String content) {
     final containerWidth = widget.width - 24;
-    final containerHeight = widget.height - 24;
 
     return '''
 <!DOCTYPE html>
@@ -180,7 +219,7 @@ class _FixedSizeHtmlWidgetState extends State<FixedSizeHtmlWidget> {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fixed Size Content</title>
+    <title>Auto Height Content</title>
     <style>
         * {
             margin: 0;
@@ -190,50 +229,27 @@ class _FixedSizeHtmlWidgetState extends State<FixedSizeHtmlWidget> {
         
         html, body {
             width: 100%;
-            height: 100%;
-            overflow: hidden;
+            min-height: 100%;
+            overflow: hidden; /* Prevent scroll issues */
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: transparent;
+            background: white; /* Ensure white background */
+            margin: 0;
+            padding: 0;
         }
         
-        .fixed-container {
+        .auto-container {
             width: ${containerWidth}px;
-            height: ${containerHeight}px;
-            overflow: hidden;
-            position: relative;
+            min-height: fit-content;
+            max-height: none; /* Remove height restrictions */
             padding: 12px;
             background: white;
             border-radius: 8px;
+            overflow: visible; /* Allow content to be visible */
+            position: relative;
         }
         
-        .scrollable-content {
-            width: 100%;
-            height: 100%;
-            overflow-y: auto;
-            overflow-x: hidden;
-            scrollbar-width: thin;
-            scrollbar-color: #ccc transparent;
-        }
-        
-        .scrollable-content::-webkit-scrollbar {
-            width: 4px;
-        }
-        
-        .scrollable-content::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        
-        .scrollable-content::-webkit-scrollbar-thumb {
-            background: #ccc;
-            border-radius: 2px;
-        }
-        
-        .scrollable-content::-webkit-scrollbar-thumb:hover {
-            background: #999;
-        }
-        
-        /* Base content styles */
         .content-wrapper {
+            width: 100%;
             font-size: 14px;
             line-height: 1.5;
             color: #333;
@@ -277,15 +293,86 @@ class _FixedSizeHtmlWidgetState extends State<FixedSizeHtmlWidget> {
             text-decoration: underline;
         }
         
-        /* Images - constrained to container */
+        /* Images - Fixed sizing to prevent layout jumps */
         img {
             max-width: 100%;
+            max-height: 150px !important; /* Force consistent height */
+            width: auto;
             height: auto;
             border-radius: 4px;
             margin: 4px 0;
+            display: block;
+            object-fit: cover;
         }
         
-        /* Tables - responsive within fixed container */
+        /* Override any inline styles on images */
+        .content-wrapper img {
+            max-height: 150px !important;
+            max-width: 100% !important;
+            box-sizing: border-box;
+        }
+        
+        /* Multiple images in a row */
+        .images-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 8px 0;
+        }
+        
+        .images-row img {
+            flex: 1;
+            min-width: 100px;
+            max-width: calc(33.33% - 8px); /* 3 images per row */
+            max-height: 120px;
+            object-fit: cover;
+        }
+        
+        /* Grid layout for multiple images */
+        .images-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 8px;
+            margin: 8px 0;
+        }
+        
+        .images-grid img {
+            width: 100%;
+            max-height: 120px;
+            object-fit: cover;
+        }
+        
+        /* Stack images vertically with smaller size */
+        .images-stack img {
+            max-height: 100px;
+            width: 100%;
+            object-fit: cover;
+            margin: 4px 0;
+        }
+        
+        /* Ensure images in flex/grid containers display properly */
+        .flex img {
+            flex-shrink: 0;
+            max-height: 120px;
+        }
+        
+        .grid img {
+            max-height: 120px;
+        }
+        
+        /* Responsive image sizing */
+        @media (max-width: 400px) {
+            img {
+                max-height: 100px;
+            }
+            
+            .images-row img {
+                max-width: calc(50% - 4px); /* 2 images per row on small screens */
+                max-height: 80px;
+            }
+        }
+        
+        /* Tables */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -310,7 +397,7 @@ class _FixedSizeHtmlWidgetState extends State<FixedSizeHtmlWidget> {
             background-color: #f8f9fa;
         }
         
-        /* Forms - compact for fixed size */
+        /* Forms */
         form {
             margin: 8px 0;
         }
@@ -356,10 +443,9 @@ class _FixedSizeHtmlWidgetState extends State<FixedSizeHtmlWidget> {
         textarea {
             resize: vertical;
             min-height: 40px;
-            max-height: 80px;
         }
         
-        /* Code - compact */
+        /* Code */
         pre, code {
             font-family: 'SF Mono', Monaco, Inconsolata, 'Roboto Mono', Consolas, 'Courier New', monospace;
             background: #f8f9fa;
@@ -377,7 +463,7 @@ class _FixedSizeHtmlWidgetState extends State<FixedSizeHtmlWidget> {
             font-size: 11px;
         }
         
-        /* Blockquotes - compact */
+        /* Blockquotes */
         blockquote {
             border-left: 3px solid #e5e5e5;
             padding-left: 12px;
@@ -386,7 +472,7 @@ class _FixedSizeHtmlWidgetState extends State<FixedSizeHtmlWidget> {
             font-style: italic;
         }
         
-        /* Utility classes for fixed container */
+        /* Utility classes */
         .flex { display: flex; }
         .items-center { align-items: center; }
         .justify-center { justify-content: center; }
@@ -399,7 +485,6 @@ class _FixedSizeHtmlWidgetState extends State<FixedSizeHtmlWidget> {
         .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
         .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
         
-        /* Compact spacing */
         .m-1 { margin: 2px; }
         .m-2 { margin: 4px; }
         .p-1 { padding: 2px; }
@@ -421,28 +506,24 @@ class _FixedSizeHtmlWidgetState extends State<FixedSizeHtmlWidget> {
         .bg-gray-50 { background-color: #f9fafb; }
         .bg-white { background-color: white; }
         
-        /* Width utilities */
         .w-full { width: 100%; }
         .w-1\\/2 { width: 50%; }
         
-        /* Border utilities */
         .rounded { border-radius: 4px; }
         .rounded-lg { border-radius: 8px; }
         .border { border: 1px solid #e5e7eb; }
         .border-gray-300 { border-color: #d1d5db; }
         
-        /* Shadow utilities */
         .shadow { box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); }
         .shadow-lg { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         
-        /* Font utilities */
         .font-semibold { font-weight: 600; }
         .font-bold { font-weight: 700; }
         .text-sm { font-size: 11px; }
         .text-lg { font-size: 15px; }
         .text-xl { font-size: 17px; }
         
-        /* Patient card specific styles for fixed container */
+        /* Patient card specific styles */
         .patient-header {
             display: flex;
             align-items: center;
@@ -483,11 +564,9 @@ class _FixedSizeHtmlWidgetState extends State<FixedSizeHtmlWidget> {
     </style>
 </head>
 <body>
-    <div class="fixed-container">
-        <div class="scrollable-content">
-            <div class="content-wrapper">
-                $content
-            </div>
+    <div class="auto-container" id="autoContainer">
+        <div class="content-wrapper">
+            $content
         </div>
     </div>
     
@@ -495,9 +574,246 @@ class _FixedSizeHtmlWidgetState extends State<FixedSizeHtmlWidget> {
     (function() {
         'use strict';
         
-        console.log('Fixed-size HTML setup started');
+        console.log('Auto-height HTML setup started');
         
-        // Form handling for fixed container
+        let resizeObserver;
+        let lastHeight = 0;
+        
+        function updateHeight() {
+            const container = document.getElementById('autoContainer');
+            if (container) {
+                // Force a reflow to ensure accurate measurement
+                container.style.height = 'auto';
+                
+                const height = Math.max(container.scrollHeight, container.offsetHeight) + 24;
+                
+                // Prevent infinite updates with a reasonable max height
+                const maxAllowedHeight = 2000;
+                const finalHeight = Math.min(height, maxAllowedHeight);
+                
+                if (Math.abs(finalHeight - lastHeight) > 10 && finalHeight > 50) {
+                    lastHeight = finalHeight;
+                    
+                    if (window.HeightChannel) {
+                        window.HeightChannel.postMessage(JSON.stringify({
+                            type: 'heightChange',
+                            height: finalHeight
+                        }));
+                    }
+                    
+                    console.log('Height updated:', finalHeight);
+                }
+            }
+        }
+        
+        function organizeImages() {
+            const container = document.getElementById('autoContainer');
+            const images = container.querySelectorAll('img');
+            
+            if (images.length > 1) {
+                console.log('Found', images.length, 'images, organizing layout...');
+                
+                // Group consecutive images together
+                let imageGroups = [];
+                let currentGroup = [];
+                
+                images.forEach((img, index) => {
+                    // Check if this image is directly following the previous one
+                    if (currentGroup.length === 0) {
+                        currentGroup.push(img);
+                    } else {
+                        const prevImg = currentGroup[currentGroup.length - 1];
+                        const nextSibling = prevImg.nextElementSibling;
+                        
+                        if (nextSibling === img || 
+                            (nextSibling && nextSibling.nextElementSibling === img)) {
+                            currentGroup.push(img);
+                        } else {
+                            if (currentGroup.length > 1) {
+                                imageGroups.push([...currentGroup]);
+                            }
+                            currentGroup = [img];
+                        }
+                    }
+                });
+                
+                if (currentGroup.length > 1) {
+                    imageGroups.push(currentGroup);
+                }
+                
+                // Create organized layout for groups
+                imageGroups.forEach(group => {
+                    if (group.length >= 2) {
+                        const wrapper = document.createElement('div');
+                        
+                        if (group.length === 2) {
+                            wrapper.className = 'images-row';
+                        } else if (group.length === 3) {
+                            wrapper.className = 'images-grid';
+                            wrapper.style.gridTemplateColumns = 'repeat(3, 1fr)';
+                        } else {
+                            wrapper.className = 'images-grid';
+                        }
+                        
+                        // Insert wrapper before first image
+                        group[0].parentNode.insertBefore(wrapper, group[0]);
+                        
+                        // Move all images to wrapper
+                        group.forEach(img => {
+                            wrapper.appendChild(img);
+                        });
+                        
+                        console.log('Created image group with', group.length, 'images');
+                    }
+                });
+            }
+        }
+        
+        function waitForImages() {
+            return new Promise((resolve) => {
+                const images = document.querySelectorAll('img');
+                if (images.length === 0) {
+                    console.log('No images found, proceeding...');
+                    resolve();
+                    return;
+                }
+                
+                let loadedImages = 0;
+                let erroredImages = 0;
+                const totalImages = images.length;
+                console.log('Waiting for', totalImages, 'images to load...');
+                
+                // Log all image sources for debugging
+                images.forEach((img, index) => {
+                    console.log('Image', index + 1, 'src:', img.src.substring(0, 100) + '...');
+                });
+                
+                const imageProcessed = () => {
+                    const processed = loadedImages + erroredImages;
+                    console.log('Images processed:', processed + '/' + totalImages, 'loaded:', loadedImages, 'errored:', erroredImages);
+                    
+                    if (processed >= totalImages) {
+                        setTimeout(() => {
+                            organizeImages();
+                            updateHeight();
+                            resolve();
+                        }, 300);
+                    }
+                };
+                
+                images.forEach((img, index) => {
+                    // Set consistent max dimensions
+                    img.style.maxHeight = '150px';
+                    img.style.maxWidth = '100%';
+                    img.style.objectFit = 'cover';
+                    img.style.display = 'block';
+                    
+                    if (img.complete && img.naturalWidth > 0) {
+                        console.log('Image', index + 1, 'already loaded');
+                        loadedImages++;
+                        imageProcessed();
+                    } else {
+                        img.onload = () => {
+                            console.log('Image', index + 1, 'loaded successfully');
+                            loadedImages++;
+                            imageProcessed();
+                        };
+                        img.onerror = (error) => {
+                            console.error('Image', index + 1, 'failed to load:', img.src);
+                            console.error('Error details:', error);
+                            // Replace broken image with placeholder
+                            img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDIwMCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTUwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik04NS4zMzMzIDc1SDE1MEw5NCA0NUw4NS4zMzMzIDUzLjMzMzNMNjQgNDVMNTAgNzVIMTMzLjMzM1oiIGZpbGw9IiM2QjcyODAiLz4KPGNpcmNsZSBjeD0iNzAiIGN5PSI2MCIgcj0iNSIgZmlsbD0iIzZCNzI4MCIvPgo8dGV4dCB4PSIxMDAiIHk9IjEwMCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEyIiBmaWxsPSIjNkI3MjgwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5GYWlsZWQgdG8gbG9hZCBpbWFnZTwvdGV4dD4KPHN2Zz4K';
+                            erroredImages++;
+                            imageProcessed();
+                        };
+                    }
+                });
+                
+                // Shorter timeout to prevent hanging
+                setTimeout(() => {
+                    if (loadedImages + erroredImages < totalImages) {
+                        console.log('Image loading timeout, proceeding with partial load');
+                        organizeImages();
+                        updateHeight();
+                        resolve();
+                    }
+                }, 2000);
+            });
+        }
+        
+        function setupHeightObserver() {
+            const container = document.getElementById('autoContainer');
+            if (!container) return;
+            
+            let isInitialized = false;
+            let updateCount = 0;
+            const MAX_UPDATES = 5; // Prevent infinite updates
+            
+            // Wait for images to load first
+            waitForImages().then(() => {
+                console.log('All images processed, setting up height observer');
+                isInitialized = true;
+                
+                // Use ResizeObserver if available
+                if (window.ResizeObserver) {
+                    resizeObserver = new ResizeObserver((entries) => {
+                        if (isInitialized && updateCount < MAX_UPDATES) {
+                            updateCount++;
+                            updateHeight();
+                        }
+                    });
+                    resizeObserver.observe(container);
+                }
+                
+                // Limited periodic checks instead of continuous monitoring
+                const limitedChecks = () => {
+                    if (updateCount < MAX_UPDATES) {
+                        updateHeight();
+                        setTimeout(limitedChecks, 2000); // Check every 2 seconds
+                    } else {
+                        console.log('Height observer reached max updates, stopping');
+                    }
+                };
+                
+                // Initial height update
+                updateHeight();
+                
+                // Start limited checking after a delay
+                setTimeout(limitedChecks, 1000);
+            });
+            
+            // Handle dynamic content changes more carefully
+            const observer = new MutationObserver((mutations) => {
+                if (!isInitialized || updateCount >= MAX_UPDATES) return;
+                
+                let shouldUpdate = false;
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'childList') {
+                        const addedImages = Array.from(mutation.addedNodes)
+                            .filter(node => node.nodeType === 1)
+                            .flatMap(node => {
+                                if (node.tagName === 'IMG') return [node];
+                                return Array.from(node.querySelectorAll('img'));
+                            });
+                        
+                        if (addedImages.length > 0) {
+                            console.log('New images detected, re-processing...');
+                            shouldUpdate = true;
+                        }
+                    }
+                });
+                
+                if (shouldUpdate) {
+                    waitForImages();
+                }
+            });
+            
+            observer.observe(container, {
+                childList: true,
+                subtree: true
+            });
+        }
+        
         function setupFormHandling() {
             const forms = document.querySelectorAll('form');
             forms.forEach(form => {
@@ -542,7 +858,28 @@ class _FixedSizeHtmlWidgetState extends State<FixedSizeHtmlWidget> {
             });
         }
         
-        // Link handling
+        function setupImageHandling() {
+            const images = document.querySelectorAll('img');
+            images.forEach(img => {
+                img.style.cursor = 'pointer';
+                img.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    if (window.FlutterChannel) {
+                        window.FlutterChannel.postMessage(JSON.stringify({
+                            type: 'imageClick',
+                            src: img.src,
+                            alt: img.alt || '',
+                            width: img.naturalWidth,
+                            height: img.naturalHeight
+                        }));
+                    }
+                    
+                    return false;
+                });
+            });
+        }
+        
         function setupLinkHandling() {
             const links = document.querySelectorAll('a');
             links.forEach(link => {
@@ -562,7 +899,6 @@ class _FixedSizeHtmlWidgetState extends State<FixedSizeHtmlWidget> {
             });
         }
         
-        // Prevent problematic behaviors
         function setupPreventions() {
             document.body.style.userSelect = 'none';
             document.body.style.webkitUserSelect = 'none';
@@ -589,14 +925,15 @@ class _FixedSizeHtmlWidgetState extends State<FixedSizeHtmlWidget> {
             }, false);
         }
         
-        // Initialize everything
         function initialize() {
             try {
+                setupHeightObserver();
                 setupFormHandling();
                 setupLinkHandling();
+                setupImageHandling();
                 setupPreventions();
                 
-                console.log('Fixed-size HTML setup completed successfully');
+                console.log('Auto-height HTML setup completed successfully');
                 
             } catch (error) {
                 console.error('Initialization error:', error);
@@ -631,6 +968,11 @@ class _FixedSizeHtmlWidgetState extends State<FixedSizeHtmlWidget> {
           log('Link clicked: ${data['url']}');
           break;
 
+        case 'imageClick':
+          widget.onImageTap?.call(data['src']);
+          log('Image clicked: ${data['src']}');
+          break;
+
         case 'buttonClick':
           log('Button clicked: ${data['data']}');
           break;
@@ -640,14 +982,14 @@ class _FixedSizeHtmlWidgetState extends State<FixedSizeHtmlWidget> {
     }
   }
 
-  void _setupFixedSizeHtml() async {
-    log('Fixed-size HTML setup completed for type: $htmlType');
+  void _setupAutoHeightHtml() async {
+    log('Auto-height HTML setup completed for type: $htmlType');
   }
 
   Widget _buildErrorWidget() {
     return Container(
       width: widget.width,
-      height: widget.height,
+      height: currentHeight,
       decoration: BoxDecoration(
         color: Colors.red[50],
         borderRadius: BorderRadius.circular(12),
@@ -698,9 +1040,11 @@ class _FixedSizeHtmlWidgetState extends State<FixedSizeHtmlWidget> {
       return _buildErrorWidget();
     }
 
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
       width: widget.width,
-      height: widget.height,
+      height: currentHeight,
       decoration: BoxDecoration(
         color: Colors.grey[50],
         borderRadius: BorderRadius.circular(12),
@@ -711,13 +1055,13 @@ class _FixedSizeHtmlWidgetState extends State<FixedSizeHtmlWidget> {
           children: [
             SizedBox(
               width: widget.width,
-              height: widget.height,
+              height: currentHeight,
               child: WebViewWidget(controller: controller),
             ),
             if (isLoading)
               Container(
                 width: widget.width,
-                height: widget.height,
+                height: currentHeight,
                 color: Colors.white.withOpacity(0.95),
                 child: Center(
                   child: Column(
@@ -749,53 +1093,20 @@ class _FixedSizeHtmlWidgetState extends State<FixedSizeHtmlWidget> {
             Positioned(
               top: 6,
               right: 6,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getTypeColor(htmlType).withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      htmlType.replaceAll('_', ' ').toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 8,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: _getTypeColor(htmlType).withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  htmlType.replaceAll('_', ' ').toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 8,
+                    fontWeight: FontWeight.bold,
                   ),
-                  // const SizedBox(width: 4),
-                  // Container(
-                  //   padding: const EdgeInsets.all(4),
-                  //   decoration: BoxDecoration(
-                  //     color: Colors.black.withOpacity(0.7),
-                  //     borderRadius: BorderRadius.circular(3),
-                  //   ),
-                  //   child: GestureDetector(
-                  //     onTap: () {
-                  //       Navigator.of(context).push(
-                  //         MaterialPageRoute(
-                  //           builder: (context) => HtmlViewerScreen(
-                  //             htmlContent: widget.htmlContent,
-                  //             title: 'HTML Content',
-                  //           ),
-                  //         ),
-                  //       );
-                  //     },
-                  //     child: const Icon(
-                  //       Icons.open_in_full,
-                  //       size: 12,
-                  //       color: Colors.white,
-                  //     ),
-                  //   ),
-                  // ),
-                ],
+                ),
               ),
             ),
           ],

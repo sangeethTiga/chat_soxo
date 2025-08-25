@@ -409,6 +409,7 @@ class _UnifiedMessageInputState extends State<UnifiedMessageInput>
         content: messageText.isNotEmpty ? messageText : 'File attachment',
         source: 'Website',
         attachedFiles: selectedFiles,
+        thread: '3',
       ),
       files: selectedFiles,
     );
