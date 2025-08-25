@@ -94,17 +94,17 @@ class _SingleChatScreenState extends State<SingleChatScreen>
 
   void _handleErrorMessage(BuildContext context, ChatState state) {
     if (state.errorMessage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(state.errorMessage!),
-          backgroundColor: Colors.red,
-          action: SnackBarAction(
-            label: 'Dismiss',
-            textColor: Colors.white,
-            onPressed: () => context.read<ChatCubit>().clearError(),
-          ),
-        ),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(
+      //     content: Text(state.errorMessage!),
+      //     backgroundColor: Colors.red,
+      //     action: SnackBarAction(
+      //       label: 'Dismiss',
+      //       textColor: Colors.white,
+      //       onPressed: () => context.read<ChatCubit>().clearError(),
+      //     ),
+      //   ),
+      // );
     }
   }
 
@@ -252,11 +252,7 @@ class _OptimizedChatMessagesListState extends State<OptimizedChatMessagesList> {
 
   Widget _buildMessagesList(List<Entry> entries) {
     final pinnedList = entries
-        .where(
-          (e) =>
-              (e.pinned ?? '').trim().toUpperCase() == 'Y' ||
-              (e.messageType == 'html'),
-        )
+        .where((e) => (e.messageType == 'html' && e.thread != ''))
         .toList();
     return FutureBuilder(
       future: AuthUtils.instance.readUserData(),

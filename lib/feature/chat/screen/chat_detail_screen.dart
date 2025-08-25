@@ -237,39 +237,25 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
           );
         },
       ),
-      body: BlocListener<ChatCubit, ChatState>(
-        listenWhen: (previous, current) =>
-            previous.errorMessage != current.errorMessage ||
-            previous.chatEntry?.entries?.length !=
-                current.chatEntry?.entries?.length,
-        listener: (context, state) {
-          _handleErrorMessage(context, state);
-
-          // FIX: Ensure keys are created when chat entries are loaded
-          if (state.chatEntry?.entries != null) {
-            _ensureMessageKeysExist(state.chatEntry!.entries!);
-          }
-        },
-        child: _buildBody(),
-      ),
+      body: _buildBody(),
     );
   }
 
-  void _handleErrorMessage(BuildContext context, ChatState state) {
-    if (state.errorMessage != null) {
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   SnackBar(
-      //     content: Text(state.errorMessage!),
-      //     backgroundColor: Colors.red,
-      //     action: SnackBarAction(
-      //       label: 'Dismiss',
-      //       textColor: Colors.white,
-      //       onPressed: () => context.read<ChatCubit>().clearError(),
-      //     ),
-      //   ),
-      // );
-    }
-  }
+  // void _handleErrorMessage(BuildContext context, ChatState state) {
+  //   if (state.errorMessage != null) {
+  //     // ScaffoldMessenger.of(context).showSnackBar(
+  //     //   SnackBar(
+  //     //     content: Text(state.errorMessage!),
+  //     //     backgroundColor: Colors.red,
+  //     //     action: SnackBarAction(
+  //     //       label: 'Dismiss',
+  //     //       textColor: Colors.white,
+  //     //       onPressed: () => context.read<ChatCubit>().clearError(),
+  //     //     ),
+  //     //   ),
+  //     // );
+  //   }
+  // }
 
   Widget _buildBody() {
     return Container(
@@ -513,32 +499,77 @@ class _ChatContentState extends State<ChatContent>
   Widget build(BuildContext context) {
     return BlocBuilder<ChatCubit, ChatState>(
       builder: (context, chatState) {
-        final pinnedEntries =
-            chatState.chatEntry?.entries
-                ?.where((e) => (e.pinned ?? '').trim().toUpperCase() == 'Y')
-                .toList() ??
-            [];
+        // final pinnedEntries =
+        //     chatState.chatEntry?.entries
+        //         ?.where(
+        //           (e) =>
+        //               (e.pinned ?? '').trim().toUpperCase() == 'Y' ||
+        //               e.thread != null && e.thread != '',
+        //         )
+        //         .toList() ??
+        //     [];
+
+        final allEntries = chatState.chatEntry?.entries ?? [];
+
+        final pinnedEntries = allEntries
+            .where((e) => (e.pinned ?? '').trim().toUpperCase() == 'Y')
+            .toList();
+
+        final threadEntries = allEntries
+            .where((e) => e.thread != null && e.thread!.isNotEmpty)
+            .toList();
 
         return AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(color: Colors.white),
           child: Column(
             children: [
-              if (pinnedEntries.isNotEmpty) ...{
+              if (pinnedEntries.isNotEmpty) ...[
                 GroupCardWidget(
+                  isPinned: 'Pinned',
                   title: pinnedEntries[0].sender?.name,
                   imageUrl: pinnedEntries[0].sender?.imageUrl,
+                  thread: pinnedEntries[0].thread,
                   onTap: () {
                     widget.onPinnedMessageTap?.call(pinnedEntries[0]);
                   },
                 ),
+              ],
+              if (threadEntries.isNotEmpty) ...[
+                GroupCardWidget(
+                  title: threadEntries[0].sender?.name,
+                  imageUrl: threadEntries[0].sender?.imageUrl,
+                  thread: threadEntries[0].thread ?? 'Thread',
+                  onTap: () {
+                    widget.onPinnedMessageTap?.call(pinnedEntries[0]);
+                  },
+                ),
+                const SizedBox(height: 8),
+              ],
+
+              if (pinnedEntries.isNotEmpty || threadEntries.isNotEmpty) ...[
                 AnimatedDividerCard(
-                  count: pinnedEntries.length.toString(),
+                  count: (pinnedEntries.length + threadEntries.length)
+                      .toString(),
                   onArrowTap: widget.onToggleTap,
                   arrowAnimation: widget.arrowAnimation,
                 ),
-              },
-
+              ],
+              // if (pinnedEntries.isNotEmpty) ...{
+              //   GroupCardWidget(
+              //     title: pinnedEntries[0].sender?.name,
+              //     imageUrl: pinnedEntries[0].sender?.imageUrl,
+              //     thread: pinnedEntries[0].thread,
+              //     onTap: () {
+              //       widget.onPinnedMessageTap?.call(pinnedEntries[0]);
+              //     },
+              //   ),
+              //   AnimatedDividerCard(
+              //     count: pinnedEntries.length.toString(),
+              //     onArrowTap: widget.onToggleTap,
+              //     arrowAnimation: widget.arrowAnimation,
+              //   ),
+              // },
               Expanded(
                 child: OptimizedChatMessagesLists(
                   onReplyMessage: _startReply,

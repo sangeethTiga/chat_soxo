@@ -71,20 +71,27 @@ class GroupCardWidget extends StatelessWidget {
   final String? imageUrl;
   final int? chatId;
   final VoidCallback? onTap;
+  final String? thread;
+  final String? isPinned;
   const GroupCardWidget({
     super.key,
     this.title,
     this.imageUrl,
     this.chatId,
     this.onTap,
+    this.thread,
+    this.isPinned,
   });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () {
-        onTap == null ? null : onTap!();
-        // _navigateToSingleChat(context);
+        if (thread != null && thread != '') {
+          _navigateToSingleChat(context);
+        } else {
+          onTap == null ? null : onTap!();
+        }
       },
       child: Container(
         padding: EdgeInsets.only(left: 10.h, right: 10.w, top: 14.h),
@@ -92,6 +99,17 @@ class GroupCardWidget extends StatelessWidget {
 
         child: Row(
           children: [
+            if (isPinned != '' && isPinned != null) ...{
+              SvgPicture.asset('assets/icons/mynaui_pin-solid.svg'),
+            } else ...{
+              SizedBox(
+                height: 15,
+                child: Padding(
+                  padding: EdgeInsets.only(right: 5.w),
+                  child: Image.asset('assets/icons/threads.png'),
+                ),
+              ),
+            },
             CachedChatAvatar(name: title ?? '', size: 30, imageUrl: imageUrl),
 
             12.horizontalSpace,
